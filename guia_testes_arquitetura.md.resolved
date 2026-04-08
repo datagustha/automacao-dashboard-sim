@@ -1,0 +1,42 @@
+# 📚 Guia Definitivo: Engenharia de Software e Testes no Python
+
+Este guia é um compilado de todas as viradas de chave e conceitos de programação profissional que estabelecemos ao refatorar a sua automação hoje. Guarde isso como o seu "Cheat Sheet" (Livro de Dicas) para os próximos desafios!
+
+## 1. Arquitetura Limpa: Produção x Laboratório
+A maior lição profissional: **"A regra é nunca rodar nas próprias pastas!"**
+- **Pasta `src/` (Source/Produção):** É a fábrica blindada. Aqui não colocamos `if __name__ == "__main__":` nem `#%%`. Apenas escrevemos o comportamento base, como receitas de bolo (`def fazer_bolo():`).
+- **Pasta `tests/` (Laboratório):** Aqui montamos a estrutura e colocamos as funções de teste para **comprovarem** que as funções antigas da Produção estão perfeitas. Se o código for rasgar, ele explode e suja a mesa do laboratório, nunca a de produção.
+
+## 2. A Mágica do `__init__.py`
+Ele é o "crachá oficial" que comprova para o Python (e para ferramentas sérias como Git, VSCode ou Pytest) que aquela pasta `utils`, por exemplo, é um Módulo Oficial Python, e não só uma pasta qualquer do Windows cheia de PDFs. **Nunca apague o `__init__.py` (nem que seja vazio) de arquivos e sub-pastas.**
+
+## 3. O Desafio dos Caminhos (Sys.Path e Module `-m`)
+Quando tomamos um `ModuleNotFoundError (No Module Named 'Src')`, o Python está tentando avisar que ele não sabe olhar as pastas em volta se não falarmos para ele quem é o teto ("A Raiz"). Você aprendeu as duas formas de contornar isso:
+
+- **O Padrão Ouro (Rodagem Rápida):** Abrir o terminal direto na grande pasta raiz e chamar:
+  `python -m src.services.scraper_service`
+  *(O fato de colocar a flag `-m` salva a vida e evita o PathError)*.
+  
+- **O Caminho Detalhado (Para os arquivos de `tests/`):**
+  Desconstruímos o famoso Sys.Path. Exigimos injetar na memória (`sys.path.append()`) o endereço correto da raiz do nosso projeto no momento em que passamos 2 tesouradas (`os.path.dirname`) do arquivo atual (`__file__`). Após fazer isso, todos os "imports Absolutos" lá embaixo vão sempre funcionar.
+
+## 4. O "Detetive Linha-Dura": Como funciona o `assert`?
+Testes não são testes se não garantirem o resultado. O Comando `assert` no Python significa dizer: *"Isto TEM que ser Verdade"*. 
+
+```python
+resultado = baixar_relatorio()
+assert resultado is not None 
+```
+Se a variável estiver perfeita cheia de dados: o Python não fala nada. Ele pisca um `PASSED (100%)` em Verde para nós.
+Se a variável vier quebrada ou vazia (`None`): O Python dá um **grto vermelho gigante** `AssertionError`. O programa inteiro aborta a missão para garantir que coisas erradas não poluam a parte interna do banco da empresa.
+
+## 5. Capturas de Tela do PyTest (O comando Sagrado `-s`)
+A ferramenta PyTest de laboratório tenta ser muito metódica, com isso, ela esconde (`Swallows`) **todos os `print()` do código** para gerar um terminal limpinho só verde e vermelho.
+
+Mas para acompanhar lógicas em tempo real na tela, sempre execute testes com a bandeira de Mostrar Outputs `-s`.
+
+* `pytest tests/test_scraper.py` ➔ Roda o teste liso.
+* `pytest -s tests/test_scraper.py` ➔ Roda o teste te contando cada print de linha do código de forma barulhenta!
+
+---
+*Consulte esse arquivo sempre que der "branco"! Você subiu de patamar hoje nas lógicas arquiteturais que definem os Programadores Plenos de automação!*

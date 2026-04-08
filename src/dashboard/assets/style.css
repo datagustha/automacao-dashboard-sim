@@ -1,0 +1,109 @@
+/* 
+RESET E VARIÁVEIS DE COR
+*/
+:root {
+    --purple-main: #7e3d97;
+    --purple-light: #9b5bad;
+    --purple-dark: #612d75;
+    --emerald: #10B981;
+    --gray-bg: #F9FAFB;
+    --text-main: #111827;
+    --text-muted: #6B7280;
+}
+
+body {
+    background-color: var(--gray-bg);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+}
+
+/* SIDEBAR FIXA */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    background-color: var(--purple-main); /* Usando a nova cor principal exigida */
+    color: white;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .nav-link {
+    color: #cbd5e1 !important;
+    padding: 12px 24px;
+    margin: 4px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white !important;
+}
+
+.sidebar .nav-link.active {
+    background-color: white !important;
+    color: var(--purple-main) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* CONTEÚDO PRINCIPAL */
+.main-content {
+    margin-left: 260px;
+    padding: 24px 32px;
+    background-color: var(--gray-bg);
+    min-height: 100vh;
+}
+
+/* CARDS INDICADORES */
+.card-kpi {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%;
+}
+.card-kpi:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+.kpi-title {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 12px;
+    margin-bottom: 4px;
+}
+.kpi-value {
+    color: var(--text-main);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+.kpi-subtext {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 5px;
+}
+
+/* CONTAINER GRÁFICO E TABELA */
+.dashboard-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+}
