@@ -1,6 +1,6 @@
-/* 
-RESET E VARIÁVEIS DE COR
-*/
+/* ================================================================
+   RESET E VARIÁVEIS DE COR
+   ================================================================ */
 :root {
     --purple-main: #7e3d97;
     --purple-light: #9b5bad;
@@ -18,14 +18,31 @@ body {
     margin: 0;
 }
 
-/* SIDEBAR FIXA */
+/* ================================================================
+   ESTILOS PARA GRÁFICOS
+   ================================================================ */
+.graph-roxo {
+    --graph-primary: #7e3d97;
+    --graph-secondary: #9b5bad;
+    --graph-area: rgba(126, 61, 151, 0.2);
+}
+
+.graph-verde {
+    --graph-primary: #10B981;
+    --graph-secondary: #34D399;
+    --graph-area: rgba(16, 185, 129, 0.2);
+}
+
+/* ================================================================
+   SIDEBAR FIXA (BARRA LATERAL)
+   ================================================================ */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
     width: 260px;
-    background-color: var(--purple-main); /* Usando a nova cor principal exigida */
+    background-color: var(--purple-main);
     color: white;
     overflow-y: auto;
     z-index: 100;
@@ -57,7 +74,9 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* CONTEÚDO PRINCIPAL */
+/* ================================================================
+   CONTEÚDO PRINCIPAL
+   ================================================================ */
 .main-content {
     margin-left: 260px;
     padding: 24px 32px;
@@ -65,45 +84,105 @@ body {
     min-height: 100vh;
 }
 
-/* CARDS INDICADORES */
+/* ================================================================
+   CARDS (KPIs) - PADRONIZADOS
+   ================================================================ */
 .card-kpi {
     background: white;
     border-radius: 16px;
-    padding: 20px 24px;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 20px 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
+
 .card-kpi:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
+
+/* Container do valor para manter altura consistente entre cards */
+.kpi-value-wrapper {
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Títulos dos cards */
 .kpi-title {
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-top: 12px;
-    margin-bottom: 4px;
-}
-.kpi-value {
-    color: var(--text-main);
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0;
-}
-.kpi-subtext {
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-top: 5px;
+    margin: 8px 0 4px 0;
+    text-align: center;
 }
 
-/* CONTAINER GRÁFICO E TABELA */
+/* Valores dos cards */
+.kpi-value {
+    color: var(--text-main);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+}
+
+/* Subtexto (ex: "Mês anterior: R$ xxx") */
+/* Garante altura mínima para a área do subtexto */
+.kpi-subtext {
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-top: 8px;
+    text-align: center;
+    min-height: 24px;
+    /* ← altura mínima garantida */
+}
+
+/* Espaçador para cards sem subtexto (mantém altura consistente) */
+.kpi-subtext-placeholder {
+    height: 24px;
+}
+
+/* ================================================================
+   CONTAINER PARA GRÁFICOS E TABELAS
+   ================================================================ */
 .dashboard-panel {
     background: white;
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     margin-bottom: 24px;
+}
+
+/* ================================================================
+   RESPONSIVIDADE (TABLET E MOBILE)
+   ================================================================ */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 16px;
+    }
+
+    .card-kpi {
+        padding: 16px 12px;
+    }
+
+    .kpi-value {
+        font-size: 1.25rem;
+    }
+
+    .kpi-title {
+        font-size: 0.7rem;
+    }
 }

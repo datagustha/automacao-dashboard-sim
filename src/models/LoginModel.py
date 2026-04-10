@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime # Importamos os tipos de dados que usaremos nas colunas
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Boolean# Importamos os tipos de dados que usaremos nas colunas
 from sqlalchemy.orm import declarative_base # A base declarativa cria um vínculo entre a classe Python e a tabela do banco de dados
 
 # Criamos a Base. Todos os nossos modelos vão 'herdar' dessa Base
@@ -19,3 +19,9 @@ class analistas(Base):
     banco = Column(String(255))
     atividade = Column(String(255))
     imagem = Column(String(255))
+
+    #novas colunas
+    email = Column(String(255))
+    senha_hash = Column(String(255), nullable=True)
+    primeiro_acesso = Column(Boolean, default=True)
+

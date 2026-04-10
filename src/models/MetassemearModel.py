@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base # A base declarativa cria um víncul
 Base = declarative_base()
 
 # Definimos o nosso Modelo (Model). Cada modelo representa uma Tabela no banco de dados.
-class Metas(Base):
+class Metas_semear(Base):
     # O atributo __tablename__ informa ao SQLAlchemy qual é o nome exato da tabela lá no MySQL
     __tablename__ = "fmetaSemearop" # ← exatamente igual ao MySQLante
 

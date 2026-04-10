@@ -8,8 +8,9 @@ from datetime import date, datetime
 from dash_iconify import DashIconify
 
 from src.dashboard.components.menus import get_sidebar, get_header
-from src.dashboard.components.cards import card_indicador
-from src.dashboard.components.tabelas import container_grafico, container_tabela
+from src.dashboard.components.cards import card_indicador, card_meta
+from src.dashboard.components.tabelas import container_grafico, container_tabela, container_tabela_cheia
+from src.dashboard.components.graficos import grafico_barras_fase, grafico_evolucao_diaria
 
 anos = [{"label": str(ano), "value": ano} for ano in range(2020, date.today().year + 2)]
 meses = [
@@ -66,14 +67,78 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None):
             # === KPIs ===
             dbc.Row(
                 [
-                    dbc.Col(card_indicador("FATURAMENTO TOTAL", "R$ 0,00", "kpi-faturamento", "var(--emerald)", "lucide:trending-up", "kpi-mes-anterior"), width=12, md=4, className="mb-4"),
-                    dbc.Col(card_indicador("TICKET MÉDIO", "R$ 0,00", "kpi-ticket", "var(--purple-main)", "lucide:ticket"), width=12, md=4, className="mb-4"),
-                    dbc.Col(card_indicador("OPERAÇÕES PAGAS", "0", "kpi-total-pgtos", "#A78BFA", "lucide:credit-card"), width=12, md=4, className="mb-4"),
-                ]
+                    dbc.Col(
+                        card_indicador(
+                            titulo="FATURAMENTO TOTAL",
+                            valor_default="R$ 0,00",
+                            id_valor="kpi-faturamento",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:trending-up",
+                            id_sub_texto="kpi-mes-anterior"
+                        ),
+                        width=12, md=3, className="mb-4"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="TICKET MÉDIO",
+                            valor_default="R$ 0,00",
+                            id_valor="kpi-ticket",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:ticket"
+                        ),
+                        width=12, md=3, className="mb-4"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="OPERAÇÕES PAGAS",
+                            valor_default="0",
+                            id_valor="kpi-total-pgtos",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:credit-card"
+                        ),
+                        width=12, md=3, className="mb-4"
+                    ),
+                    dbc.Col(
+                        card_meta(
+                            titulo="META DO MÊS",
+                            id_meta_objetivo="kpi-meta-objetivo",
+                            id_barra="kpi-meta-barra",
+                            id_percentual="kpi-meta-percentual",
+                            cor_icone="var(--purple-main)"
+                        ),
+                        width=12, md=3, className="mb-4"
+                    ),
+                ],
+                className="g-3"  # espaçamento entre os cards
             ),
 
             # === GRÁFICO E TABELA ===
-            dbc.Row([dbc.Col(container_grafico("Evolução Diária - Faturamento no Período", "grafico-faturamento"), width=12)]),
+            # No layout, dentro do dbc.Row:
+            dbc.Row([
+                # Gráfico de evolução (esquerda)
+                dbc.Col(
+                    grafico_evolucao_diaria("grafico-faturamento", "Evolução Diária - Faturamento no Período"), 
+                    width=12, md=6
+                ),
+                # Gráfico de barras (direita)
+                dbc.Col(
+                    grafico_barras_fase("grafico-fase", "Pagamentos por Fase", cor="roxo"), 
+                    width=12, md=6
+                )
+            ], className="mb-4"),
+
+            # ================================================================
+            # TABELA DE PERFORMANCE DO OPERADOR
+            # ================================================================
+            dbc.Row([
+                dbc.Col(
+                    container_tabela_cheia("tabela-performance", titulo="📊 Performance do Operador"),
+                    width=12
+                )
+            ], className="mb-4"),
+
+            # === TABELA ===
+
             dbc.Row([dbc.Col(container_tabela("tabela-pagamentos"), width=12)]),
 
             dcc.Interval(id='intervalo-atualizacao', interval=300*1000, n_intervals=0)

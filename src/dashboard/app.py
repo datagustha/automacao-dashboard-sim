@@ -34,7 +34,7 @@ app = dash.Dash(
     suppress_callback_exceptions=True,  # Necessário para layouts dinâmicos
     external_stylesheets=[
         dbc.themes.FLATLY,
-        dbc.icons.FONT_AWESOME # 🌟 Adicionado suporte aos Ícones Profissionais
+        dbc.icons.FONT_AWESOME
     ]
 )
 
@@ -43,8 +43,7 @@ server = app.server
 # ========================================================================
 # LAYOUT RAIZ (ROOT LAYOUT)
 # ========================================================================
-# IMPORTANTE: O Store 'login-success-store' precisa estar AQUI no layout raiz
-# para que os callbacks possam acessá-lo antes mesmo de qualquer tela carregar
+# IMPORTANTE: Os Stores com storage_type='local' persistem entre navegações
 app.layout = html.Div([
     # Controle de URL (roteamento)
     dcc.Location(id='url', refresh=False),
@@ -53,22 +52,25 @@ app.layout = html.Div([
     html.Div(id='page-content'),
     
     # ==================================================
-    # STORE GLOBAL - GUARDA DADOS DO USUÁRIO LOGADO
-    # Este componente fica SEMPRE no layout, mesmo quando a tela muda
-    # É invisível e serve para guardar dados entre as páginas
+    # STORES GLOBAIS - PERSISTEM ENTRE PÁGINAS
     # ==================================================
-    dcc.Store(id='login-success-store', storage_type='memory'),  # ✅ Adicionado globalmente
+    # storage_type='local' mantém os dados no navegador
+    dcc.Store(id='login-success-store', storage_type='local'),
+    dcc.Store(id='login-step-store', data={'step': 'login'}, storage_type='local'),
 ])
 
 # ========================================================================
 # IMPORTA OS CALLBACKS
 # ========================================================================
-from src.dashboard.callbacks import auth_callbacks, graficos_callbacks, pgto_callbacks
+from src.dashboard.callbacks import auth_callbacks, graficos_callbacks, pgto_callbacks, operador_callbacks
 
-# Registra os callbacks
+# ========================================================================
+# REGISTRA OS CALLBACKS
+# ========================================================================
 auth_callbacks.register_callbacks(app)
 graficos_callbacks.register_callbacks(app)
 pgto_callbacks.register_callbacks(app)
+operador_callbacks.register_callbacks(app)
 
 # ========================================================================
 # PONTO DE ENTRADA

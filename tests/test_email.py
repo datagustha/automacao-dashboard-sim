@@ -16,16 +16,15 @@ pasta_raiz = os.path.dirname(pasta_origigem)
 sys.path.append(pasta_raiz)
 
 # 5. ver os buscar dados
-from src.services.db_service import Buscar_login, Buscar_pagamento
+from src.services.email_service import enviar_email_teste
 
-def test_buscar_login():
+def test_enviar_email():
 
-    operador = Buscar_login("2552ROSELI")
+    envio = enviar_email_teste("Controladoria@simfacilita.com.br")
 
-    if operador:
-        print(operador)
+    if envio:
+        print("Sucesso")
+        print(envio)
 
-        pagamentos = Buscar_pagamento(operador)
-        print(pagamentos)
 
-    assert operador is not None
+    assert envio is not None
