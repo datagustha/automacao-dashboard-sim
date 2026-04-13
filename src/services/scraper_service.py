@@ -291,7 +291,7 @@ def baixar_relatorio_portal():
         # ── Bancos a processar ─────────────────────────────────────────
         bancos = [
             {"label": "BANCO SEMEAR", "chave": "semear"},
-            {"label": "AGORACRED",    "chave": "agoracred"},
+            {"label": "Agoracred Financeira",    "chave": "agoracred"},
         ]
 
         for banco in bancos:
