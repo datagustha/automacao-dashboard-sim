@@ -10,10 +10,10 @@ from src.dashboard.components.menus import get_sidebar, get_header
 from src.dashboard.components.tabelas import container_tabela_simples, container_tabela_cheia, container_grafico
 
 
-def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, operador_selecionado: dict = None, banco: str = "SEMEAR"):
+def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, operador_selecionado: dict = None, banco: str = "SEMEAR", is_adm: bool = False):
     """Constrói a tela de detalhe do operador."""
     
-    sidebar = get_sidebar("operador", active_link="operadores")
+    sidebar = get_sidebar("operadores" if is_adm else "operador", perfil="adm" if is_adm else "operador")
     
     nome_operador = operador_selecionado.get('nome', nome_usuario) if operador_selecionado else nome_usuario
     imagem_operador = operador_selecionado.get('imagem', imagem_url) if operador_selecionado else imagem_url
@@ -39,6 +39,56 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
     conteudo = html.Div(
         [
             get_header(nome_operador, imagem_operador, f"📊 Desempenho - {banco}"),
+            
+            # --- Bloco exclusivo ADM ---
+            (
+                html.Div(
+                    dbc.Row(
+                        dbc.Col(
+                            html.Div(
+                                [
+                                    html.H5("Escolha o banco e o operador", className="mb-4", style={"color": "var(--text-main)", "fontWeight": "700"}),
+                                    dbc.Row([
+                                        dbc.Col(
+                                            [
+                                                html.Label("Banco", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                                                dcc.Dropdown(
+                                                    id="adm-banco-select",
+                                                    options=[
+                                                        {"label": "🟣 SEMEAR",    "value": "SEMEAR"},
+                                                        {"label": "🔵 AGORACRED", "value": "AGORACRED"},
+                                                    ],
+                                                    value=banco,
+                                                    clearable=False,
+                                                    style={"borderRadius": "8px"}
+                                                ),
+                                            ],
+                                            width=12, md=3
+                                        ),
+                                        dbc.Col(
+                                            [
+                                                html.Label("Operador", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                                                dcc.Dropdown(
+                                                    id="adm-operador-select",
+                                                    options=[], # Será populado
+                                                    value=operador_selecionado.get('login', 'TODOS') if operador_selecionado else 'TODOS',
+                                                    placeholder="Selecione um operador...",
+                                                    clearable=False,
+                                                    style={"borderRadius": "8px"}
+                                                ),
+                                            ],
+                                            width=12, md=4
+                                        ),
+                                    ])
+                                ],
+                                className="dashboard-panel mb-4"
+                            ),
+                            width=12
+                        )
+                    )
+                ) if is_adm else html.Div()
+            ),
+            # --------------------------
             
             # Filtros
             dbc.Row(
@@ -94,7 +144,15 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
             # Tabela de Performance
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-performance-operador", "🎯 Performance do Operador"),
+                    html.Div([
+                        # Subtítulo: dias trabalhados e restantes (vem do callback)
+                        html.Div(
+                            id='info-dias-operador',
+                            className="text-muted mb-2 px-1",
+                            style={"fontSize": "13px", "fontWeight": "500"}
+                        ),
+                        container_tabela_cheia("tabela-performance-operador", "🎯 Performance do Operador"),
+                    ]),
                     width=12
                 )
             ], className="mb-4"),
@@ -107,6 +165,7 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
             dcc.Interval(id='intervalo-operador', interval=300*1000, n_intervals=0),
             dcc.Store(id='operador-selecionado-store', data=operador_selecionado),
             dcc.Store(id='banco-operador-store', data=banco),
+            dcc.Location(id="adm-redirect-detalhe", refresh=True) if is_adm else html.Div()
         ],
         className="main-content"
     )

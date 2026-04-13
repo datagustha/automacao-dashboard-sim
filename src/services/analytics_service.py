@@ -4,26 +4,13 @@ SERVIÇO DE CÁLCULOS E INDICADORES
 
 ARQUIVO: analytics_service.py
 LOCAL: src/services/
-
-RESPONSABILIDADE:
-- Calcular métricas e indicadores a partir dos dados de pagamento
-- NENHUMA função aqui faz consulta direta ao banco
-- Todas recebem os dados como parâmetro e calculam
-- Usa PANDAS para cálculos eficientes
-- Funciona com OBJETOS SQLAlchemy OU DICIONÁRIOS
-
-ESTRUTURA DO ARQUIVO:
-1. Funções auxiliares (_extrair_valor)
-2. Indicadores básicos (faturamento, ticket, total)
-3. Gráficos (faturamento por dia, pagamentos por fase)
-4. Meta (buscar meta do mês, calcular percentual)
-5. PERFORMANCE (nova) - para tabela de performance do operador
 """
 
 import pandas as pd
 from typing import List, Any, Dict
-from datetime import datetime
+from datetime import datetime, date
 import calendar
+import holidays
 
 
 # ================================================================
@@ -31,55 +18,30 @@ import calendar
 # ================================================================
 
 def _extrair_valor(pagamento, campo: str):
-    """
-    EXTRAI UM VALOR DE UM PAGAMENTO, SEJA OBJETO OU DICIONÁRIO.
-    
-    PASSO A PASSO:
-    1. Verifica se é dicionário (acessa com colchetes)
-    2. Se não for, assume que é objeto (acessa com ponto)
-    3. Retorna o valor ou None se não existir
-    
-    ARGS:
-        pagamento: Objeto SQLAlchemy ou dicionário
-        campo: Nome do campo a extrair (ex: 'valorTotal')
-    
-    RETORNO:
-        Valor do campo ou None
-    """
+    """Extrai um valor de um pagamento, seja objeto ou dicionário."""
     if isinstance(pagamento, dict):
         return pagamento.get(campo)
     else:
         return getattr(pagamento, campo, None)
 
 
-def _contar_dias_uteis(ano: int, mes: int, data_referencia: datetime = None):
-    """
-    CALCULA QUANTOS DIAS ÚTEIS NO MÊS E QUANTOS JÁ PASSARAM.
+def _contar_dias_uteis(ano, mes, data_referencia: datetime = None):
+    """Calcula quantos dias úteis no mês e quantos já passaram."""
+    ano = int(ano)
+    mes = int(mes)
     
-    O QUE FAZ:
-    - Dias úteis = segunda a sexta (não considera feriados)
-    - Se data_referencia for fornecida, conta apenas dias ATÉ aquela data
-    
-    ARGS:
-        ano: Ano (ex: 2026)
-        mes: Mês (ex: 4 para Abril)
-        data_referencia: Data para contar dias úteis até ela (opcional)
-    
-    RETORNO:
-        tuple: (total_dias_uteis, dias_uteis_passados)
-    """
-    # Total de dias no mês
     total_dias = calendar.monthrange(ano, mes)[1]
     
-    # Lista de dias úteis (segunda=0, sexta=4)
+    feriados_br = holidays.country_holidays('BR', years=ano)
+    
     dias_uteis = []
     for dia in range(1, total_dias + 1):
-        if calendar.weekday(ano, mes, dia) < 5:  # 0-4 = segunda a sexta
+        data_atual = date(ano, mes, dia)
+        if data_atual.weekday() < 5 and data_atual not in feriados_br:
             dias_uteis.append(dia)
     
     total_dias_uteis = len(dias_uteis)
     
-    # Conta dias úteis até a data de referência
     if data_referencia:
         dias_uteis_passados = 0
         for dia in dias_uteis:
@@ -94,24 +56,15 @@ def _contar_dias_uteis(ano: int, mes: int, data_referencia: datetime = None):
 # 2. INDICADORES BÁSICOS
 # ================================================================
 
-def calcular_indicadores_operador(pagamentos: List[Any]) -> Dict[str, Any]:
+def calcular_indicadores_operador(pagamentos: List[Any], banco: str = "SEMEAR") -> Dict[str, Any]:
     """
     CALCULA OS PRINCIPAIS INDICADORES DE UM OPERADOR.
     
-    IMPORTANTE: Exclui automaticamente pagamentos com fase "Fora da fase"
-    
-    ARGS:
-        pagamentos: Lista de pagamentos (objetos ou dicionários)
-    
-    RETORNO:
-        dict: {
-            'total_pagamentos': int,
-            'faturamento_total': float,
-            'ticket_medio': float
-        }
+    IMPORTANTE: 
+    - Para SEMEAR: exclui pagamentos com fase "Fora da fase"
+    - Para AGORACRED: considera todos os pagamentos
     """
     
-    # VALIDAÇÃO: Se não tem pagamentos, retorna tudo zero
     if not pagamentos:
         print("[AVISO] Lista de pagamentos vazia")
         return {
@@ -121,27 +74,35 @@ def calcular_indicadores_operador(pagamentos: List[Any]) -> Dict[str, Any]:
         }
     
     # ================================================================
-    # FILTRO: Excluir pagamentos com fase "Fora da fase"
+    # FILTRO: Excluir pagamentos com fase "Fora da fase" (apenas SEMEAR)
     # ================================================================
-    pagamentos_filtrados = []
-    for pag in pagamentos:
-        fase = _extrair_valor(pag, 'faseAtraso')
-        if fase != "Fora da fase":
+    if banco == "SEMEAR":
+        pagamentos_filtrados = []
+        for pag in pagamentos:
+            fase = _extrair_valor(pag, 'faseAtraso')
+            # Se a fase for "Fora da fase", exclui
+            if fase == "Fora da fase":
+                continue
             pagamentos_filtrados.append(pag)
-    
-    if not pagamentos_filtrados:
-        print("[AVISO] Todos os pagamentos estão com fase 'Fora da fase'")
-        return {
-            'total_pagamentos': 0,
-            'faturamento_total': 0.0,
-            'ticket_medio': 0.0
-        }
-    
-    print(f"[FILTRO] Removidos {len(pagamentos) - len(pagamentos_filtrados)} pagamentos 'Fora da fase'")
+        
+        if not pagamentos_filtrados:
+            print("[AVISO] Todos os pagamentos estão com fase 'Fora da fase'")
+            return {
+                'total_pagamentos': 0,
+                'faturamento_total': 0.0,
+                'ticket_medio': 0.0
+            }
+        
+        print(f"[FILTRO] Removidos {len(pagamentos) - len(pagamentos_filtrados)} pagamentos 'Fora da fase'")
+        pagamentos_para_calculo = pagamentos_filtrados
+    else:
+        # AGORACRED: considera todos os pagamentos (sem filtro)
+        pagamentos_para_calculo = pagamentos
+        print(f"[INFO] AGORACRED: considerando todos os {len(pagamentos)} pagamentos")
     
     # Converte para DataFrame
     dados = []
-    for pag in pagamentos_filtrados:
+    for pag in pagamentos_para_calculo:
         valor = _extrair_valor(pag, 'valorTotal')
         if valor is not None and isinstance(valor, (int, float)):
             dados.append({
@@ -154,7 +115,6 @@ def calcular_indicadores_operador(pagamentos: List[Any]) -> Dict[str, Any]:
     
     df = pd.DataFrame(dados)
     
-    # Calcula indicadores
     faturamento_total = df['valorTotal'].sum()
     total_pagamentos = len(df)
     ticket_medio = df['valorTotal'].mean() if total_pagamentos > 0 else 0
@@ -170,24 +130,28 @@ def calcular_indicadores_operador(pagamentos: List[Any]) -> Dict[str, Any]:
 # 3. GRÁFICOS
 # ================================================================
 
-def calcular_faturamento_por_dia(pagamentos: List[Any]) -> pd.DataFrame:
-    """Calcula o faturamento agrupado por dia (exclui 'Fora da fase')."""
+def calcular_faturamento_por_dia(pagamentos: List[Any], banco: str = "SEMEAR") -> pd.DataFrame:
+    """Calcula o faturamento agrupado por dia."""
     
     if not pagamentos:
         return pd.DataFrame(columns=['data', 'total'])
     
-    # Filtra "Fora da fase"
-    pagamentos_filtrados = []
-    for pag in pagamentos:
-        fase = _extrair_valor(pag, 'faseAtraso')
-        if fase != "Fora da fase":
-            pagamentos_filtrados.append(pag)
-    
-    if not pagamentos_filtrados:
-        return pd.DataFrame(columns=['data', 'total'])
+    # Filtra "Fora da fase" apenas para SEMEAR
+    if banco == "SEMEAR":
+        pagamentos_filtrados = []
+        for pag in pagamentos:
+            fase = _extrair_valor(pag, 'faseAtraso')
+            if fase != "Fora da fase":
+                pagamentos_filtrados.append(pag)
+        
+        if not pagamentos_filtrados:
+            return pd.DataFrame(columns=['data', 'total'])
+        pagamentos_para_calculo = pagamentos_filtrados
+    else:
+        pagamentos_para_calculo = pagamentos
     
     dados = []
-    for pag in pagamentos_filtrados:
+    for pag in pagamentos_para_calculo:
         data = _extrair_valor(pag, 'dtPgto')
         valor = _extrair_valor(pag, 'valorTotal')
         if data and valor and isinstance(valor, (int, float)):
@@ -204,8 +168,8 @@ def calcular_faturamento_por_dia(pagamentos: List[Any]) -> pd.DataFrame:
     return resultado.sort_values('data')
 
 
-def calcular_pagamentos_por_fase(pagamentos: List[Any]) -> pd.DataFrame:
-    """Agrupa pagamentos por fase (exclui 'Fora da fase')."""
+def calcular_pagamentos_por_fase(pagamentos: List[Any], banco: str = "SEMEAR") -> pd.DataFrame:
+    """Agrupa pagamentos por fase."""
     
     if not pagamentos:
         return pd.DataFrame(columns=['fase', 'total'])
@@ -214,7 +178,12 @@ def calcular_pagamentos_por_fase(pagamentos: List[Any]) -> pd.DataFrame:
     for pag in pagamentos:
         fase = _extrair_valor(pag, 'faseAtraso')
         valor = _extrair_valor(pag, 'valorTotal')
-        if fase and fase != "Fora da fase" and valor and isinstance(valor, (int, float)):
+        
+        # Para SEMEAR, exclui "Fora da fase"
+        if banco == "SEMEAR" and fase == "Fora da fase":
+            continue
+        
+        if fase and valor and isinstance(valor, (int, float)):
             fase_limpa = str(fase).replace("Fase ", "").strip()
             dados.append({'fase': fase_limpa, 'valor': float(valor)})
     
@@ -251,7 +220,7 @@ def calcular_percentual_meta(faturamento: float, meta_valor: float) -> float:
 
 
 # ================================================================
-# 5. TABELA DE PERFORMANCE (NOVO)
+# 5. TABELA DE PERFORMANCE
 # ================================================================
 
 def calcular_performance_operador(
@@ -259,35 +228,15 @@ def calcular_performance_operador(
     metas: List[Any], 
     ano: int, 
     mes: int,
-    login: str = None
+    login: str = None,
+    banco: str = "SEMEAR"
 ) -> Dict[str, Any]:
     """
     CALCULA A PERFORMANCE COMPLETA DE UM OPERADOR PARA A TABELA.
-    
-    O QUE CALCULA:
-    - faturamento: soma dos valores
-    - feito_diario: faturamento / dias_uteis_trabalhados
-    - meta: meta100 do mês
-    - meta_diaria: meta / dias_uteis_totais
-    - atingido_meta: percentual do faturamento em relação à meta
-    - faltas: quanto falta para 70%, 80%, 90%, 100%
-    - meta_ranking: meta de ranking
-    - projecao: projeção de faturamento até fim do mês
-    - projecao_percentual: percentual projetado
-    
-    ARGS:
-        pagamentos: Lista de pagamentos do operador
-        metas: Lista de metas do operador
-        ano: Ano desejado
-        mes: Mês desejado
-        login: Login do operador (opcional)
-    
-    RETORNO:
-        dict: Dicionário com todas as métricas
     """
     
     # ----------------------------------------------------------------
-    # 1. FILTRA PAGAMENTOS DO MÊS (exclui "Fora da fase")
+    # 1. FILTRA PAGAMENTOS DO MÊS
     # ----------------------------------------------------------------
     df = pd.DataFrame(pagamentos)
     df['dtPgto'] = pd.to_datetime(df['dtPgto'])
@@ -297,8 +246,14 @@ def calcular_performance_operador(
         (df['dtPgto'].dt.year == ano)
     ].copy()
     
-    # Exclui "Fora da fase"
-    df_mes = df_mes[df_mes['faseAtraso'] != "Fora da fase"]
+    # ================================================================
+    # FILTRO: Excluir "Fora da fase" apenas para SEMEAR
+    # ================================================================
+    if banco == "SEMEAR":
+        if 'faseAtraso' in df_mes.columns:
+            df_mes = df_mes[df_mes['faseAtraso'] != "Fora da fase"]
+        elif 'fase' in df_mes.columns:
+            df_mes = df_mes[df_mes['fase'] != "Fora da fase"]
     
     # ----------------------------------------------------------------
     # 2. BUSCA META DO MÊS
@@ -321,32 +276,23 @@ def calcular_performance_operador(
     # ----------------------------------------------------------------
     # 4. CÁLCULO DE DIAS ÚTEIS
     # ----------------------------------------------------------------
-    # Última data de pagamento (para calcular dias trabalhados)
     ultima_data = df_mes['dtPgto'].max() if not df_mes.empty else datetime.now()
     
-    # Dias úteis totais do mês
     total_dias_uteis, dias_trabalhados = _contar_dias_uteis(ano, mes, ultima_data)
     dias_restantes = total_dias_uteis - dias_trabalhados
     
     # ----------------------------------------------------------------
     # 5. CÁLCULO DAS MÉTRICAS
     # ----------------------------------------------------------------
-    # Feito diário (média por dia trabalhado)
     feito_diario = faturamento / dias_trabalhados if dias_trabalhados > 0 else 0
-    
-    # Meta diária
     meta_diaria = meta_valor / total_dias_uteis if total_dias_uteis > 0 else 0
-    
-    # Percentual atingido da meta
     atingido_meta = (faturamento / meta_valor) * 100 if meta_valor > 0 else 0
     
-    # Quanto falta para cada nível da meta (se positivo, mostra quanto falta)
     falta_70 = max(0, (meta_valor * 0.7) - faturamento)
     falta_80 = max(0, (meta_valor * 0.8) - faturamento)
     falta_90 = max(0, (meta_valor * 0.9) - faturamento)
     falta_100 = max(0, meta_valor - faturamento)
     
-    # Projeção (se tiver dias restantes)
     if dias_restantes > 0 and feito_diario > 0:
         projecao = faturamento + (feito_diario * dias_restantes)
     else:
@@ -378,21 +324,11 @@ def calcular_performance_operador(
 
 
 def calcular_performance_todos_operadores(
-    lista_pagamentos: List[tuple],  # lista de (operador, pagamentos, metas)
+    lista_pagamentos: List[tuple],
     ano: int,
     mes: int
 ) -> pd.DataFrame:
-    """
-    CALCULA A PERFORMANCE DE TODOS OS OPERADORES PARA A TABELA DO ADM.
-    
-    ARGS:
-        lista_pagamentos: Lista de tuplas (operador_dict, pagamentos_list, metas_list)
-        ano: Ano desejado
-        mes: Mês desejado
-    
-    RETORNO:
-        pd.DataFrame: DataFrame com performance de todos os operadores
-    """
+    """Calcula a performance de todos os operadores para a tabela do ADM."""
     resultados = []
     
     for operador, pagamentos, metas in lista_pagamentos:
@@ -401,15 +337,14 @@ def calcular_performance_todos_operadores(
             metas=metas,
             ano=ano,
             mes=mes,
-            login=operador.get('login')
+            login=operador.get('login'),
+            banco=operador.get('banco', 'SEMEAR')
         )
-        # Adiciona turno e outros dados do operador
         perf['turno'] = operador.get('turno', '')
         resultados.append(perf)
     
     df = pd.DataFrame(resultados)
     
-    # Ordena por faturamento decrescente
     if not df.empty:
         df = df.sort_values('faturamento', ascending=False)
     

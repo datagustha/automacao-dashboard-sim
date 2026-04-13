@@ -66,6 +66,7 @@ def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de O
                         page_size=30,
                         sort_action="native",
                         filter_action="native",
+                        markdown_options={"html": True},
                         style_table={'overflowX': 'auto', 'borderRadius': '12px'}, 
                         style_header={
                             'backgroundColor': 'var(--purple-main)', 

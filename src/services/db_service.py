@@ -570,14 +570,24 @@ def Buscar_pagamento_por_operador(dados_operador: dict):
     if not dados_operador:
         return None
     
+    login = dados_operador.get('login')
     banco = dados_operador.get('banco')
+    
+    if login == 'TODOS':
+        dados_gerais = buscar_pagamentos_todos_operadores_por_banco(banco)
+        if not dados_gerais: return []
+        
+        pag_consolidados = []
+        for op, pgtos, mts in dados_gerais:
+            if pgtos:
+                pag_consolidados.extend(pgtos)
+        return pag_consolidados
     
     if banco == 'SEMEAR':
         return Buscar_pagamento_semear(dados_operador)
     elif banco == 'AGORACRED':
         return Buscar_pagamento_agoracred(dados_operador)
     else:
-        # Para ADM ou banco não identificado, tenta SEMEAR primeiro
         pagamentos = Buscar_pagamento_semear(dados_operador)
         if pagamentos:
             return pagamentos
@@ -585,25 +595,51 @@ def Buscar_pagamento_por_operador(dados_operador: dict):
 
 
 def buscar_metas_por_operador(dados_operador: dict):
-    """
-    BUSCA METAS DO OPERADOR BASEADO NO BANCO DELE (FUNÇÃO GENÉRICA).
-    
-    Funcionamento IDÊNTICO ao Buscar_pagamento_por_operador,
-    mas para as metas.
-    
-    ARGS:
-        dados_operador: Dicionário com dados do operador
-    
-    RETORNO:
-        list: Lista de metas
-        None: Se não houver metas
-    """
-    
+    """BUSCA METAS DO OPERADOR (COM SUPORTE A TODOS)."""
     if not dados_operador:
         return None
     
-    banco = dados_operador.get('banco')
+    login = dados_operador.get('login')
+    banco = dados_operador.get('banco', 'SEMEAR')
     
+    if login == 'TODOS':
+        import pandas as pd
+        dados_gerais = buscar_pagamentos_todos_operadores_por_banco(banco)
+        if not dados_gerais: return []
+        
+        meta_dict = {}
+        for op, pgtos, mts in dados_gerais:
+            if not mts: continue
+            for m in mts:
+                data_obj = m.get('data')
+                if isinstance(data_obj, str):
+                    try:
+                        data_chave = str(pd.to_datetime(data_obj).date())
+                    except:
+                        data_chave = str(data_obj)
+                elif hasattr(data_obj, 'date'):
+                    data_chave = str(data_obj.date())
+                else:
+                    data_chave = str(data_obj)
+                
+                if data_chave not in meta_dict:
+                    meta_dict[data_chave] = {
+                        'data': m.get('data'),
+                        'meta70': 0.0,
+                        'meta80': 0.0,
+                        'meta90': 0.0,
+                        'meta100': 0.0,
+                        'meta_ranking': 0.0
+                    }
+                
+                meta_dict[data_chave]['meta70'] += float(m.get('meta70') or 0.0)
+                meta_dict[data_chave]['meta80'] += float(m.get('meta80') or 0.0)
+                meta_dict[data_chave]['meta90'] += float(m.get('meta90') or 0.0)
+                meta_dict[data_chave]['meta100'] += float(m.get('meta100') or 0.0)
+                meta_dict[data_chave]['meta_ranking'] += float(m.get('meta_ranking') or m.get('metaRanking') or 0.0)
+                
+        return list(meta_dict.values())
+        
     if banco == 'SEMEAR':
         return buscar_metas_semear(dados_operador)
     elif banco == 'AGORACRED':
@@ -613,3 +649,50 @@ def buscar_metas_por_operador(dados_operador: dict):
         if metas:
             return metas
         return buscar_metas_agoracred(dados_operador)
+
+
+# ================================================================
+# 6. FUNÇÕES PARA O ADM (busca coletiva por banco)
+# ================================================================
+
+def buscar_todos_operadores_por_banco(banco: str) -> list:
+    """BUSCA TODOS OS OPERADORES DE UM BANCO ESPECÍFICO."""
+    with Session(engine) as session:
+        try:
+            operadores = session.query(analistas).filter(
+                analistas.banco == banco
+            ).all()
+            
+            lista = []
+            for op in operadores:
+                lista.append({
+                    "login": op.loguin,
+                    "nome": op.nome_completo,
+                    "banco": op.banco,
+                    "turno": op.turno,
+                    "imagem": op.imagem,
+                    "atividade": op.atividade,
+                })
+            
+            return lista
+            
+        except Exception as e:
+            print(f"[ERRO] Erro ao buscar operadores: {e}")
+            return []
+
+def buscar_pagamentos_todos_operadores_por_banco(banco: str) -> list:
+    """BUSCA TODOS OS PAGAMENTOS DE UM BANCO."""
+    operadores = buscar_todos_operadores_por_banco(banco)
+    resultado = []
+    
+    for operador in operadores:
+        if banco == 'SEMEAR':
+            pagamentos = Buscar_pagamento_semear(operador)
+            metas = buscar_metas_semear(operador)
+        else:
+            pagamentos = Buscar_pagamento_agoracred(operador)
+            metas = buscar_metas_agoracred(operador)
+        
+        resultado.append((operador, pagamentos or [], metas or []))
+    
+    return resultado

@@ -62,7 +62,7 @@ app.layout = html.Div([
 # ========================================================================
 # IMPORTA OS CALLBACKS
 # ========================================================================
-from src.dashboard.callbacks import auth_callbacks, graficos_callbacks, pgto_callbacks, operador_callbacks
+from src.dashboard.callbacks import auth_callbacks, graficos_callbacks, pgto_callbacks, operador_callbacks, adm_callbacks
 
 # ========================================================================
 # REGISTRA OS CALLBACKS
@@ -71,6 +71,7 @@ auth_callbacks.register_callbacks(app)
 graficos_callbacks.register_callbacks(app)
 pgto_callbacks.register_callbacks(app)
 operador_callbacks.register_callbacks(app)
+adm_callbacks.register_callbacks(app)
 
 # ========================================================================
 # PONTO DE ENTRADA

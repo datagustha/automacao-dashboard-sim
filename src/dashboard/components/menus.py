@@ -10,13 +10,14 @@ from dash import html, dcc
 from dash_iconify import DashIconify
 
 
-def get_sidebar(active_route: str, active_link: str = None):
+def get_sidebar(active_route: str, active_link: str = None, perfil: str = 'operador'):
     """
     Constrói o menu Lateral esquerdo do sistema.
     
     Args:
         active_route: Rota ativa para destaque ('dashboard', 'pagamentos', 'operadores')
         active_link: Link específico para destacar (usado quando o href é dinâmico)
+        perfil: 'adm' ou 'operador' — pode adaptar o menu conforme necessário
     """
     def check_active(route):
         if active_link:
@@ -49,7 +50,7 @@ def get_sidebar(active_route: str, active_link: str = None):
                     ),
                     dcc.Link(
                         [DashIconify(icon="lucide:users", width=20, className="me-3"), "Operadores"], 
-                        href="/operador/2552ROSELI",  # Link temporário
+                        href="/operadores",
                         className=check_active("operadores")
                     ),
                 ],

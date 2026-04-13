@@ -14,9 +14,10 @@ class analistas(Base):
     ID_analista = Column(Integer, primary_key=True) 
     loguin = Column(String(255))
     nome_completo = Column(String(255))
-    jornada = Column(String(255))
+    jornada = Column(String(255))    # ← coluna legada
+    turno = Column(String(255))      # ← turno do operador (M=Manhã, T=Tarde, N=Noite)
     admissao = Column(String(255))
-    banco = Column(String(255))
+    banco = Column(String(255))      # ← 'SEMEAR', 'AGORACRED' ou 'ADM'
     atividade = Column(String(255))
     imagem = Column(String(255))
 
