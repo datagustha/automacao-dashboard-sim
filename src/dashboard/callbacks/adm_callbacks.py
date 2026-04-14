@@ -220,14 +220,22 @@ def register_callbacks(app):
     # =========================================================================
     @app.callback(
         Output('adm-operador-select', 'options'),
-        Input('adm-banco-select', 'value')
+        [
+            Input('adm-banco-select', 'value'),
+            Input('adm-filtro-atividade', 'value')
+        ]
     )
-    def carregar_operadores_banco(banco):
-        """Carrega os operadores do banco selecionado no dropdown."""
+    def carregar_operadores_banco(banco, atividade):
+        """Carrega os operadores do banco selecionado no dropdown, filtrando por atividade."""
         from src.services.db_service import buscar_todos_operadores_por_banco
         if not banco:
             return []
+        
         operadores = buscar_todos_operadores_por_banco(banco)
+        
+        if atividade == "ativo":
+            operadores = [op for op in operadores if op.get('atividade') == 'ativo']
+            
         opcoes = [{"label": "🌟 Todos os Operadores (Consolidado)", "value": "TODOS"}]
         opcoes.extend(
             [{"label": f"{op['nome']} ({op['login']})", "value": op['login']} for op in operadores]

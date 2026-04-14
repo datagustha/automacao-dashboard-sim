@@ -26,16 +26,17 @@ def register_callbacks(app):
             Input('intervalo-atualizacao-pgtos', 'n_intervals'),
             Input('url', 'pathname'),
             Input('filtro-texto-pgtos-completo', 'value'),
-            Input('banco-selecionado-pgtos', 'value'),  # ← seletor ADM (oculto para operador)
+            Input('banco-selecionado-pgtos', 'value'),  # ← seletor ADM
+            Input('adm-filtro-atividade-pgtos', 'value'), # ← atividade ADM
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_tabela_mestra(n_intervals, pathname, texto_busca, banco_escolhido, dados_operador):
+    def atualizar_tabela_mestra(n_intervals, pathname, texto_busca, banco_escolhido, atividade_escolhida, dados_operador):
         """
         Atualiza a tabela mestra de pagamentos.
         
         - Operador: mostra só os próprios pagamentos
-        - ADM: mostra TODOS os pagamentos do banco selecionado
+        - ADM: mostra TODOS os pagamentos do banco selecionado, de acordo com a atividade
         """
         if pathname != '/pagamentos' or not dados_operador:
             return [], []
@@ -52,7 +53,11 @@ def register_callbacks(app):
             banco_para_buscar = banco_escolhido or 'SEMEAR'
             todos = buscar_pagamentos_todos_operadores_por_banco(banco_para_buscar)
             pagamentos_brutos = []
-            for _, pagamentos, _ in todos:
+            
+            for operador_dict, pagamentos, _ in todos:
+                # Se selecionado "ativo", ignora os dados de operadores não ativos
+                if atividade_escolhida == 'ativo' and operador_dict.get('atividade') != 'ativo':
+                    continue
                 pagamentos_brutos.extend(pagamentos or [])
         else:
             # ── Operador: só os próprios ───────────────────────────────────

@@ -13,7 +13,7 @@ from src.dashboard.components.tabelas import container_tabela_simples, container
 def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, operador_selecionado: dict = None, banco: str = "SEMEAR", is_adm: bool = False):
     """Constrói a tela de detalhe do operador."""
     
-    sidebar = get_sidebar("operadores" if is_adm else "operador", perfil="adm" if is_adm else "operador")
+    sidebar = get_sidebar("operadores", perfil="adm" if is_adm else "operador")
     
     nome_operador = operador_selecionado.get('nome', nome_usuario) if operador_selecionado else nome_usuario
     imagem_operador = operador_selecionado.get('imagem', imagem_url) if operador_selecionado else imagem_url
@@ -64,6 +64,22 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                                                 ),
                                             ],
                                             width=12, md=3
+                                        ),
+                                        dbc.Col(
+                                            [
+                                                html.Label("Atividade", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                                                dcc.Dropdown(
+                                                    id="adm-filtro-atividade",
+                                                    options=[
+                                                        {"label": "🟢 Ativos", "value": "ativo"},
+                                                        {"label": "⚪ Todos", "value": "todos"},
+                                                    ],
+                                                    value="ativo",
+                                                    clearable=False,
+                                                    style={"borderRadius": "8px"}
+                                                ),
+                                            ],
+                                            width=12, md=2
                                         ),
                                         dbc.Col(
                                             [

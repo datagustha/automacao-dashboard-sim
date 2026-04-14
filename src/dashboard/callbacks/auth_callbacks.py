@@ -109,11 +109,9 @@ def register_callbacks(app):
                     if login_alvo == "TODOS":
                         op_data = {"login": "TODOS", "banco": banco}
                     else:
-                        from src.services.db_service import Buscar_login
                         op_banco = Buscar_login(login_alvo)
                         op_data = op_banco if op_banco else {"login": "TODOS", "banco": banco}
                         
-                    from src.dashboard.layouts.operador_detalhe import get_operador_detalhe_layout
                     return get_operador_detalhe_layout(
                         nome_usuario=login_dados['nome'],
                         imagem_url=login_dados.get('imagem'),

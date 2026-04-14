@@ -44,13 +44,30 @@ def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str
                     ],
                     width="auto"
                 ),
+                dbc.Col(
+                    [
+                        html.Label("Atividade", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                        dcc.Dropdown(
+                            id="adm-filtro-atividade-pgtos",
+                            options=[
+                                {"label": "🟢 Ativos", "value": "ativo"},
+                                {"label": "⚪ Todos", "value": "todos"},
+                            ],
+                            value="ativo",
+                            clearable=False,
+                            style={"borderRadius": "8px", "minWidth": "150px"}
+                        ),
+                    ],
+                    width="auto"
+                ),
             ],
             className="mb-3 align-items-end"
         )
     ) if perfil == 'adm' else html.Div(
-        # Para operador: componente oculto mas presente (o callback precisa do ID)
-        dcc.Dropdown(id="banco-selecionado-pgtos", value="SEMEAR",
-                     options=[], style={"display": "none"})
+        [
+            dcc.Dropdown(id="banco-selecionado-pgtos", value="SEMEAR", options=[], style={"display": "none"}),
+            dcc.Dropdown(id="adm-filtro-atividade-pgtos", value="ativo", options=[], style={"display": "none"})
+        ]
     )
 
     conteudo = html.Div(
