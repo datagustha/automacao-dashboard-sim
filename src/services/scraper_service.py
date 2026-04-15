@@ -119,22 +119,33 @@ def _configurar_filtros(navegador, label_banco: str):
     status_btn.click()
     time.sleep(0.5)
     
-    processado_option = navegador.find_element(By.XPATH, "//li/a/label[contains(text(), 'Processado')]")
-    processado_option.click()
+    # Aguarda o menu de status aparecer
+    WebDriverWait(navegador, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//li/a/label[contains(text(), 'Processado')]"))
+    ).click()
     time.sleep(0.5)
     
     status_btn.click()  # Fecha dropdown de status
     time.sleep(0.5)
 
-    # 3. Banco - PRIMEIRO ABRE O DROPDOWN
-    # Procura o botão que abre o dropdown de bancos
+    # 3. Banco - Abrir o dropdown
     banco_btn = navegador.find_element(By.XPATH, "//div[contains(@class, 'multiselect')]//button")
     banco_btn.click()
-    time.sleep(1)  # Espera o dropdown abrir
+    time.sleep(1)  # Aguarda o dropdown abrir
 
-    # Agora seleciona o banco desejado (já está visível)
-    banco_elem = navegador.find_element(By.XPATH, f"//label[contains(text(), '{label_banco}')]")
+    # 🔥 PASSO IMPORTANTE: Clica em "Selecionar Todos" para desmarcar todos
+    try:
+        selecionar_todos = navegador.find_element(By.XPATH, "//label[contains(text(), 'Selecionar Todos')]")
+        selecionar_todos.click()
+        print("  ✅ Todos os bancos desmarcados")
+        time.sleep(0.5)
+    except Exception as e:
+        print(f"  ⚠️ Não foi possível desmarcar todos: {e}")
+
+    # Agora seleciona APENAS o banco desejado
+    banco_elem = navegador.find_element(By.XPATH, f"//label[contains(normalize-space(), '{label_banco}')]")
     banco_elem.click()
+    print(f"  ✅ Banco selecionado: {label_banco}")
     time.sleep(0.5)
 
     # Fecha o dropdown de bancos
@@ -146,8 +157,6 @@ def _configurar_filtros(navegador, label_banco: str):
     time.sleep(0.5)
     navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]').click()
     time.sleep(1)
-
-    aguardar_toast_fechar(navegador)
 
     aguardar_toast_fechar(navegador)
 
