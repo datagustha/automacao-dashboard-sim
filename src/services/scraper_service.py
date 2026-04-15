@@ -107,22 +107,45 @@ def _configurar_filtros(navegador, label_banco: str):
     Configura os filtros do relatório:
     - Tipo: Analítico
     - Status: Processado
-    - Banco: conforme label_banco passado (ex: 'BANCO SEMEAR' ou 'AGORACRED')
+    - Banco: conforme label_banco passado (ex: 'BANCO SEMEAR' ou 'Agoracred Financeira')
     - Tipo Finalização: opção 4
     """
+    # Tipo Analítico
     clicar_com_seguranca(navegador, By.XPATH, "//label[@for='rbTipoAnalitico']")
 
+    # Status: Processado
     navegador.find_element(By.CSS_SELECTOR, "button.btn.dropdown-toggle").click()
     navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/ul/li[2]/a/label').click()
 
+    # Fechar dropdown de status
+    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/button').click()
+
+    # 🔥 LIMPAR FILTRO DE BANCO ANTES DE SELECIONAR
+    time.sleep(1)
+    try:
+        # Abre o dropdown de banco
+        banco_dropdown = navegador.find_element(By.XPATH, "//div[contains(@class, 'multiselect')]//button")
+        banco_dropdown.click()
+        time.sleep(0.5)
+        
+        # Clica em "Limpar" se existir
+        limpar_btn = navegador.find_element(By.XPATH, "//button[contains(@class, 'multiselect-clear-filter')]")
+        limpar_btn.click()
+        time.sleep(0.5)
+        
+        # Fecha o dropdown
+        banco_dropdown.click()
+    except Exception:
+        pass  # Se não tiver botão limpar, segue
+
+    # Agora seleciona o banco correto
     WebDriverWait(navegador, 10).until(
         EC.element_to_be_clickable(
             (By.XPATH, f'//label[contains(normalize-space(.), "{label_banco}")]')
         )
     ).click()
 
-    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/button').click()
-
+    # Tipo Finalização: opção 4
     navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]').click()
     navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]').click()
 
