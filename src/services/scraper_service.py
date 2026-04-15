@@ -107,60 +107,40 @@ def _configurar_filtros(navegador, label_banco: str):
     Configura os filtros do relatório:
     - Tipo: Analítico
     - Status: Processado
-    - Banco: conforme label_banco passado (ex: 'BANCO SEMEAR' ou 'Agoracred Financeira')
+    - Banco: conforme label_banco passado
     - Tipo Finalização: opção 4
     """
-    # 1. Tipo Analítico
+    # Tipo Analítico
     clicar_com_seguranca(navegador, By.XPATH, "//label[@for='rbTipoAnalitico']")
     time.sleep(0.5)
 
-    # 2. Status: Processado
-    status_btn = navegador.find_element(By.CSS_SELECTOR, "#divStatus button.btn.dropdown-toggle")
-    status_btn.click()
+    # Status: Processado
+    navegador.find_element(By.CSS_SELECTOR, "button.btn.dropdown-toggle").click()
     time.sleep(0.5)
-    
-    processado_option = navegador.find_element(By.XPATH, "//li/a/label[contains(text(), 'Processado')]")
-    processado_option.click()
+    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/ul/li[2]/a/label').click()
     time.sleep(0.5)
-    
-    status_btn.click()  # Fecha dropdown
+    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/button').click()
     time.sleep(0.5)
 
-    # 3. Banco - Abrir o dropdown
-    banco_btn = navegador.find_element(By.XPATH, "//div[contains(@class, 'multiselect')]//button")
-    banco_btn.click()
-    time.sleep(1)
-
-    # 🔥 LIMPAR TODOS OS BANCOS SELECIONADOS
+    # Seleciona o banco - usando o XPath que você me mostrou
     try:
-        # Procura o botão de limpar (x)
-        limpar_btn = navegador.find_element(By.XPATH, "//button[contains(@class, 'multiselect-clear-filter')]")
-        limpar_btn.click()
-        time.sleep(0.5)
-        print("  ✅ Filtro de bancos limpo")
+        # Primeiro tenta o seletor direto pelo label
+        banco_elem = navegador.find_element(By.XPATH, f"//label[contains(text(), '{label_banco}')]")
+        banco_elem.click()
     except:
-        print("  ⚠️ Botão limpar não encontrado")
-
-    # Agora seleciona APENAS o banco desejado
-    banco_option = navegador.find_element(By.XPATH, f"//label[contains(normalize-space(), '{label_banco}')]")
-    banco_option.click()
-    time.sleep(0.5)
-
-    # Fecha o dropdown
-    banco_btn.click()
-    time.sleep(1)
-
-    # 4. Tipo Finalização: opção 4
-    tipo_finalizacao = navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]')
-    tipo_finalizacao.click()
-    time.sleep(0.5)
+        # Se não achar, tenta com normalize-space
+        banco_elem = navegador.find_element(By.XPATH, f"//label[contains(normalize-space(), '{label_banco}')]")
+        banco_elem.click()
     
-    opcao4 = navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]')
-    opcao4.click()
+    time.sleep(0.5)
+
+    # Tipo Finalização: opção 4
+    navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]').click()
+    time.sleep(0.5)
+    navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]').click()
     time.sleep(1)
 
     aguardar_toast_fechar(navegador)
-
 
 def _selecionar_periodo(navegador, alvo_pt: str, alvo_ingles: str, anoatual: int):
     """
