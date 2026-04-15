@@ -106,59 +106,26 @@ def _configurar_filtros(navegador, label_banco: str):
     """
     Configura os filtros do relatório:
     - Tipo: Analítico
-    - Status: Processado
     - Banco: conforme label_banco passado
-    - Tipo Finalização: opção 4
     """
     # 1. Tipo Analítico
     clicar_com_seguranca(navegador, By.XPATH, "//label[@for='rbTipoAnalitico']")
     time.sleep(0.5)
 
-    # 2. Status: Processado
-    status_btn = navegador.find_element(By.CSS_SELECTOR, "#divStatus button.btn.dropdown-toggle")
-    status_btn.click()
-    time.sleep(0.5)
-    
-    # Aguarda o menu de status aparecer
-    WebDriverWait(navegador, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//li/a/label[contains(text(), 'Processado')]"))
-    ).click()
-    time.sleep(0.5)
-    
-    status_btn.click()  # Fecha dropdown de status
-    time.sleep(0.5)
-
-    # 3. Banco - Abrir o dropdown
+    # 2. Banco - Abrir o dropdown
     banco_btn = navegador.find_element(By.XPATH, "//div[contains(@class, 'multiselect')]//button")
     banco_btn.click()
-    time.sleep(1)  # Aguarda o dropdown abrir
+    time.sleep(1)
 
-    # 🔥 PASSO IMPORTANTE: Clica em "Selecionar Todos" para desmarcar todos
-    try:
-        selecionar_todos = navegador.find_element(By.XPATH, "//label[contains(text(), 'Selecionar Todos')]")
-        selecionar_todos.click()
-        print("  ✅ Todos os bancos desmarcados")
-        time.sleep(0.5)
-    except Exception as e:
-        print(f"  ⚠️ Não foi possível desmarcar todos: {e}")
-
-    # Agora seleciona APENAS o banco desejado
+    # 3. Seleciona o banco desejado
     banco_elem = navegador.find_element(By.XPATH, f"//label[contains(normalize-space(), '{label_banco}')]")
     banco_elem.click()
     print(f"  ✅ Banco selecionado: {label_banco}")
     time.sleep(0.5)
 
-    # Fecha o dropdown de bancos
+    # 4. Fecha o dropdown
     banco_btn.click()
     time.sleep(0.5)
-
-    # 4. Tipo Finalização: opção 4
-    navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]').click()
-    time.sleep(0.5)
-    navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]').click()
-    time.sleep(1)
-
-    aguardar_toast_fechar(navegador)
 
 def _selecionar_periodo(navegador, alvo_pt: str, alvo_ingles: str, anoatual: int):
     """
