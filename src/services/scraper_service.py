@@ -110,35 +110,44 @@ def _configurar_filtros(navegador, label_banco: str):
     - Banco: conforme label_banco passado
     - Tipo Finalização: opção 4
     """
-    # Tipo Analítico
+    # 1. Tipo Analítico
     clicar_com_seguranca(navegador, By.XPATH, "//label[@for='rbTipoAnalitico']")
     time.sleep(0.5)
 
-    # Status: Processado
-    navegador.find_element(By.CSS_SELECTOR, "button.btn.dropdown-toggle").click()
+    # 2. Status: Processado
+    status_btn = navegador.find_element(By.CSS_SELECTOR, "#divStatus button.btn.dropdown-toggle")
+    status_btn.click()
     time.sleep(0.5)
-    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/ul/li[2]/a/label').click()
-    time.sleep(0.5)
-    navegador.find_element(By.XPATH, '//*[@id="divStatus"]/div/div[2]/button').click()
-    time.sleep(0.5)
-
-    # Seleciona o banco - usando o XPath que você me mostrou
-    try:
-        # Primeiro tenta o seletor direto pelo label
-        banco_elem = navegador.find_element(By.XPATH, f"//label[contains(text(), '{label_banco}')]")
-        banco_elem.click()
-    except:
-        # Se não achar, tenta com normalize-space
-        banco_elem = navegador.find_element(By.XPATH, f"//label[contains(normalize-space(), '{label_banco}')]")
-        banco_elem.click()
     
+    processado_option = navegador.find_element(By.XPATH, "//li/a/label[contains(text(), 'Processado')]")
+    processado_option.click()
+    time.sleep(0.5)
+    
+    status_btn.click()  # Fecha dropdown de status
     time.sleep(0.5)
 
-    # Tipo Finalização: opção 4
+    # 3. Banco - PRIMEIRO ABRE O DROPDOWN
+    # Procura o botão que abre o dropdown de bancos
+    banco_btn = navegador.find_element(By.XPATH, "//div[contains(@class, 'multiselect')]//button")
+    banco_btn.click()
+    time.sleep(1)  # Espera o dropdown abrir
+
+    # Agora seleciona o banco desejado (já está visível)
+    banco_elem = navegador.find_element(By.XPATH, f"//label[contains(text(), '{label_banco}')]")
+    banco_elem.click()
+    time.sleep(0.5)
+
+    # Fecha o dropdown de bancos
+    banco_btn.click()
+    time.sleep(0.5)
+
+    # 4. Tipo Finalização: opção 4
     navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]').click()
     time.sleep(0.5)
     navegador.find_element(By.XPATH, '//*[@id="selTipoFinalizacao"]/option[4]').click()
     time.sleep(1)
+
+    aguardar_toast_fechar(navegador)
 
     aguardar_toast_fechar(navegador)
 
