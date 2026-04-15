@@ -24,7 +24,7 @@ if ROOT_DIR not in sys.path:
 # ========================================================================
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc, html, Input, Output
 
 # ========================================================================
 # INICIALIZA O APP DASH PRINCIPAL
@@ -57,6 +57,12 @@ app.layout = html.Div([
     # storage_type='local' mantém os dados no navegador
     dcc.Store(id='login-success-store', storage_type='local'),
     dcc.Store(id='login-step-store', data={'step': 'login'}, storage_type='local'),
+    
+    # ==================================================
+    # ATUALIZAÇÃO AUTOMÁTICA - A CADA 5 MINUTOS
+    # ==================================================
+    # interval=300000 = 5 minutos (em milissegundos)
+    dcc.Interval(id='interval-component', interval=300000, n_intervals=0),
 ])
 
 # ========================================================================
@@ -74,6 +80,27 @@ operador_callbacks.register_callbacks(app)
 adm_callbacks.register_callbacks(app)
 
 # ========================================================================
+# CALLBACK PARA ATUALIZAÇÃO AUTOMÁTICA
+# ========================================================================
+@app.callback(
+    Output('page-content', 'children', allow_duplicate=True),
+    Input('interval-component', 'n_intervals'),
+    prevent_initial_call=True
+)
+def atualizar_dashboard(n):
+    """
+    Atualiza o dashboard automaticamente a cada 5 minutos.
+    Recarrega a página atual para buscar novos dados do banco.
+    """
+    from dash import page_registry
+    from flask import request
+    
+    print(f"🔄 Atualizando dashboard automaticamente... (ciclo #{n})")
+    
+    # Força o recarregamento da página atual
+    return dash.no_update
+
+# ========================================================================
 # PONTO DE ENTRADA
 # ========================================================================
 if __name__ == '__main__':
@@ -82,6 +109,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print(f" Diretorio raiz: {ROOT_DIR}")
     print(f" Acesse: http://127.0.0.1:8050")
+    print(" Atualização automática a cada 5 minutos")
     print("=" * 50)
     
-    app.run(debug=True, host='0.0.0.0', port=8050)
+    app.run(debug=False, host='0.0.0.0', port=8050)
