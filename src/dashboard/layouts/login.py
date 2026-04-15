@@ -75,7 +75,7 @@ def get_login_layout():
                                     # ========================================
                                     dbc.Input(
                                         id='login-user-input',
-                                        placeholder="Digite seu login (ex: 2552ROSELI)",
+                                        placeholder="Digite seu login (ex: 2552USER)",
                                         type="text",
                                         className="mb-3",
                                         style={"borderRadius": "8px"}
