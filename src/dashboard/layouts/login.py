@@ -78,7 +78,8 @@ def get_login_layout():
                                         placeholder="Digite seu login (ex: 2552USER)",
                                         type="text",
                                         className="mb-3",
-                                        style={"borderRadius": "8px"}
+                                        style={"borderRadius": "8px"},
+                                        n_submit=0 
                                     ),
                                     
                                     # ========================================

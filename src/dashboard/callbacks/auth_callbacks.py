@@ -150,6 +150,7 @@ def register_callbacks(app):
     # ================================================================
     # CALLBACK 2: GERENCIAR FLUXO DE LOGIN
     # ================================================================
+    # 🔥 MUDANÇA 1: Adicionados inputs de n_submit para suportar ENTER
     @app.callback(
         [
             Output('login-success-store', 'data'),
@@ -165,6 +166,11 @@ def register_callbacks(app):
         ],
         [
             Input('login-button', 'n_clicks'),
+            Input('login-user-input', 'n_submit'),           # 🔥 NOVO: ENTER no login
+            Input('login-password-input', 'n_submit'),       # 🔥 NOVO: ENTER na senha
+            Input('login-token-input', 'n_submit'),          # 🔥 NOVO: ENTER no token
+            Input('login-nova-senha-input', 'n_submit'),     # 🔥 NOVO: ENTER na nova senha
+            Input('login-confirma-senha-input', 'n_submit'), # 🔥 NOVO: ENTER na confirmação
             Input('btn-esqueci-senha', 'n_clicks')
         ],
         [
@@ -177,11 +183,15 @@ def register_callbacks(app):
         ],
         prevent_initial_call=True
     )
-    def gerenciar_autenticacao(n_clicks_login, n_clicks_esqueci, 
+    def gerenciar_autenticacao(n_clicks_login, n_submit_login, n_submit_senha, 
+                                n_submit_token, n_submit_nova, n_submit_confirma,
+                                n_clicks_esqueci, 
                                 login, senha, token, nova_senha, confirma_senha,
                                 step_store):
         """
         FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO.
+        - Suporta ENTER em qualquer campo
+        - 🔥 Converte login para MAIÚSCULO
         """
         
         ctx = dash.callback_context
@@ -190,9 +200,12 @@ def register_callbacks(app):
         
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        if trigger_id not in ['login-button', 'btn-esqueci-senha']:
-            raise PreventUpdate
-        
+        # ============================================================
+        # 🔥 MUDANÇA 2: CONVERTER LOGIN PARA MAIÚSCULO
+        # ============================================================
+        if login:
+            login = login.upper().strip()
+
         # ============================================================
         # BOTÃO "ESQUECI MINHA SENHA"
         # ============================================================
@@ -244,7 +257,7 @@ def register_callbacks(app):
             pass
         
         # ============================================================
-        # RESETAR STEP SE FOR UM NOVO LOGIN (evita step pendente)
+        # RESETAR STEP SE FOR UM NOVO LOGIN
         # ============================================================
         if step_store and step_store.get('login') != login:
             step_store = {'step': 'login'}
@@ -287,7 +300,6 @@ def register_callbacks(app):
         # VALIDAR SENHA
         # ============================================================
         elif step == 'validar_senha':
-            # VERIFICA SE A SENHA FOI DIGITADA
             if not senha:
                 return (None, "Digite sua senha", "", 
                         {"display": "block"}, {"display": "none"}, 
