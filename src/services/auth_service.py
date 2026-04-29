@@ -339,3 +339,137 @@ def marcar_primeiro_acesso_concluido(login: str) -> bool:
     except Exception as e:
         print(f"[ERRO] Erro ao atualizar primeiro acesso: {str(e)}")
         return False
+
+# ================================================================
+# FUNÇÕES PARA 2FA (SEGUNDO FATOR DE AUTENTICAÇÃO)
+# ================================================================
+
+from src.models.token_2fa import Token2FA  # Modelo que você criou
+
+
+def salvar_token_2fa(login: str, token: str) -> bool:
+    """
+    Salva token de 2FA no banco com expiração de 5 minutos.
+    
+    Args:
+        login: Login do operador
+        token: Token numérico de 6 dígitos
+    
+    Returns:
+        bool: True se salvou com sucesso
+    """
+    try:
+        with Session(engine) as session:
+            # Remove tokens antigos não usados do mesmo login (opcional)
+            session.query(Token2FA).filter(
+                Token2FA.login == login,
+                Token2FA.usado == False,
+                Token2FA.expira_em < datetime.now()
+            ).delete()
+            
+            # Cria novo token 2FA
+            novo_token = Token2FA(
+                login=login,
+                codigo=token,  # Atenção: sua tabela usa 'codigo', não 'token'
+                expira_em=datetime.now() + timedelta(minutes=5),  # 5 minutos
+                usado=False,
+                tentativas=0
+            )
+            
+            session.add(novo_token)
+            session.commit()
+            return True
+            
+    except Exception as e:
+        print(f"[ERRO] Erro ao salvar token 2FA: {str(e)}")
+        return False
+
+
+def validar_token_2fa(login: str, token_digitado: str) -> dict:
+    """
+    Verifica se o token 2FA digitado pelo usuário é válido.
+    
+    Args:
+        login: Login do operador
+        token_digitado: Token de 6 dígitos que o usuário digitou
+    
+    Returns:
+        dict: {
+            'valido': bool,
+            'mensagem': str,
+            'tentativas_restantes': int (opcional)
+        }
+    """
+    try:
+        with Session(engine) as session:
+            # Busca token válido (não usado, não expirado)
+            token = session.query(Token2FA).filter(
+                Token2FA.login == login,
+                Token2FA.usado == False,
+                Token2FA.expira_em > datetime.now()
+            ).first()
+            
+            # Token não encontrado ou expirado
+            if not token:
+                return {
+                    'valido': False,
+                    'mensagem': 'Código expirado ou inválido. Solicite um novo código.'
+                }
+            
+            # Verifica tentativas (máximo 3)
+            if token.tentativas >= 3:
+                # Marca como expirado por muitas tentativas
+                token.usado = True
+                session.commit()
+                return {
+                    'valido': False,
+                    'mensagem': 'Muitas tentativas. Solicite um novo código.'
+                }
+            
+            # Verifica se o código está correto
+            if token.codigo == token_digitado:
+                # Sucesso! Marca como usado
+                token.usado = True
+                session.commit()
+                return {
+                    'valido': True,
+                    'mensagem': 'Código validado com sucesso!'
+                }
+            else:
+                # Código errado: incrementa tentativas
+                token.tentativas += 1
+                session.commit()
+                
+                tentativas_restantes = 3 - token.tentativas
+                return {
+                    'valido': False,
+                    'mensagem': f'Código incorreto. Você tem mais {tentativas_restantes} tentativa(s).'
+                }
+            
+    except Exception as e:
+        print(f"[ERRO] Erro ao validar token 2FA: {str(e)}")
+        return {
+            'valido': False,
+            'mensagem': 'Erro interno. Tente novamente.'
+        }
+
+
+def limpar_tokens_2fa_expirados() -> int:
+    """
+    Remove tokens 2FA expirados do banco.
+    Rode isso num CRON diário para manter o banco limpo.
+    
+    Returns:
+        int: Número de tokens removidos
+    """
+    try:
+        with Session(engine) as session:
+            removidos = session.query(Token2FA).filter(
+                Token2FA.expira_em < datetime.now()
+            ).delete()
+            session.commit()
+            return removidos
+            
+    except Exception as e:
+        print(f"[ERRO] Erro ao limpar tokens 2FA: {str(e)}")
+        return 0

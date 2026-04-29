@@ -234,3 +234,84 @@ def enviar_email_teste(destinatario: str):
     except Exception as e:
         print(f"[ERRO] Falha no e-mail de teste: {str(e)}")
         return False
+# ================================================================
+# FUNÇÃO PARA 2FA (Autenticação de Dois Fatores)
+# ================================================================
+
+def enviar_token_2fa_email(destinatario: str, login: str, token: str) -> bool:
+    """
+    Envia token de 2FA por e-mail com formato HTML.
+    
+    Args:
+        destinatario: E-mail do operador
+        login: Login do operador
+        token: Código de 6 dígitos
+    
+    Returns:
+        bool: True se enviado com sucesso
+    """
+    assunto = f"🔐 Seu código de verificação - {login}"
+    
+    # Corpo do e-mail em HTML (mais bonito e profissional)
+    corpo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .codigo {{ 
+                font-size: 32px; 
+                letter-spacing: 5px; 
+                background-color: #f3e8f7;
+                padding: 15px;
+                text-align: center;
+                border-radius: 10px;
+                font-weight: bold;
+                color: #7e3d97;
+            }}
+            .footer {{ font-size: 12px; color: #666; margin-top: 30px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>🔐 Código de Verificação (2FA)</h2>
+            <p>Olá, <strong>{login}</strong>!</p>
+            <p>Seu código de autenticação de dois fatores é:</p>
+            <div class="codigo">{token}</div>
+            <p>Este código expira em <strong>5 minutos</strong>.</p>
+            <p>Se você não solicitou este código, ignore este e-mail.</p>
+            <hr>
+            <div class="footer">
+                Dashboard Semear - Sistema de Gestão de Pagamentos<br>
+                Autenticação de Dois Fatores
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        # Criar mensagem com HTML
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_REMETENTE
+        msg['To'] = destinatario
+        msg['Subject'] = assunto
+        
+        # Anexar corpo HTML
+        msg.attach(MIMEText(corpo_html, 'html', 'utf-8'))
+        
+        # Conectar e enviar
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_REMETENTE, EMAIL_SENHA)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"[OK] E-mail 2FA enviado para {destinatario} (login: {login})")
+        return True
+        
+    except Exception as e:
+        print(f"[ERRO] Falha ao enviar e-mail 2FA para {destinatario}: {str(e)}")
+        return False

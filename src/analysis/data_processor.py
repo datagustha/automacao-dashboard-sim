@@ -106,7 +106,7 @@ def _processar_arquivo(caminho_arquivo: str) -> pd.DataFrame | None:
         # 8. Limpeza final de tipos
         df["filial"] = df["filial"].replace(np.nan, None)
         df["parcela"] = df["parcela"].fillna(0).astype(int)
-        df["plano"] = df["plano"].fillna(0).astype(int)
+        df["plano"] = df["plano"].fillna(0).infer_objects(copy=False).astype(int)
 
         for col in ["principal", "multa", "juros", "despesa", "valorTotal"]:
             df[col] = df[col].astype(float)

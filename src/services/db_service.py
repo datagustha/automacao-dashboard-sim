@@ -91,7 +91,7 @@ def enviar_para_banco_semear(df: pd.DataFrame):
 
                 if registro_existe:
                     # Se já existe, ignora e continua para a próxima linha
-                    print(f"[IGNORADO] Registro já existe: {row['contrato']}")
+                    continue
                 else:
                     # ----------------------------------------------------
                     # 2. CRIAR NOVO REGISTRO
@@ -122,6 +122,8 @@ def enviar_para_banco_semear(df: pd.DataFrame):
                     
                     # Adiciona o objeto à sessão (ainda não foi salvo no banco)
                     session.add(novo_pagamento)
+
+                    print(f"[NOVO REGISTRO]: {row['contrato']} - {row['dtPgto']}")
                     
             except Exception as loop_error:
                 # Se erro em uma linha, continua para as próximas

@@ -1,6 +1,6 @@
 """
-CALLBACKS DE AUTENTICAÇÃO - VERSÃO COMPLETA
-============================================
+CALLBACKS DE AUTENTICAÇÃO - VERSÃO COMPLETA COM 2FA
+===================================================
 """
 
 import dash
@@ -20,9 +20,11 @@ from src.dashboard.layouts.operador_detalhe import get_operador_detalhe_layout
 from src.services.db_service import Buscar_login
 from src.services.auth_service import (
     operador_tem_senha, obter_email_operador, gerar_token_numerico,
-    salvar_token, validar_token, salvar_senha
+    salvar_token, validar_token, salvar_senha,
+    # 🔥 NOVOS IMPORTS PARA 2FA
+    salvar_token_2fa, validar_token_2fa
 )
-from src.services.email_service import enviar_token_email
+from src.services.email_service import enviar_token_email, enviar_token_2fa_email
 
 # ================================================================
 # CAMINHO DO ARQUIVO PARA SALVAR ÚLTIMO LOGIN
@@ -148,9 +150,8 @@ def register_callbacks(app):
     
     
     # ================================================================
-    # CALLBACK 2: GERENCIAR FLUXO DE LOGIN
+    # CALLBACK 2: GERENCIAR FLUXO DE LOGIN (COM 2FA)
     # ================================================================
-    # 🔥 MUDANÇA 1: Adicionados inputs de n_submit para suportar ENTER
     @app.callback(
         [
             Output('login-success-store', 'data'),
@@ -158,6 +159,7 @@ def register_callbacks(app):
             Output('login-info-mensagem', 'children'),
             Output('login-password-input', 'style'),
             Output('login-token-input', 'style'),
+            Output('login-2fa-input', 'style'),  # 🔥 NOVO: campo 2FA
             Output('login-nova-senha-input', 'style'),
             Output('login-confirma-senha-input', 'style'),
             Output('login-button', 'children'),
@@ -166,17 +168,19 @@ def register_callbacks(app):
         ],
         [
             Input('login-button', 'n_clicks'),
-            Input('login-user-input', 'n_submit'),           # 🔥 NOVO: ENTER no login
-            Input('login-password-input', 'n_submit'),       # 🔥 NOVO: ENTER na senha
-            Input('login-token-input', 'n_submit'),          # 🔥 NOVO: ENTER no token
-            Input('login-nova-senha-input', 'n_submit'),     # 🔥 NOVO: ENTER na nova senha
-            Input('login-confirma-senha-input', 'n_submit'), # 🔥 NOVO: ENTER na confirmação
+            Input('login-user-input', 'n_submit'),
+            Input('login-password-input', 'n_submit'),
+            Input('login-token-input', 'n_submit'),
+            Input('login-2fa-input', 'n_submit'),  # 🔥 NOVO: ENTER no 2FA
+            Input('login-nova-senha-input', 'n_submit'),
+            Input('login-confirma-senha-input', 'n_submit'),
             Input('btn-esqueci-senha', 'n_clicks')
         ],
         [
             State('login-user-input', 'value'),
             State('login-password-input', 'value'),
             State('login-token-input', 'value'),
+            State('login-2fa-input', 'value'),  # 🔥 NOVO: valor do 2FA
             State('login-nova-senha-input', 'value'),
             State('login-confirma-senha-input', 'value'),
             State('login-step-store', 'data')
@@ -184,14 +188,15 @@ def register_callbacks(app):
         prevent_initial_call=True
     )
     def gerenciar_autenticacao(n_clicks_login, n_submit_login, n_submit_senha, 
-                                n_submit_token, n_submit_nova, n_submit_confirma,
+                                n_submit_token, n_submit_2fa, n_submit_nova, n_submit_confirma,
                                 n_clicks_esqueci, 
-                                login, senha, token, nova_senha, confirma_senha,
+                                login, senha, token, codigo_2fa, nova_senha, confirma_senha,
                                 step_store):
         """
-        FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO.
+        FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO COM 2FA.
         - Suporta ENTER em qualquer campo
         - 🔥 Converte login para MAIÚSCULO
+        - 🔥 NOVO: 2FA após senha correta
         """
         
         ctx = dash.callback_context
@@ -201,7 +206,7 @@ def register_callbacks(app):
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
         # ============================================================
-        # 🔥 MUDANÇA 2: CONVERTER LOGIN PARA MAIÚSCULO
+        # 🔥 CONVERTER LOGIN PARA MAIÚSCULO
         # ============================================================
         if login:
             login = login.upper().strip()
@@ -212,14 +217,14 @@ def register_callbacks(app):
         if trigger_id == 'btn-esqueci-senha':
             if not login:
                 return (None, "Digite seu login primeiro", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Entrar", step_store, dash.no_update)
             
             email = obter_email_operador(login)
             if not email:
                 return (None, "Login não encontrado ou e-mail não cadastrado", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Entrar", step_store, dash.no_update)
             
@@ -228,7 +233,7 @@ def register_callbacks(app):
             enviar_token_email(email, login, token_num, "reset_senha")
             
             return (None, "", f"📧 Código enviado para {email}",
-                    {"display": "none"}, {"display": "block"}, 
+                    {"display": "none"}, {"display": "block"}, {"display": "none"},
                     {"display": "none"}, {"display": "none"},
                     "Validar Token", {'step': 'validar_token_reset', 'login': login}, 
                     dash.no_update)
@@ -238,14 +243,14 @@ def register_callbacks(app):
         # ============================================================
         if not login:
             return (None, "Digite seu login", "", 
-                    {"display": "none"}, {"display": "none"}, 
+                    {"display": "none"}, {"display": "none"}, {"display": "none"},
                     {"display": "none"}, {"display": "none"}, 
                     "Entrar", step_store, dash.no_update)
         
         operador = Buscar_login(login)
         if not operador:
             return (None, "Login não encontrado", "", 
-                    {"display": "none"}, {"display": "none"}, 
+                    {"display": "none"}, {"display": "none"}, {"display": "none"},
                     {"display": "none"}, {"display": "none"}, 
                     "Entrar", step_store, dash.no_update)
         
@@ -274,7 +279,7 @@ def register_callbacks(app):
         if step == 'login':
             if operador_tem_senha(login):
                 return (None, "", "Digite sua senha", 
-                        {"display": "block"}, {"display": "none"}, 
+                        {"display": "block"}, {"display": "none"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Entrar", {'step': 'validar_senha', 'login': login}, 
                         dash.no_update)
@@ -282,7 +287,7 @@ def register_callbacks(app):
                 email = obter_email_operador(login)
                 if not email:
                     return (None, "E-mail não cadastrado", "", 
-                            {"display": "none"}, {"display": "none"}, 
+                            {"display": "none"}, {"display": "none"}, {"display": "none"},
                             {"display": "none"}, {"display": "none"}, 
                             "Entrar", step_store, dash.no_update)
                 
@@ -291,7 +296,7 @@ def register_callbacks(app):
                 enviar_token_email(email, login, token_num, "primeiro_acesso")
                 
                 return (None, "", f"📧 Código enviado para {email}",
-                        {"display": "none"}, {"display": "block"}, 
+                        {"display": "none"}, {"display": "block"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"},
                         "Validar Token", {'step': 'validar_token_primeiro', 'login': login}, 
                         dash.no_update)
@@ -302,7 +307,7 @@ def register_callbacks(app):
         elif step == 'validar_senha':
             if not senha:
                 return (None, "Digite sua senha", "", 
-                        {"display": "block"}, {"display": "none"}, 
+                        {"display": "block"}, {"display": "none"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Entrar", step_store, dash.no_update)
             
@@ -318,37 +323,76 @@ def register_callbacks(app):
                 
                 if not user or not user.senha_hash:
                     return (None, "Erro: senha não encontrada", "", 
-                            {"display": "block"}, {"display": "none"}, 
+                            {"display": "block"}, {"display": "none"}, {"display": "none"},
                             {"display": "none"}, {"display": "none"}, 
                             "Entrar", step_store, dash.no_update)
                 
                 if verificar_senha(user.senha_hash, senha):
-                    banco_op = operador.get('banco', 'SEMEAR')
-                    perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
-                    dados_usuario = {
-                        'nome': operador['nome'],
-                        'login': operador['login'],
-                        'imagem': operador.get('imagem'),
-                        'banco': banco_op,
-                        'perfil': perfil_op
-                    }
-                    return (dados_usuario, "", "", 
-                            {"display": "none"}, {"display": "none"}, 
-                            {"display": "none"}, {"display": "none"}, 
-                            "Entrar", step_store, "/dashboard")
+                    # 🔥 SENHA CORRETA! Agora verifica 2FA
+                    # Gera token 2FA
+                    token_2fa = gerar_token_numerico(6)
+                    
+                    # Salva no banco
+                    salvar_token_2fa(login, token_2fa)
+                    
+                    # Envia por email
+                    email = obter_email_operador(login)
+                    if email:
+                        # Você precisa criar esta função no email_service.py
+                        enviar_token_2fa_email(email, login, token_2fa)
+                    
+                    return (None, "", f"📱 Código 2FA enviado para seu e-mail!",
+                            {"display": "none"}, {"display": "none"}, {"display": "block"},
+                            {"display": "none"}, {"display": "none"},
+                            "Validar 2FA", {'step': 'validar_2fa', 'login': login}, 
+                            dash.no_update)
                 else:
                     return (None, "Senha incorreta", "", 
-                            {"display": "block"}, {"display": "none"}, 
+                            {"display": "block"}, {"display": "none"}, {"display": "none"},
                             {"display": "none"}, {"display": "none"}, 
                             "Entrar", step_store, dash.no_update)
         
         # ============================================================
-        # VALIDAR TOKEN
+        # 🔥 NOVO: VALIDAR 2FA (SEGUNDO FATOR)
+        # ============================================================
+        elif step == 'validar_2fa':
+            if not codigo_2fa:
+                return (None, "Digite o código 2FA recebido", "", 
+                        {"display": "none"}, {"display": "none"}, {"display": "block"},
+                        {"display": "none"}, {"display": "none"}, 
+                        "Validar 2FA", step_store, dash.no_update)
+            
+            # Valida o token 2FA
+            resultado = validar_token_2fa(login, codigo_2fa)
+            
+            if resultado['valido']:
+                # 🔥 2FA OK! Login concluído com sucesso
+                banco_op = operador.get('banco', 'SEMEAR')
+                perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
+                dados_usuario = {
+                    'nome': operador['nome'],
+                    'login': operador['login'],
+                    'imagem': operador.get('imagem'),
+                    'banco': banco_op,
+                    'perfil': perfil_op
+                }
+                return (dados_usuario, "", "", 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
+                        {"display": "none"}, {"display": "none"}, 
+                        "Entrar", step_store, "/dashboard")
+            else:
+                return (None, resultado['mensagem'], "", 
+                        {"display": "none"}, {"display": "none"}, {"display": "block"},
+                        {"display": "none"}, {"display": "none"}, 
+                        "Validar 2FA", step_store, dash.no_update)
+        
+        # ============================================================
+        # VALIDAR TOKEN (primeiro acesso / reset senha)
         # ============================================================
         elif step in ['validar_token_primeiro', 'validar_token_reset']:
             if not token:
                 return (None, "Digite o código recebido", "", 
-                        {"display": "none"}, {"display": "block"}, 
+                        {"display": "none"}, {"display": "block"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Validar Token", step_store, dash.no_update)
             
@@ -356,13 +400,13 @@ def register_callbacks(app):
             
             if validar_token(login, token, tipo):
                 return (None, "", "Token válido! Crie sua senha",
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "block"}, {"display": "block"},
                         "Criar Senha", {'step': 'criar_senha', 'login': login}, 
                         dash.no_update)
             else:
                 return (None, "Token inválido ou expirado", "", 
-                        {"display": "none"}, {"display": "block"}, 
+                        {"display": "none"}, {"display": "block"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Validar Token", step_store, dash.no_update)
         
@@ -372,19 +416,19 @@ def register_callbacks(app):
         elif step == 'criar_senha':
             if not nova_senha or not confirma_senha:
                 return (None, "Preencha ambos os campos", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "block"}, {"display": "block"}, 
                         "Criar Senha", step_store, dash.no_update)
             
             if nova_senha != confirma_senha:
                 return (None, "As senhas não coincidem", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "block"}, {"display": "block"}, 
                         "Criar Senha", step_store, dash.no_update)
             
             if len(nova_senha) < 4:
                 return (None, "Mínimo 4 caracteres", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "block"}, {"display": "block"}, 
                         "Criar Senha", step_store, dash.no_update)
             
@@ -400,12 +444,12 @@ def register_callbacks(app):
                     'perfil': perfil_op
                 }
                 return (dados_usuario, "Senha criada com sucesso!", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "none"}, {"display": "none"}, 
                         "Entrar", {'step': 'login'}, "/dashboard")
             else:
                 return (None, "Erro ao salvar senha", "", 
-                        {"display": "none"}, {"display": "none"}, 
+                        {"display": "none"}, {"display": "none"}, {"display": "none"},
                         {"display": "block"}, {"display": "block"}, 
                         "Criar Senha", step_store, dash.no_update)
         
@@ -413,7 +457,7 @@ def register_callbacks(app):
         # FALLBACK
         # ============================================================
         return (None, "Erro no fluxo de autenticação", "", 
-                {"display": "none"}, {"display": "none"}, 
+                {"display": "none"}, {"display": "none"}, {"display": "none"},
                 {"display": "none"}, {"display": "none"}, 
                 "Entrar", step_store, dash.no_update)
     
