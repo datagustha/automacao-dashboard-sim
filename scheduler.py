@@ -34,7 +34,7 @@ from apscheduler.triggers.cron import CronTrigger
 # É mais poderoso que o schedule simples porque suporta
 # timezone nativa e não desperdiça CPU entre execuções.
 
-from main import main
+from src.main import main
 # Importa a função main() do seu main.py que fica na raiz
 # do projeto. É ela que orquestra todo o fluxo:
 # scraping → processamento → banco de dados.
