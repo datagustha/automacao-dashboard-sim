@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     # scheduler.add_job(job, CronTrigger(hour="8,11,16", minute=0))
     # Em vez de 8, 11, 16
-    schedule.add_job(job, 'cron', hour=11, minute=40)  # Vai rodar 11:40
+    scheduler.add_job(job, 'cron', hour=11, minute=40)  # Vai rodar 11:40
     # Registra o job para rodar às 8h00, 11h00 e 16h00 todo dia.
     # hour="8,11,16" → vírgula separa múltiplos horários
     # minute=0       → no minuto zero de cada hora
