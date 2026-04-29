@@ -174,7 +174,7 @@ def enviar_para_banco_agoracred(df: pd.DataFrame):
                 ).first()
 
                 if registro_existe:
-                    print(f"[IGNORADO] Registro já existe: {row['contrato']}")
+                    continue
                 else:
                     novo_pagamento = PgtoAgoracred(
                         cliente=str(row['cliente']) if pd.notna(row['cliente']) else None,
@@ -197,6 +197,7 @@ def enviar_para_banco_agoracred(df: pd.DataFrame):
                         faseAtraso=str(row['faseAtraso']) if pd.notna(row['faseAtraso']) else None
                     )
                     session.add(novo_pagamento)
+                    print(f"[NOVO REGISTRO]: {row['contrato']} - {row['dtPgto']}")
                     
             except Exception as loop_error:
                 print(f"[ERRO] Falha na linha {row['contrato']}: {str(loop_error)}")
