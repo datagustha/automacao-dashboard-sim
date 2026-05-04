@@ -345,33 +345,29 @@ def marcar_primeiro_acesso_concluido(login: str) -> bool:
 # ================================================================
 
 from src.models.token_2fa import Token2FA  # Modelo que você criou
-
-
+from datetime import datetime, timezone, timedelta
 def salvar_token_2fa(login: str, token: str) -> bool:
     """
     Salva token de 2FA no banco com expiração de 5 minutos.
-    
-    Args:
-        login: Login do operador
-        token: Token numérico de 6 dígitos
-    
-    Returns:
-        bool: True se salvou com sucesso
     """
     try:
         with Session(engine) as session:
-            # Remove tokens antigos não usados do mesmo login (opcional)
+            # 🔥 USAR UTC EM TODOS OS LUGARES
+            agora_utc = datetime.now(timezone.utc)
+            
+            # Remove tokens antigos não usados do mesmo login
             session.query(Token2FA).filter(
                 Token2FA.login == login,
                 Token2FA.usado == False,
-                Token2FA.expira_em < datetime.now()
+                Token2FA.expira_em < agora_utc
             ).delete()
             
             # Cria novo token 2FA
             novo_token = Token2FA(
                 login=login,
-                codigo=token,  # Atenção: sua tabela usa 'codigo', não 'token'
-                expira_em=datetime.now() + timedelta(minutes=5),  # 5 minutos
+                codigo=token,
+                criado_em=agora_utc,
+                expira_em=agora_utc + timedelta(minutes=5),
                 usado=False,
                 tentativas=0
             )
@@ -388,37 +384,26 @@ def salvar_token_2fa(login: str, token: str) -> bool:
 def validar_token_2fa(login: str, token_digitado: str) -> dict:
     """
     Verifica se o token 2FA digitado pelo usuário é válido.
-    
-    Args:
-        login: Login do operador
-        token_digitado: Token de 6 dígitos que o usuário digitou
-    
-    Returns:
-        dict: {
-            'valido': bool,
-            'mensagem': str,
-            'tentativas_restantes': int (opcional)
-        }
     """
     try:
         with Session(engine) as session:
+            # 🔥 USAR UTC AQUI TAMBÉM
+            agora_utc = datetime.now(timezone.utc)
+            
             # Busca token válido (não usado, não expirado)
             token = session.query(Token2FA).filter(
                 Token2FA.login == login,
                 Token2FA.usado == False,
-                Token2FA.expira_em > datetime.now()
+                Token2FA.expira_em > agora_utc
             ).first()
             
-            # Token não encontrado ou expirado
             if not token:
                 return {
                     'valido': False,
                     'mensagem': 'Código expirado ou inválido. Solicite um novo código.'
                 }
             
-            # Verifica tentativas (máximo 3)
             if token.tentativas >= 3:
-                # Marca como expirado por muitas tentativas
                 token.usado = True
                 session.commit()
                 return {
@@ -426,9 +411,7 @@ def validar_token_2fa(login: str, token_digitado: str) -> dict:
                     'mensagem': 'Muitas tentativas. Solicite um novo código.'
                 }
             
-            # Verifica se o código está correto
             if token.codigo == token_digitado:
-                # Sucesso! Marca como usado
                 token.usado = True
                 session.commit()
                 return {
@@ -436,10 +419,8 @@ def validar_token_2fa(login: str, token_digitado: str) -> dict:
                     'mensagem': 'Código validado com sucesso!'
                 }
             else:
-                # Código errado: incrementa tentativas
                 token.tentativas += 1
                 session.commit()
-                
                 tentativas_restantes = 3 - token.tentativas
                 return {
                     'valido': False,
