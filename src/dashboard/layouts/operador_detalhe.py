@@ -5,6 +5,7 @@ LAYOUT DA TELA DE DETALHE DO OPERADOR
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+from datetime import datetime
 
 from src.dashboard.components.menus import get_sidebar, get_header
 from src.dashboard.components.tabelas import container_tabela_simples, container_tabela_cheia, container_grafico
@@ -24,9 +25,12 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
     grafico_componente = container_grafico("Faturamento por Mês", "grafico-fase-operador")
     
     # ================================================================
-    # FILTROS
+    # FILTROS - CORRIGIDO: agora usa o MÊS ATUAL como padrão
     # ================================================================
-    anos = [{"label": str(ano), "value": ano} for ano in range(2024, 2027)]
+    ano_atual = datetime.now().year
+    mes_atual = datetime.now().month
+    
+    anos = [{"label": str(ano), "value": ano} for ano in range(2024, ano_atual + 2)]
     meses = [
         {"label": "Janeiro", "value": 1}, {"label": "Fevereiro", "value": 2},
         {"label": "Março", "value": 3}, {"label": "Abril", "value": 4},
@@ -106,14 +110,14 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
             ),
             # --------------------------
             
-            # Filtros
+            # Filtros - CORRIGIDO: agora usa mes_atual em vez de 4
             dbc.Row(
                 [
                     dbc.Col(
                         dbc.Select(
                             id="filtro-mes-operador",
                             options=meses,
-                            value=4,
+                            value=mes_atual,  # ← CORRIGIDO: agora usa o mês atual
                             className="shadow-sm",
                             style={"borderRadius": "8px"}
                         ),
@@ -123,7 +127,7 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                         dbc.Select(
                             id="filtro-ano-operador",
                             options=anos,
-                            value=2026,
+                            value=ano_atual,  # ← CORRIGIDO: agora usa o ano atual
                             className="shadow-sm",
                             style={"borderRadius": "8px"}
                         ),
@@ -180,8 +184,7 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
             
             dcc.Interval(id='intervalo-operador', interval=300*1000, n_intervals=0),
             dcc.Store(id='operador-selecionado-store', data=operador_selecionado),
-            dcc.Store(id='banco-operador-store', data=banco),
-            dcc.Location(id="adm-redirect-detalhe", refresh=True) if is_adm else html.Div()
+            dcc.Store(id='banco-operador-store', data=banco)
         ],
         className="main-content"
     )

@@ -7,6 +7,12 @@ Tela com suporte a:
 - Recuperação de senha (token por e-mail)
 - 🔐 Autenticação de Dois Fatores (2FA)
 
+⚠️ IMPORTANTE:
+    Este layout NÃO define dcc.Store. Os Stores globais
+    (login-success-store, login-step-store) são definidos APENAS
+    no app.py com storage_type='local'. Duplicá-los aqui causava
+    sobrescrita dos dados e quebrava a navegação entre páginas.
+
 CORES DA MARCA:
 - Roxo principal: #7e3d97
 - Roxo escuro: #612d75
@@ -286,11 +292,6 @@ def get_login_layout():
                 className="vh-100"
             ),
             
-            # ========================================
-            # STORES (armazenam dados temporários)
-            # ========================================
-            dcc.Store(id='login-success-store'),
-            dcc.Store(id='login-step-store', data={'step': 'login'})
         ],
         fluid=True,
         className="bg-gradient-light",
@@ -299,3 +300,11 @@ def get_login_layout():
             "minHeight": "100vh"
         }
     )
+
+# ========================================================================
+# NOTA IMPORTANTE:
+# Os dcc.Store('login-success-store') e dcc.Store('login-step-store')
+# NÃO devem existir aqui. Eles já estão definidos no app.py (layout raiz)
+# com storage_type='local'. Duplicá-los aqui causava sobrescrita dos dados
+# de autenticação ao trocar de página, quebrando toda a navegação.
+# ========================================================================

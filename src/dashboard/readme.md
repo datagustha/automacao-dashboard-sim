@@ -1,112 +1,106 @@
-1. layouts/ - A CARA (o que o usuário VÊ)
-python
-# layouts/dashboard.py
-# Aqui você desenha a tela: onde fica o filtro, onde fica o gráfico, etc.
+# 📖 Dashboard SIM Facilita — Documentação Técnica
 
-def get_dashboard_layout():
-    return html.Div([
-        dcc.Dropdown(id='filtro-fase', ...),  # ← Um filtro aqui
-        dcc.Graph(id='grafico-faturamento'),   # ← Um gráfico aqui
-        html.H3(id='kpi-faturamento'),         # ← Um número aqui
-    ])
-O que importa aqui: Os id que você coloca (ex: filtro-fase, grafico-faturamento)
+## Estrutura do Dashboard
 
-2. callbacks/ - O CÉREBRO (o que ACONTECE)
-python
-# callbacks/graficos_callbacks.py
-# Aqui você diz: QUANDO o usuário fizer algo, FAÇA ISSO.
+```
+src/dashboard/
+├── app.py                  # Ponto de entrada principal (Stores GLOBAIS + registro de callbacks)
+├── layouts/                # Telas/páginas (o que o usuário VÊ)
+│   ├── login.py            # Tela de login (2FA, criação de senha, reset)
+│   ├── dashboard.py        # Dashboard do Operador (KPIs, gráficos, tabela)
+│   ├── dashboard_adm.py    # Dashboard do ADM (visão consolidada SEMEAR + AGORACRED)
+│   ├── pagamentos.py       # Tela de Pagamentos (tabela completa)
+│   ├── operador_detalhe.py # Detalhes do Operador (dia a dia, mês a mês, performance)
+│   └── esqueleto.py        # ⚠️ LEGADO — arquivo limpo, sem uso ativo
+├── callbacks/              # Lógica interativa (o "cérebro")
+│   ├── auth_callbacks.py   # Login, logout, roteamento de páginas
+│   ├── graficos_callbacks.py # KPIs, gráficos e tabela do dashboard
+│   ├── pgto_callbacks.py   # Tabela mestra da tela de Pagamentos
+│   ├── operador_callbacks.py # Tabelas e gráficos do detalhe do operador
+│   └── adm_callbacks.py    # KPIs e ranking do painel ADM
+├── components/             # Peças reutilizáveis
+│   ├── menus.py            # Sidebar (navegação) + Header (avatar do usuário)
+│   ├── cards.py            # Cards de KPI e Meta
+│   ├── tabelas.py          # DataTables (simples, cheia, com gráfico)
+│   └── graficos.py         # Gráficos Plotly reutilizáveis
+└── assets/
+    ├── style.css           # CSS global (variáveis, sidebar, cards, responsividade)
+    └── *.png               # Logos e imagens
+```
 
-@app.callback(
-    Output('grafico-faturamento', 'figure'),  # ← MUDA o gráfico
-    Input('filtro-fase', 'value')             # ← QUANDO o filtro mudar
-)
-def atualizar_grafico(fase_selecionada):
-    # Busca dados, calcula, retorna o gráfico novo
-    return figura
-O que importa aqui: Os id precisam ser os MESMOS que estão nos layouts!
+---
 
-3. components/ - AS PEÇAS (reutilizáveis)
-python
-# components/cards.py
-# Você cria uma "fábrica" de cards para usar em vários lugares.
+## ⚠️ REGRAS CRÍTICAS
 
-def card_indicador(titulo, id_valor):
-    return html.Div([
-        html.H6(titulo),
-        html.H3(id=id_valor)  # ← O id vem de fora
-    ])
-Depois você usa no layout:
+### 1. Stores Globais — NUNCA duplicar
+Os `dcc.Store` de autenticação são definidos **APENAS** no `app.py`:
 
-python
-# layouts/dashboard.py
-card_indicador("Faturamento", "kpi-faturamento")  # ← Passa o id
+```python
+# app.py (layout raiz)
+dcc.Store(id='login-success-store', storage_type='local')
+dcc.Store(id='login-step-store', data={'step': 'login'}, storage_type='local')
+```
 
-ONDE CADA COISA É MONTADA?
-O app.py é o montador final:
-python
-# app.py
+**NUNCA** crie esses Stores em layouts de página (login.py, dashboard.py, etc.)!
+Duplicá-los sobrescreve os dados de autenticação e quebra a navegação.
 
-# 1. Cria o app
-app = dash.Dash(__name__)
+### 2. Logout — Sempre limpar os Stores
+O callback de logout DEVE limpar `login-success-store` e `login-step-store`:
 
-# 2. Define o layout RAIZ (a estrutura base)
-app.layout = html.Div([
-    dcc.Location(id='url'),           # ← Controle de URL
-    html.Div(id='page-content')       # ← Aqui entra o conteúdo (login, dashboard)
-])
+```python
+# auth_callbacks.py - Callback 3
+return None, {'step': 'login'}, "/"
+#      ↑ limpa dados   ↑ reseta step   ↑ redireciona
+```
 
-# 3. Registra os callbacks (conecta o cérebro)
-from src.dashboard.callbacks import auth_callbacks, graficos_callbacks
-auth_callbacks.register_callbacks(app)    # ← Conecta os callbacks de login
-graficos_callbacks.register_callbacks(app) # ← Conecta os callbacks do dashboard
+---
 
-# 4. Roda o servidor
-app.run(debug=True)
-O page-content é onde as telas aparecem:
-python
-# auth_callbacks.py (parte do roteador)
+## Fluxo Completo: Login → Dashboard → Navegação → Logout
 
-@app.callback(
-    Output('page-content', 'children'),  # ← MUDA o conteúdo da página
-    Input('url', 'pathname')              # ← QUANDO a URL mudar
-)
-def render_page(pathname):
-    if pathname == '/dashboard':
-        return get_dashboard_layout()     # ← MOSTRA o dashboard
-    else:
-        return get_login_layout()         # ← MOSTRA o login
-FLUXO COMPLETO (DESDE O LOGIN ATÉ O GRÁFICO)
-text
+```
 1. USUÁRIO ABRE O SITE
    ↓
-2. URL = "/" → mostra get_login_layout() (tela de login)
+2. URL = "/" → render_page() mostra get_login_layout()
    ↓
-3. USUÁRIO DIGITA LOGIN E CLICA
+3. USUÁRIO DIGITA LOGIN → gerenciar_autenticacao() verifica senha
    ↓
-4. auth_callbacks.py detecta o clique
+4. SENHA OK → envia 2FA por e-mail
    ↓
-5. Busca no banco, se OK → muda URL para "/dashboard"
+5. 2FA OK → salva dados no login-success-store + redireciona para /dashboard
    ↓
-6. URL mudou → render_page() mostra get_dashboard_layout()
+6. render_page() detecta URL /dashboard + dados no store
    ↓
-7. Tela do dashboard aparece (com filtros, gráficos, cards)
+7. ADM → get_dashboard_adm_layout() | Operador → get_dashboard_layout()
    ↓
-8. USUÁRIO SELECIONA UMA FASE no filtro
+8. USUÁRIO NAVEGA → clica em "Pagamentos" na sidebar
    ↓
-9. graficos_callbacks.py detecta a mudança no 'filtro-fase'
+9. dcc.Link muda URL para /pagamentos → render_page() renderiza nova página
    ↓
-10. Busca dados, calcula, retorna novos valores
-   ↓
-11. Os cards e gráficos atualizam automaticamente
-O QUE CADA CALLBACK FAZ (RESUMO)
-Arquivo	O que faz	Quando é usado
-auth_callbacks.py	Login, logout, roteamento de páginas	Quando o usuário faz login ou sai
-graficos_callbacks.py	Atualiza cards, gráfico e tabela do dashboard	Quando o usuário muda filtros ou timer
-pgto_callbacks.py	Atualiza a tabela completa da página "Pagamentos"	Quando o usuário está na página de pagamentos
-ONDE VOCÊ DEVE MEXER PARA CADA COISA:
-O que quer mudar	Onde mexer
-Aparência da tela (cores, posições)	layouts/dashboard.py
-Opções do filtro (o que aparece no dropdown)	layouts/dashboard.py
-O que acontece quando clica em algo	callbacks/graficos_callbacks.py
-Como os números são calculados	services/analytics_service.py
-Aparência de um card (se usado em vários lugares)	components/cards.py
+10. USUÁRIO CLICA "SAIR" → fazer_logout() limpa stores + redireciona
+```
+
+---
+
+## O que cada callback faz
+
+| Arquivo | O que faz | Quando é ativado |
+|---|---|---|
+| `auth_callbacks.py` | Login (2FA), logout, roteamento de páginas | Login, troca de URL, clique em Sair |
+| `graficos_callbacks.py` | Atualiza KPIs, gráficos e tabela do Dashboard | Filtros de mês/ano/fase/busca ou timer |
+| `pgto_callbacks.py` | Atualiza tabela mestra de Pagamentos | Filtros de texto/banco na tela de Pagamentos |
+| `operador_callbacks.py` | Tabelas dia a dia, dia útil, mês a mês, performance | Filtros de mês/ano na tela de Operador |
+| `adm_callbacks.py` | KPIs globais + ranking por banco | Filtros de mês/ano/atividade no painel ADM |
+
+---
+
+## Onde mexer para cada coisa
+
+| O que quer mudar | Onde mexer |
+|---|---|
+| Aparência da tela (cores, posições) | `layouts/*.py` |
+| Opções do filtro (dropdowns) | `layouts/*.py` |
+| O que acontece quando muda filtro | `callbacks/*_callbacks.py` |
+| Como os números são calculados | `services/analytics_service.py` |
+| Aparência de card ou tabela | `components/*.py` |
+| Cores e estilos globais (CSS) | `assets/style.css` |
+| Sidebar e Header | `components/menus.py` |

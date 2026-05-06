@@ -4,6 +4,7 @@ LAYOUT DO DASHBOARD ADM
 Exibe visão consolidada do grupo com duas seções:
 - Faturamento + Tabela de operadores SEMEAR
 - Faturamento + Tabela de operadores AGORACRED
+- NOVO: Gráficos + Tabela de evolução diária separados por banco
 
 Só é exibido quando o login tem banco='ADM'.
 """
@@ -28,7 +29,7 @@ meses = [
 
 
 def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
-    """Constrói o layout do dashboard do ADM com as duas seções de banco."""
+    """Constrói o layout do dashboard do ADM com as duas seções de banco e filtro de operador."""
 
     sidebar = get_sidebar("dashboard", perfil="adm")
 
@@ -40,40 +41,67 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
             dbc.Row(
                 [
                     dbc.Col(
-                        dbc.Select(
-                            id="filtro-mes-adm",
-                            options=meses,
-                            value=datetime.today().month,
-                            className="shadow-sm",
-                            style={"borderRadius": "8px"}
-                        ),
+                        [
+                            html.Label("Mês", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Select(
+                                id="filtro-mes-adm",
+                                options=meses,
+                                value=datetime.today().month,
+                                className="shadow-sm",
+                                style={"borderRadius": "8px"}
+                            ),
+                        ],
                         width=2
                     ),
                     dbc.Col(
-                        dbc.Select(
-                            id="filtro-ano-adm",
-                            options=anos,
-                            value=datetime.today().year,
-                            className="shadow-sm",
-                            style={"borderRadius": "8px"}
-                        ),
+                        [
+                            html.Label("Ano", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Select(
+                                id="filtro-ano-adm",
+                                options=anos,
+                                value=datetime.today().year,
+                                className="shadow-sm",
+                                style={"borderRadius": "8px"}
+                            ),
+                        ],
                         width=2
                     ),
                     dbc.Col(
-                        dbc.Select(
-                            id="filtro-atividade-adm",
-                            options=[
-                                {"label": "Somente Ativos", "value": "ATIVO"},
-                                {"label": "Todos", "value": "TODOS"}
-                            ],
-                            value="ATIVO",
-                            className="shadow-sm",
-                            style={"borderRadius": "8px"}
-                        ),
+                        [
+                            html.Label("Atividade", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Select(
+                                id="filtro-atividade-adm",
+                                options=[
+                                    {"label": "🟢 Somente Ativos", "value": "ATIVO"},
+                                    {"label": "⚪ Todos", "value": "TODOS"}
+                                ],
+                                value="ATIVO",
+                                className="shadow-sm",
+                                style={"borderRadius": "8px"}
+                            ),
+                        ],
                         width=3
                     ),
+                    dbc.Col(
+                        [
+                            html.Label("Operador", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dcc.Dropdown(
+                                id="filtro-operador-adm",
+                                placeholder="📊 Todos os Operadores",
+                                options=[],  # Será preenchido pelo callback
+                                value="TODOS",
+                                clearable=True,
+                                style={"borderRadius": "8px"}
+                            ),
+                        ],
+                        width=4
+                    ),
                 ],
-                className="mb-4"
+                className="mb-4 align-items-end"
             ),
 
             # ── Cards globais do grupo ──────────────────────────────────
@@ -125,6 +153,45 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                 ],
                 className="g-3"
             ),
+
+            # ── GRÁFICOS DE EVOLUÇÃO DIÁRIA SEPARADOS ─────────────────────
+            html.Div(
+                [
+                    html.Hr(style={"borderColor": "#7e3d97", "borderWidth": "2px"}),
+                    html.H4(
+                        [DashIconify(icon="lucide:trending-up", width=22, className="me-2"), "Evolução Diária por Banco"],
+                        style={"color": "#7e3d97", "fontWeight": "700"}
+                    ),
+                ],
+                className="mb-3 mt-2"
+            ),
+            
+            # GRÁFICO SEMEAR
+            dbc.Row([
+                dbc.Col(
+                    html.Div([
+                        html.H5("🟣 SEMEAR", style={"color": "#7e3d97", "fontWeight": "600", "marginBottom": "10px"}),
+                        dcc.Graph(id="grafico-evolucao-semear-adm", config={'displayModeBar': True}),
+                    ]),
+                    width=12, md=6
+                ),
+                # GRÁFICO AGORACRED
+                dbc.Col(
+                    html.Div([
+                        html.H5("🟢 AGORACRED", style={"color": "#10B981", "fontWeight": "600", "marginBottom": "10px"}),
+                        dcc.Graph(id="grafico-evolucao-agoracred-adm", config={'displayModeBar': True}),
+                    ]),
+                    width=12, md=6
+                ),
+            ], className="mb-3"),
+            
+            # TABELA DE VALORES DIÁRIOS
+            dbc.Row([
+                dbc.Col(
+                    container_tabela_cheia("tabela-evolucao-diaria-adm", "📊 Valores Diários por Banco"),
+                    width=12
+                )
+            ], className="mb-4"),
 
             # ── Seção SEMEAR ────────────────────────────────────────────
             html.Div(

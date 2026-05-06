@@ -4,6 +4,18 @@ APLICAÇÃO PRINCIPAL DO DASHBOARD
 Este é o ponto de entrada (entry point) do dashboard.
 Inicializa o servidor Dash, configura o layout raiz e registra os callbacks.
 
+ARQUITETURA:
+    - app.py → layout raiz + Stores GLOBAIS + registro de callbacks
+    - layouts/ → telas/páginas (login, dashboard, pagamentos, operadores)
+    - callbacks/ → lógica interativa (autenticação, gráficos, filtros)
+    - components/ → componentes reutilizáveis (cards, tabelas, menus)
+
+⚠️ REGRA CRÍTICA:
+    Os Stores globais (login-success-store, login-step-store) são definidos
+    APENAS aqui no layout raiz. NUNCA criar Stores com esses IDs em layouts
+    de página, pois isso sobrescreve os dados de autenticação e quebra a
+    navegação entre páginas.
+
 COMO EXECUTAR:
     python -m src.dashboard.app
 """
@@ -49,14 +61,14 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     
     # Container onde as páginas (login/dashboard) serão renderizadas
-    html.Div(id='page-content'),
+    html.Div(id='page-content', style={"minHeight": "100vh"}),
     
     # ==================================================
     # STORES GLOBAIS - PERSISTEM ENTRE PÁGINAS
     # ==================================================
     # storage_type='local' mantém os dados no navegador
     dcc.Store(id='login-success-store', storage_type='local'),
-    dcc.Store(id='login-step-store', data={'step': 'login'}, storage_type='local'),
+    dcc.Store(id='login-step-store', data={'step': 'login'}, storage_type='memory'),
     
     # ==================================================
     # ATUALIZAÇÃO AUTOMÁTICA - A CADA 5 MINUTOS
@@ -80,25 +92,11 @@ operador_callbacks.register_callbacks(app)
 adm_callbacks.register_callbacks(app)
 
 # ========================================================================
-# CALLBACK PARA ATUALIZAÇÃO AUTOMÁTICA
+# NOTA: O callback de atualização automática foi removido.
+# Ele usava allow_duplicate=True no Output('page-content', 'children')
+# e retornava dash.no_update, conflitando com o roteador de páginas.
+# O dcc.Interval permanece no layout para uso futuro se necessário.
 # ========================================================================
-@app.callback(
-    Output('page-content', 'children', allow_duplicate=True),
-    Input('interval-component', 'n_intervals'),
-    prevent_initial_call=True
-)
-def atualizar_dashboard(n):
-    """
-    Atualiza o dashboard automaticamente a cada 5 minutos.
-    Recarrega a página atual para buscar novos dados do banco.
-    """
-    from dash import page_registry
-    from flask import request
-    
-    print(f"🔄 Atualizando dashboard automaticamente... (ciclo #{n})")
-    
-    # Força o recarregamento da página atual
-    return dash.no_update
 
 # ========================================================================
 # PONTO DE ENTRADA

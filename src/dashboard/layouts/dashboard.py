@@ -23,6 +23,27 @@ meses = [
     {"label": "Outubro", "value": 10}, {"label": "Novembro", "value": 11}, {"label": "Dezembro", "value": 12}
 ]
 
+# ================================================================
+# LISTA COMPLETA DE FASES EM ORDEM PARA O FILTRO DO DASHBOARD
+# ================================================================
+OPCOES_FASES_DASHBOARD = [
+    {"label": "📊 Todas as fases", "value": "todas"},
+    {"label": "📈 Fase 10 a 30", "value": "Fase 10 a 30"},
+    {"label": "📈 Fase 31 a 60", "value": "Fase 31 a 60"},
+    {"label": "📈 Fase 61 a 90", "value": "Fase 61 a 90"},
+    {"label": "📈 Fase 91 a 120", "value": "Fase 91 a 120"},
+    {"label": "📈 Fase 121 a 180", "value": "Fase 121 a 180"},
+    {"label": "📈 Fase 181 a 240", "value": "Fase 181 a 240"},
+    {"label": "📈 Fase 241 a 360", "value": "Fase 241 a 360"},
+    {"label": "📈 Fase 361 a 720", "value": "Fase 361 a 720"},
+    {"label": "📈 Fase 721 a 1080", "value": "Fase 721 a 1080"},
+    {"label": "📈 Fase 1081 a 1440", "value": "Fase 1081 a 1440"},
+    {"label": "📈 Fase 1081 a 1800", "value": "Fase 1081 a 1800"},
+    {"label": "📈 Fase 1441 a 1800", "value": "Fase 1441 a 1800"},
+    {"label": "📈 Fase 1801 a 9999", "value": "Fase 1801 a 9999"},
+    {"label": "🚫 Fora da fase", "value": "Fora da fase"},
+]
+
 def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str = "SEMEAR"):
     """
     Constrói o layout do dashboard do operador.
@@ -51,22 +72,19 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                         ], className="shadow-sm mb-4", style={"borderRadius": "8px"}),
                         width=4
                     ),
-                    # Filtro de fase — oculto para AGORACRED
+                    # FILTRO DE FASE - MULTIPLA SELEÇÃO (visível só para SEMEAR)
                     dbc.Col(
                         dcc.Dropdown(
                             id="filtro-fase",
-                            options=[
-                                {"label": "Todas Fases", "value": "todas"},
-                                {"label": "Fase 10 a 30", "value": "FASE 10 A 30"},
-                                {"label": "Fase 31 a 60", "value": "FASE 31 A 60"},
-                                {"label": "Fase 61 a 90", "value": "FASE 61 A 90"}
-                            ],
+                            options=OPCOES_FASES_DASHBOARD,
                             value=["todas"],
                             multi=True,
+                            clearable=True,
+                            placeholder="Selecione uma ou mais fases...",
                             className="shadow-sm mb-4",
                             style={"borderRadius": "8px", **fase_style}
                         ),
-                        width=3,
+                        width=4,
                         style=fase_style
                     ),
                     dbc.Col(
@@ -111,7 +129,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             id_valor="kpi-total-pgtos",
                             cor_icone="var(--purple-main)",
                             icon_name="lucide:credit-card",
-                            id_sub_texto="kpi-pgtos-anterior"  # ← subtexto com mês anterior
+                            id_sub_texto="kpi-pgtos-anterior"
                         ),
                         width=12, md=3, className="mb-4"
                     ),
@@ -144,7 +162,6 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             ], className="mb-4"),
 
             # === TABELA DE PERFORMANCE ===
-            # Subtítulo com dias trabalhados/restantes (atualizado pelo callback)
             html.Div(
                 id='info-dias-performance',
                 className="text-muted mb-2 px-1",

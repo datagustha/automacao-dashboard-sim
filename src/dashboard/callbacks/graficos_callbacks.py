@@ -1,17 +1,19 @@
 """
 CALLBACKS DOS GRÁFICOS E TABELAS - DASHBOARD
 =============================================
-
-ARQUIVO: graficos_callbacks.py
-LOCAL: src/dashboard/callbacks/
+CORRIGIDO: Filtros de mês funcionando, diferencia ADMIN/OPERADOR
+PADRONIZADO: Gráficos com mesmo estilo, títulos, tamanhos
 """
 
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 import datetime
 import os
 import re
+import dash
 from dash.dependencies import Input, Output, State
+from dash import no_update
 
 from src.services.db_service import (
     Buscar_login, 
@@ -25,6 +27,51 @@ from src.services.analytics_service import (
     calcular_performance_operador
 )
 
+# ================================================================
+# DEFINIÇÃO DO retorno_vazio
+# ================================================================
+texto_zero = "R$ 0,00"
+fig_blank = go.Figure().update_layout(
+    title=dict(
+        text="<b>Sem dados para o período selecionado</b>",
+        font=dict(color='#111827', size=14),
+        x=0,
+        xanchor='left'
+    ),
+    height=400,
+    plot_bgcolor='white',
+    paper_bgcolor='white',
+    xaxis=dict(visible=False),
+    yaxis=dict(visible=False)
+)
+
+retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], texto_zero, fig_blank, texto_zero, {"width": "0%"}, "0%", texto_zero)
+
+# ================================================================
+# FUNÇÃO PARA APLICAR ESTILO PADRÃO A QUALQUER GRÁFICO
+# ================================================================
+def aplicar_estilo_padrao(figura, titulo: str, altura: int = 400):
+    """
+    Aplica estilo padrão a qualquer gráfico.
+    
+    ARGS:
+        figura: objeto Figure do Plotly
+        titulo: título do gráfico
+        altura: altura do gráfico em pixels
+    """
+    figura.update_layout(
+        title=dict(
+            text=f"<b>{titulo}</b>",
+            font=dict(color='#111827', size=14),
+            x=0,
+            xanchor='left'
+        ),
+        height=altura,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='#111827')
+    )
+    return figura
 
 # ================================================================
 # CONFIGURAÇÃO DE LOG PARA DEBUG
@@ -37,7 +84,6 @@ def log_debug(mensagem):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{timestamp}] {mensagem}\n")
     print(mensagem)
-
 
 def register_callbacks(app):
     """Função principal que registra todos os callbacks do dashboard."""
@@ -55,81 +101,69 @@ def register_callbacks(app):
             Output('kpi-meta-objetivo', 'children'),
             Output('kpi-meta-barra', 'style'),
             Output('kpi-meta-percentual', 'children'),
-            Output('kpi-pgtos-anterior', 'children'),  # ← NOVO: operações pagas mês anterior
+            Output('kpi-pgtos-anterior', 'children'),
         ],
         [
-            Input('intervalo-atualizacao', 'n_intervals'),
             Input('url', 'pathname'),
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-texto-busca', 'value'),
             Input('filtro-fase', 'value')
         ],
-        [State('login-success-store', 'data')]
+        [
+            State('login-success-store', 'data')
+        ]
     )
-    def atualizar_dashboard(n_intervals, pathname, mes, ano, texto_busca, fase, dados_operador):
-        """Função principal que atualiza todo o dashboard."""
+    def atualizar_dashboard(pathname, mes, ano, texto_busca, fase, dados_operador):
+        """
+        CORRIGIDO: 
+        - Removeu n_intervals (causava recarga desnecessária)
+        - Filtro de mês aplicado CORRETAMENTE
+        - Gráficos padronizados com mesmo estilo
+        """
         
-        log_debug("=" * 60)
-        log_debug("CALLBACK EXECUTADO")
-        log_debug(f"MES: {mes}, ANO: {ano}, FASE: {fase}, BUSCA: {texto_busca}")
-        
-        # ================================================================
-        # FIGURA VAZIA (usada quando não há dados)
-        # ================================================================
-        fig_blank = go.Figure().update_layout(
-            title="", 
-            plot_bgcolor='white', 
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False)
-        )
-        texto_zero = "R$ 0,00"
-        retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], "", fig_blank, texto_zero, {"width": "0%"}, "0%", "Mês anterior: 0")
-        
-        # ================================================================
-        # VERIFICAÇÃO DE SEGURANÇA
-        # ================================================================
-        if pathname != '/dashboard' or not dados_operador:
-            log_debug("FORA DO DASHBOARD OU SEM OPERADOR")
+        # VERIFICA SE ESTÁ NO DASHBOARD
+        if pathname != '/dashboard':
+            return [no_update] * 12
+            
+        if not dados_operador:
+            log_debug("Nenhum dado de operador no store")
             return retorno_vazio
         
         login = dados_operador.get('login')
+        tipo_usuario = dados_operador.get('tipo', 'OPERADOR')
+        
         if not login:
-            log_debug("SEM LOGIN")
+            log_debug("Login não encontrado")
             return retorno_vazio
         
-        # ================================================================
-        # BUSCA OS DADOS DO BANCO
-        # ================================================================
+        # BUSCA DADOS DO OPERADOR
         operador = Buscar_login(login)
         if not operador:
-            log_debug("OPERADOR NAO ENCONTRADO")
+            log_debug(f"Operador não encontrado: {login}")
             return retorno_vazio
         
-        # *** EXTRAI O BANCO DO OPERADOR (correção do bug principal) ***
         banco = operador.get('banco', 'SEMEAR')
-        log_debug(f"Banco do operador: {banco}")
+        log_debug(f"=== DASHBOARD - Operador: {login} | Banco: {banco} | Tipo: {tipo_usuario} | Mês: {mes}/{ano} ===")
         
-        # Usa a função genérica para buscar pagamentos
+        # BUSCA PAGAMENTOS
         pagamentos_brutos = Buscar_pagamento_por_operador(operador)
         
         if not pagamentos_brutos:
-            log_debug("NENHUM PAGAMENTO ENCONTRADO")
+            log_debug("Nenhum pagamento encontrado")
             return retorno_vazio
 
-        log_debug(f"Total de pagamentos: {len(pagamentos_brutos)}")
+        log_debug(f"Total de pagamentos brutos: {len(pagamentos_brutos)}")
         
-        # ================================================================
         # CONVERTE PARA DATAFRAME
-        # ================================================================
         df = pd.DataFrame(pagamentos_brutos)
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
         # ================================================================
         # FILTROS DE MÊS E ANO
         # ================================================================
-        mes = int(mes)
-        ano = int(ano)
+        mes = int(mes) if mes else datetime.datetime.now().month
+        ano = int(ano) if ano else datetime.datetime.now().year
         
         if mes == 1:
             mes_anterior = 12
@@ -148,7 +182,8 @@ def register_callbacks(app):
             (df['dtPgto'].dt.year == ano_anterior)
         ].copy()
         
-        log_debug(f"Registros no mês atual: {len(df_mes_atual)}")
+        log_debug(f"Registros no mês atual ({mes}/{ano}): {len(df_mes_atual)}")
+        log_debug(f"Registros no mês anterior ({mes_anterior}/{ano_anterior}): {len(df_mes_anterior)}")
         
         # ================================================================
         # FILTRO DE FASE (apenas para SEMEAR)
@@ -175,7 +210,7 @@ def register_callbacks(app):
                 log_debug(f"Registros após filtro de fase: {len(df_mes_atual)}")
         
         # ================================================================
-        # FILTRO DE TEXTO (Busca por Contrato ou Cliente)
+        # FILTRO DE TEXTO
         # ================================================================
         if texto_busca:
             log_debug(f"Aplicando filtro de texto: '{texto_busca}'")
@@ -186,38 +221,34 @@ def register_callbacks(app):
             log_debug(f"Registros após filtro de texto: {len(df_mes_atual)}")
         
         # ================================================================
-        # CÁLCULO DO MÊS ANTERIOR (faturamento em R$)
+        # CÁLCULO DO MÊS ANTERIOR
         # ================================================================
-        fat_anterior = df_mes_anterior['valorTotal'].sum() if not df_mes_anterior.empty else 0.0
-        txt_fat_anterior = f"Mês anterior: R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        
-        # ================================================================
-        # CÁLCULO OPERAÇÕES PAGAS MÊS ANTERIOR (quantidade)
-        # ================================================================
-        # Para SEMEAR, exclui "Fora da fase" no mês anterior também
         df_mes_anterior_filtrado = df_mes_anterior.copy()
         if banco == 'SEMEAR' and 'faseAtraso' in df_mes_anterior_filtrado.columns:
             df_mes_anterior_filtrado = df_mes_anterior_filtrado[
                 df_mes_anterior_filtrado['faseAtraso'] != 'Fora da fase'
             ]
+        
+        fat_anterior = df_mes_anterior_filtrado['valorTotal'].sum() if not df_mes_anterior_filtrado.empty else 0.0
+        txt_fat_anterior = f"Mês anterior: R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        
         pgtos_anterior_qtd = len(df_mes_anterior_filtrado)
         txt_pgtos_anterior = f"Mês anterior: {pgtos_anterior_qtd:,}".replace(",", ".")
         
         # ================================================================
-        # VERIFICA SE TEM DADOS NO MÊS ATUAL
+        # VERIFICA SE TEM DADOS
         # ================================================================
         if df_mes_atual.empty:
             log_debug("DataFrame vazio - retornando sem dados")
             return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior)
         
         # ================================================================
-        # CONVERTE PARA LISTA DE DICIONÁRIOS
+        # CONVERTE PARA LISTA
         # ================================================================
         pagamentos_filtrados = df_mes_atual.to_dict('records')
         
         # ================================================================
         # CALCULA INDICADORES (KPIs)
-        # *** AGORA PASSA O BANCO CORRETAMENTE ***
         # ================================================================
         indicadores = calcular_indicadores_operador(pagamentos_filtrados, banco=banco)
         
@@ -237,25 +268,22 @@ def register_callbacks(app):
 
         if metas:
             for meta in metas:
-                if meta['data'].year == ano and meta['data'].month == mes:
-                    meta_valor = meta.get('meta100', 0)
-                    break
+                data_meta = meta.get('data')
+                if data_meta and hasattr(data_meta, 'year'):
+                    if data_meta.year == ano and data_meta.month == mes:
+                        meta_valor = meta.get('meta100', 0)
+                        break
 
-        # Calcula o percentual da meta
         percentual_meta = (faturamento / meta_valor) * 100 if meta_valor > 0 else 0
-
-        # Formata o valor da meta
         txt_meta_objetivo = f"R$ {meta_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-        # ================================================================
-        # DEFINE A COR DA BARRA BASEADA NO PERCENTUAL
-        # ================================================================
+        # BARRA DE PROGRESSO
         if percentual_meta >= 100:
-            cor_barra = "#10B981"  # verde (meta atingida)
+            cor_barra = "#10B981"
         elif percentual_meta >= 70:
-            cor_barra = "#f59e0b"  # laranja (quase lá)
+            cor_barra = "#f59e0b"
         else:
-            cor_barra = "#ef4444"  # vermelho (abaixo)
+            cor_barra = "#ef4444"
 
         estilo_barra = {
             "width": f"{min(percentual_meta, 100)}%",
@@ -266,30 +294,61 @@ def register_callbacks(app):
         }
         
         # ================================================================
-        # GRÁFICO 1: EVOLUÇÃO DIÁRIA (LINHA)
-        # *** AGORA PASSA O BANCO CORRETAMENTE ***
+        # GRÁFICO 1: EVOLUÇÃO DIÁRIA (CORRIGIDO - sem scroll para dias negativos/33)
         # ================================================================
-        from src.dashboard.components.graficos import criar_grafico_linha
-
         df_grafico = calcular_faturamento_por_dia(pagamentos_filtrados, banco=banco)
-        figura = criar_grafico_linha(
-            df=df_grafico,
-            x='data',
-            y='total',
-            titulo="Evolução Diária - Faturamento no Período",
-            cor='#7e3d97'
-        )
-        if df_grafico.empty:
-            figura = fig_blank
+        
+        if not df_grafico.empty:
+            # Extrai apenas o dia do mês para o eixo X
+            df_grafico['dia'] = pd.to_datetime(df_grafico['data']).dt.day
+            
+            # Pega os dias que realmente existem no mês
+            dias_existentes = sorted(df_grafico['dia'].unique())
+            primeiro_dia = min(dias_existentes) if dias_existentes else 1
+            ultimo_dia = max(dias_existentes) if dias_existentes else 31
+            
+            figura_evolucao = px.line(
+                df_grafico, 
+                x='dia', 
+                y='total',
+                markers=True
+            )
+            figura_evolucao.update_traces(
+                line_color='#7e3d97', 
+                marker_color='#7e3d97',
+                marker_size=8,
+                line_width=3
+            )
+            
+            figura_evolucao.update_layout(
+                xaxis=dict(
+                    title="",
+                    tickmode='linear',
+                    tick0=primeiro_dia,
+                    dtick=1,
+                    range=[primeiro_dia - 0.5, ultimo_dia + 0.5],  # LIMITA O SCROLL
+                    showgrid=True,
+                    gridcolor='#E5E7EB',
+                    tickangle=0
+                ),
+                yaxis=dict(
+                    title="Recebimento (R$)",
+                    showgrid=True,
+                    gridcolor='#E5E7EB'
+                ),
+                margin=dict(b=40, t=50, l=60, r=40)  # Margens consistentes
+            )
+            
+            figura_evolucao = aplicar_estilo_padrao(figura_evolucao, f"Evolução Diária - {mes}/{ano}", 400)
+        else:
+            figura_evolucao = fig_blank
 
         # ================================================================
-        # GRÁFICO 2: PAGAMENTOS POR FASE (BARRAS) - APENAS PARA SEMEAR
-        # AGORACRED não tem visão por fase → retorna gráfico vazio/oculto
+        # GRÁFICO 2: PAGAMENTOS POR FASE (CORRIGIDO - sem corte dos rótulos)
         # ================================================================
         if banco == 'SEMEAR':
             df_fases = calcular_pagamentos_por_fase(pagamentos_filtrados, banco=banco)
             if not df_fases.empty:
-                import plotly.express as px
                 figura_fase = px.bar(
                     df_fases, 
                     x='fase', 
@@ -301,55 +360,61 @@ def register_callbacks(app):
                     marker_line_color='#612d75',
                     marker_line_width=1,
                     texttemplate='R$ %{y:,.0f}',
-                    textposition='outside'
+                    textposition='outside',
+                    textfont_size=10
                 )
                 figura_fase.update_layout(
-                    title=dict(
-                        text="Pagamentos por Fase",
-                        font=dict(color='#111827', size=14, weight='bold'),
-                        x=0,
-                        xanchor='left'
+                    xaxis=dict(
+                        title="",
+                        tickangle=-45,
+                        tickfont_size=9
                     ),
-                    height=350,
-                    plot_bgcolor='white',
-                    paper_bgcolor='white',
-                    xaxis_title="Fase",
-                    yaxis_title="Valor (R$)",
-                    font=dict(color='#111827'),
+                    yaxis=dict(
+                        title="Recebimento (R$)",
+                        showgrid=True,
+                        gridcolor='#E5E7EB'
+                    ),
                     uniformtext_minsize=8,
-                    uniformtext_mode='hide'
+                    uniformtext_mode='hide',
+                    margin=dict(b=120, t=50, l=60, r=40)  # AUMENTADO b=120 para não cortar
                 )
+                figura_fase = aplicar_estilo_padrao(figura_fase, "Pagamentos por Fase", 400)
             else:
                 figura_fase = fig_blank
         else:
-            # AGORACRED: não tem gráfico por fase → gráfico em branco
+            # AGORACRED - gráfico informativo
             figura_fase = go.Figure().update_layout(
                 title=dict(
-                    text="",
-                    x=0
+                    text="<b>Pagamentos por Fase</b>",
+                    font=dict(color='#111827', size=14),
+                    x=0,
+                    xanchor='left'
                 ),
+                height=400,
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 xaxis=dict(visible=False),
                 yaxis=dict(visible=False),
                 annotations=[dict(
-                    text="Gráfico por fase não disponível para AGORACRED",
+                    text="📊 Gráfico por fase não disponível para AGORACRED",
                     x=0.5, y=0.5,
                     xref="paper", yref="paper",
                     showarrow=False,
-                    font=dict(size=13, color='#9ca3af')
+                    font=dict(size=14, color='#9ca3af')
                 )]
             )
         
         # ================================================================
-        # TABELA DE PAGAMENTOS RECENTES
+        # TABELA DE PAGAMENTOS
         # ================================================================
-        colunas_visiveis = ['dtPgto', 'contrato', 'cliente', 'valorTotal', 'faseAtraso']
+        colunas_visiveis = ['dtPgto', 'contrato', 'cliente', 'valorTotal']
         
-        if 'faseAtraso' not in df_mes_atual.columns and 'fase' in df_mes_atual.columns:
-            colunas_visiveis = ['dtPgto', 'contrato', 'cliente', 'valorTotal', 'fase']
+        if banco == 'SEMEAR':
+            if 'faseAtraso' in df_mes_atual.columns:
+                colunas_visiveis.append('faseAtraso')
+            elif 'fase' in df_mes_atual.columns:
+                colunas_visiveis.append('fase')
         
-        # Para AGORACRED remove coluna faseAtraso se não for relevante
         colunas_existentes = [c for c in colunas_visiveis if c in df_mes_atual.columns]
         df_tabela = df_mes_atual[colunas_existentes].copy()
         df_tabela = df_tabela.sort_values(by='dtPgto', ascending=False)
@@ -371,17 +436,13 @@ def register_callbacks(app):
         dados_tabela = df_tabela.to_dict('records')
         colunas_tabela = [{"name": i, "id": i} for i in df_tabela.columns]
         
-        log_debug(f"FIM - Total final: {total} pagamentos | Banco: {banco}")
-        log_debug("=" * 60)
+        log_debug(f"✅ FINALIZADO - {total} pagamentos | Banco: {banco} | Mês: {mes}/{ano}")
         
-        # ================================================================
-        # RETORNO
-        # ================================================================
         return (
             txt_faturamento,
             txt_ticket,
             txt_total,
-            figura,
+            figura_evolucao,
             dados_tabela,
             colunas_tabela,
             txt_fat_anterior,
@@ -389,9 +450,8 @@ def register_callbacks(app):
             txt_meta_objetivo,
             estilo_barra,
             f"{percentual_meta:.1f}% da meta",
-            txt_pgtos_anterior,  # ← NOVO: operações pagas mês anterior
+            txt_pgtos_anterior,
         )
-
 
     # ================================================================
     # TABELA DE PERFORMANCE DO OPERADOR
@@ -400,30 +460,17 @@ def register_callbacks(app):
         [
             Output('tabela-performance', 'data'),
             Output('tabela-performance', 'columns'),
-            Output('info-dias-performance', 'children'),  # ← subtítulo com dias
+            Output('info-dias-performance', 'children'),
         ],
         [
-            Input('intervalo-atualizacao', 'n_intervals'),
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value')
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_tabela_performance(n, mes, ano, dados_operador):
-        """
-        ATUALIZA A TABELA DE PERFORMANCE DO OPERADOR LOGADO.
+    def atualizar_tabela_performance(mes, ano, dados_operador):
+        """Atualiza tabela de performance com os filtros corretos"""
         
-        Mostra:
-        - Login, Turno
-        - Faturamento, Feito Diário
-        - Meta, Meta Diária, % Meta
-        - Faltas para 70%, 80%, 90%, 100%
-        - Meta Ranking, Projeção (R$ e %)
-        
-        Dias trabalhados e restantes aparecem como SUBTÍTULO, não na tabela.
-        """
-        
-        # VERIFICA SE USUÁRIO ESTÁ LOGADO
         if not dados_operador:
             return [], [], ""
         
@@ -431,35 +478,31 @@ def register_callbacks(app):
         if not login:
             return [], [], ""
         
-        # BUSCA DADOS DO OPERADOR
         operador = Buscar_login(login)
         if not operador:
             return [], [], ""
         
         banco = operador.get('banco', 'SEMEAR')
-        
-        # BUSCA PAGAMENTOS E METAS
         pagamentos = Buscar_pagamento_por_operador(operador)
         metas = buscar_metas_por_operador(operador)
         
         if not pagamentos:
             return [], [{"name": "Sem dados", "id": "sem_dados"}], ""
         
-        # CALCULA PERFORMANCE
-        # *** AGORA PASSA O BANCO CORRETAMENTE ***
+        mes = int(mes) if mes else datetime.datetime.now().month
+        ano = int(ano) if ano else datetime.datetime.now().year
+        
         perf = calcular_performance_operador(
             pagamentos=pagamentos,
             metas=metas,
-            ano=int(ano),
-            mes=int(mes),
+            ano=ano,
+            mes=mes,
             login=login,
             banco=banco
         )
         
-        # MONTA SUBTÍTULO (substitui as colunas dias_trabalhados e dias_restantes da tabela)
         txt_dias = f"📅 Dias trabalhados: {perf['dias_trabalhados']}  |  ⏳ Dias úteis restantes: {perf['dias_restantes']}  |  📆 Total dias úteis: {perf['total_dias_uteis']}"
         
-        # PREPARA DADOS PARA A TABELA (sem dias_trabalhados e dias_restantes)
         dados_tabela = [{
             "login": perf['login'],
             "turno": operador.get('turno', ''),
@@ -477,7 +520,6 @@ def register_callbacks(app):
             "projecao_percentual": f"{perf['projecao_percentual']:.1f}%",
         }]
         
-        # DEFINE AS COLUNAS DA TABELA (sem dias)
         colunas = [
             {"name": "Login", "id": "login"},
             {"name": "Turno", "id": "turno"},

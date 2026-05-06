@@ -22,8 +22,8 @@ def aplicar_estilo_padrao(figura, titulo: str):
     """
     figura.update_layout(
         title=dict(
-            text=titulo,
-            font=dict(color='#111827', size=14, weight='bold'),
+            text=f"<b>{titulo}</b>",
+            font=dict(color='#111827', size=14),
             x=0,
             xanchor='left'
         ),
