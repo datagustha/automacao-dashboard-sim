@@ -106,8 +106,8 @@ if __name__ == '__main__':
     print(" INICIANDO DASHBOARD SEMEAR")
     print("=" * 50)
     print(f" Diretorio raiz: {ROOT_DIR}")
-    print(f" Acesse: http://127.0.0.1:8050")
+    print(f" Acesse: http://127.0.0.1:80")
     print(" Atualização automática a cada 5 minutos")
     print("=" * 50)
     
-    app.run(debug=False, host='0.0.0.0', port=8050)
+    app.run(debug=False, host='0.0.0.0', port=80)
