@@ -110,4 +110,5 @@ if __name__ == '__main__':
     print(" Atualização automática a cada 5 minutos")
     print("=" * 50)
     
-    app.run(debug=False, host='0.0.0.0', port=80)
+    app.run(debug=False, host='0.0.0.0')
+    #, port=80
