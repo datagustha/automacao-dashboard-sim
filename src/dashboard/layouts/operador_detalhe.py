@@ -27,18 +27,13 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
     # ================================================================
     # FILTROS - CORRIGIDO: agora usa o MÊS ATUAL como padrão
     # ================================================================
+    from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos
+    
     ano_atual = datetime.now().year
     mes_atual = datetime.now().month
     
-    anos = [{"label": str(ano), "value": ano} for ano in range(2024, ano_atual + 2)]
-    meses = [
-        {"label": "Janeiro", "value": 1}, {"label": "Fevereiro", "value": 2},
-        {"label": "Março", "value": 3}, {"label": "Abril", "value": 4},
-        {"label": "Maio", "value": 5}, {"label": "Junho", "value": 6},
-        {"label": "Julho", "value": 7}, {"label": "Agosto", "value": 8},
-        {"label": "Setembro", "value": 9}, {"label": "Outubro", "value": 10},
-        {"label": "Novembro", "value": 11}, {"label": "Dezembro", "value": 12}
-    ]
+    anos = get_anos()
+    meses = MESES
     
     conteudo = html.Div(
         [
@@ -114,27 +109,21 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
             dbc.Row(
                 [
                     dbc.Col(
-                        dbc.Select(
-                            id="filtro-mes-operador",
-                            options=meses,
-                            value=mes_atual,  # ← CORRIGIDO: agora usa o mês atual
-                            className="shadow-sm",
-                            style={"borderRadius": "8px"}
-                        ),
-                        width=3, className="mb-3"
+                        [
+                            html.Label("Mês/Ano", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Row([
+                                dbc.Col(dbc.Select(id="filtro-mes-operador", options=meses, value=mes_atual, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="pe-1"),
+                                dbc.Col(dbc.Select(id="filtro-ano-operador", options=anos, value=ano_atual, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="ps-1"),
+                            ])
+                        ],
+                        width=12, md=3, className="mb-3"
                     ),
                     dbc.Col(
-                        dbc.Select(
-                            id="filtro-ano-operador",
-                            options=anos,
-                            value=ano_atual,  # ← CORRIGIDO: agora usa o ano atual
-                            className="shadow-sm",
-                            style={"borderRadius": "8px"}
-                        ),
-                        width=2, className="mb-3"
+                        criar_filtro_data_range("operador"),
+                        width=12, md=4, className="mb-3"
                     ),
                 ],
-                className="mb-4"
+                className="mb-4 align-items-start"
             ),
             
             # Tabela Dia a Dia

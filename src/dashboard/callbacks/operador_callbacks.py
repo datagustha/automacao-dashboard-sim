@@ -13,6 +13,7 @@ import holidays
 
 from src.services.db_service import Buscar_login, Buscar_pagamento_por_operador, buscar_metas_por_operador
 from src.services.analytics_service import calcular_performance_operador
+from src.dashboard.components.filtros import aplicar_filtro_data, obter_mes_ano_do_range
 
 
 def register_callbacks(app):
@@ -55,14 +56,16 @@ def register_callbacks(app):
         [
             Input('intervalo-operador', 'n_intervals'),
             Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value')
+            Input('filtro-ano-operador', 'value'),
+            Input('filtro-data-range-operador', 'start_date'),
+            Input('filtro-data-range-operador', 'end_date'),
         ],
         [
             State('operador-selecionado-store', 'data'),
             State('banco-operador-store', 'data')
         ]
     )
-    def atualizar_tabela_dia_dia(n, mes, ano, operador_selecionado, banco):
+    def atualizar_tabela_dia_dia(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
         """Atualiza a tabela Dia a Dia."""
         
         print(f"[DEBUG] Dia a Dia - Banco: {banco}")
@@ -77,12 +80,9 @@ def register_callbacks(app):
         df = pd.DataFrame(pagamentos)
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
-        mes_int = int(mes)
-        ano_int = int(ano)
+        df_mes, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
         
-        df_mes = df[(df['dtPgto'].dt.month == mes_int) & (df['dtPgto'].dt.year == ano_int)]
-        
-        print(f"[DEBUG] Dia a Dia - Pagamentos no mês: {len(df_mes)}")
+        print(f"[DEBUG] Dia a Dia - Pagamentos no período: {len(df_mes)}")
         
         if df_mes.empty:
             return [], []
@@ -130,7 +130,7 @@ def register_callbacks(app):
         return dados, colunas
     
     # ================================================================
-    # TABELA DIA ÚTIL
+    # TABELA DIA ÚTIL (CORRIGIDA - MOSTRA SÓ DIAS COM PAGAMENTO)
     # ================================================================
     @app.callback(
         [
@@ -140,15 +140,24 @@ def register_callbacks(app):
         [
             Input('intervalo-operador', 'n_intervals'),
             Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value')
+            Input('filtro-ano-operador', 'value'),
+            Input('filtro-data-range-operador', 'start_date'),
+            Input('filtro-data-range-operador', 'end_date'),
         ],
         [
             State('operador-selecionado-store', 'data'),
             State('banco-operador-store', 'data')
         ]
     )
-    def atualizar_tabela_dia_util(n, mes, ano, operador_selecionado, banco):
-        """Atualiza a tabela Dia Útil."""
+    def atualizar_tabela_dia_util(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
+        """
+        Atualiza a tabela Dia Útil.
+        
+        CORREÇÕES APLICADAS:
+        - Mostra APENAS os dias que tiveram pagamento
+        - Para no último dia com pagamento (não mostra dias futuros)
+        - Remove R$ nan (usa fillna(0))
+        """
         
         print(f"[DEBUG] Dia Útil - Banco: {banco}")
         
@@ -162,58 +171,94 @@ def register_callbacks(app):
         df = pd.DataFrame(pagamentos)
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
-        mes_int = int(mes)
-        ano_int = int(ano)
+        df_mes, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
         
-        df_mes = df[(df['dtPgto'].dt.month == mes_int) & (df['dtPgto'].dt.year == ano_int)]
-        
-        print(f"[DEBUG] Dia Útil - Pagamentos no mês: {len(df_mes)}")
+        print(f"[DEBUG] Dia Útil - Pagamentos no período: {len(df_mes)}")
         
         df_mes = filtrar_fora_da_fase(df_mes, banco)
         
         print(f"[DEBUG] Dia Útil - Após filtro: {len(df_mes)}")
         
+        # Se não tem dados, retorna vazio
+        if df_mes.empty:
+            return [], []
+        
+        # ============================================================
+        # CORREÇÃO: Só considera dados até o último dia com pagamento
+        # ============================================================
+        ultima_data = df_mes['dtPgto'].max()
+        df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
+        
+        # ============================================================
+        # CORREÇÃO: Agrupa SOMENTE os dias que tiveram pagamento
+        # ============================================================
         faturamento_por_dia = {}
         quantidade_por_dia = {}
-        if not df_mes.empty:
-            ultima_data = df_mes['dtPgto'].max()
-            df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
-            
-            for _, row in df_mes.iterrows():
-                dia = row['dtPgto'].day
-                faturamento_por_dia[dia] = faturamento_por_dia.get(dia, 0) + row['valorTotal']
-                quantidade_por_dia[dia] = quantidade_por_dia.get(dia, 0) + 1
         
-        dias_uteis = get_dias_uteis(ano_int, mes_int)
+        for _, row in df_mes.iterrows():
+            dia = row['dtPgto'].day
+            faturamento_por_dia[dia] = faturamento_por_dia.get(dia, 0) + row['valorTotal']
+            quantidade_por_dia[dia] = quantidade_por_dia.get(dia, 0) + 1
         
+        # ============================================================
+        # CORREÇÃO: Ordena os dias que tiveram pagamento
+        # ============================================================
+        dias_com_pagamento = sorted(faturamento_por_dia.keys())
+        
+        if not dias_com_pagamento:
+            return [], []
+        
+        # ============================================================
+        # CORREÇÃO: Gera linhas APENAS para os dias com pagamento
+        # ============================================================
         resultado = []
-        for i, dia in enumerate(dias_uteis, start=1):
+        for i, dia in enumerate(dias_com_pagamento, start=1):
+            faturamento = faturamento_por_dia.get(dia, 0.0)
+            quantidade = quantidade_por_dia.get(dia, 0)
+            
             resultado.append({
                 'dia_util': i,
                 'dia': dia,
-                'quantidade': quantidade_por_dia.get(dia, 0),
-                'faturamento': faturamento_por_dia.get(dia, 0)
+                'quantidade': quantidade,
+                'faturamento': faturamento
             })
         
         df_resultado = pd.DataFrame(resultado)
         
-        total_quantidade = df_resultado['quantidade'].sum()
+        # ============================================================
+        # CORREÇÃO: Garante que não tem NaN nos valores
+        # ============================================================
+        df_resultado['faturamento'] = df_resultado['faturamento'].fillna(0)
+        df_resultado['quantidade'] = df_resultado['quantidade'].fillna(0)
+        
+        total_quantidade = int(df_resultado['quantidade'].sum())
         total_faturamento = df_resultado['faturamento'].sum()
         
+        # ============================================================
+        # Formata os valores para exibição
+        # ============================================================
         dados = []
         for _, row in df_resultado.iterrows():
+            if row['faturamento'] == 0:
+                faturamento_str = "R$ 0,00"
+            else:
+                faturamento_str = f"R$ {row['faturamento']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            
             dados.append({
                 'dia_util': row['dia_util'],
                 'dia': row['dia'],
                 'quantidade': row['quantidade'],
-                'faturamento': f"R$ {row['faturamento']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                'faturamento': faturamento_str
             })
+        
+        # Linha de TOTAL
+        total_faturamento_str = f"R$ {total_faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         
         dados.append({
             'dia_util': 'TOTAL',
             'dia': '-',
             'quantidade': total_quantidade,
-            'faturamento': f"R$ {total_faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            'faturamento': total_faturamento_str
         })
         
         colunas = [
@@ -235,14 +280,16 @@ def register_callbacks(app):
         ],
         [
             Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-ano-operador', 'value')
+            Input('filtro-ano-operador', 'value'),
+            Input('filtro-data-range-operador', 'start_date'),
+            Input('filtro-data-range-operador', 'end_date'),
         ],
         [
             State('operador-selecionado-store', 'data'),
             State('banco-operador-store', 'data')
         ]
     )
-    def atualizar_tabela_mes_mes(n, ano, operador_selecionado, banco):
+    def atualizar_tabela_mes_mes(n, ano, data_inicio, data_fim, operador_selecionado, banco):
         """Atualiza a tabela Mês a Mês."""
         
         print(f"[DEBUG] Mês a Mês - Banco: {banco}")
@@ -259,7 +306,8 @@ def register_callbacks(app):
         df = pd.DataFrame(pagamentos)
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
-        ano_int = int(ano)
+        _, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (None, int(ano) if ano else pd.Timestamp.now().year)
+        ano_int = ano_calc
         
         df_ano = df[df['dtPgto'].dt.year == ano_int]
         
@@ -351,19 +399,21 @@ def register_callbacks(app):
         [
             Output('tabela-performance-operador', 'data'),
             Output('tabela-performance-operador', 'columns'),
-            Output('info-dias-operador', 'children'),  # ← subtítulo com dias
+            Output('info-dias-operador', 'children'),
         ],
         [
             Input('intervalo-operador', 'n_intervals'),
             Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value')
+            Input('filtro-ano-operador', 'value'),
+            Input('filtro-data-range-operador', 'start_date'),
+            Input('filtro-data-range-operador', 'end_date'),
         ],
         [
             State('operador-selecionado-store', 'data'),
             State('banco-operador-store', 'data')
         ]
     )
-    def atualizar_tabela_performance(n, mes, ano, operador_selecionado, banco):
+    def atualizar_tabela_performance(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
         """Atualiza a tabela de performance. Dias trabalhados/restantes vão como subtítulo."""
         
         if not operador_selecionado:
@@ -375,8 +425,10 @@ def register_callbacks(app):
         if not pagamentos:
             return [], [], ""
         
-        ano_int = int(ano)
-        mes_int = int(mes)
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else pd.Timestamp.now().month,
+            int(ano) if ano else pd.Timestamp.now().year
+        )
         
         perf = calcular_performance_operador(
             pagamentos=pagamentos,
@@ -387,7 +439,6 @@ def register_callbacks(app):
             banco=banco
         )
         
-        # Subtítulo com os dias (substitui as colunas da tabela)
         txt_dias = (
             f"📅 Dias trabalhados: {perf['dias_trabalhados']}  "
             f"|  ⏳ Dias úteis restantes: {perf['dias_restantes']}  "
@@ -421,14 +472,16 @@ def register_callbacks(app):
         Output('grafico-fase-operador', 'figure'),
         [
             Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-ano-operador', 'value')
+            Input('filtro-ano-operador', 'value'),
+            Input('filtro-data-range-operador', 'start_date'),
+            Input('filtro-data-range-operador', 'end_date'),
         ],
         [
             State('operador-selecionado-store', 'data'),
             State('banco-operador-store', 'data')
         ]
     )
-    def atualizar_grafico_mensal(n, ano, operador_selecionado, banco):
+    def atualizar_grafico_mensal(n, ano, data_inicio, data_fim, operador_selecionado, banco):
         """Gráfico de barras: faturamento por mês do ano selecionado."""
         
         fig_blank = px.bar(title="Sem dados").update_layout(plot_bgcolor='white')
@@ -444,7 +497,8 @@ def register_callbacks(app):
         df = pd.DataFrame(pagamentos)
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
-        ano_int = int(ano)
+        _, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (None, int(ano) if ano else pd.Timestamp.now().year)
+        ano_int = ano_calc
         
         df_ano = df[df['dtPgto'].dt.year == ano_int]
         

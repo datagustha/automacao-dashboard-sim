@@ -12,26 +12,10 @@ from dash_iconify import DashIconify
 from src.dashboard.components.menus import get_sidebar, get_header
 from src.dashboard.components.tabelas import container_tabela_cheia
 
-# ================================================================
-# LISTA COMPLETA DE FASES EM ORDEM
-# ================================================================
-OPCOES_FASES = [
-    {"label": "📊 Todas as fases", "value": "TODAS"},
-    {"label": "📈 Fase 10 a 30", "value": "Fase 10 a 30"},
-    {"label": "📈 Fase 31 a 60", "value": "Fase 31 a 60"},
-    {"label": "📈 Fase 61 a 90", "value": "Fase 61 a 90"},
-    {"label": "📈 Fase 91 a 120", "value": "Fase 91 a 120"},
-    {"label": "📈 Fase 121 a 180", "value": "Fase 121 a 180"},
-    {"label": "📈 Fase 181 a 240", "value": "Fase 181 a 240"},
-    {"label": "📈 Fase 241 a 360", "value": "Fase 241 a 360"},
-    {"label": "📈 Fase 361 a 720", "value": "Fase 361 a 720"},
-    {"label": "📈 Fase 721 a 1080", "value": "Fase 721 a 1080"},
-    {"label": "📈 Fase 1081 a 1440", "value": "Fase 1081 a 1440"},
-    {"label": "📈 Fase 1081 a 1800", "value": "Fase 1081 a 1800"},
-    {"label": "📈 Fase 1441 a 1800", "value": "Fase 1441 a 1800"},
-    {"label": "📈 Fase 1801 a 9999", "value": "Fase 1801 a 9999"},
-    {"label": "🚫 Fora da fase", "value": "Fora da fase"},
-]
+from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos, OPCOES_FASES_PGTOS
+
+# Usaremos o OPCOES_FASES_PGTOS
+OPCOES_FASES = OPCOES_FASES_PGTOS
 
 def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str = 'operador'):
     """
@@ -53,46 +37,33 @@ def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str
         [
             dbc.Col(
                 [
-                    html.Label("Mês", className="fw-bold mb-1",
-                               style={"color": "var(--text-muted)", "fontSize": "13px"}),
-                    dcc.Dropdown(
-                        id="filtro-mes-pgtos",
-                        options=[
-                            {"label": "Janeiro", "value": 1},
-                            {"label": "Fevereiro", "value": 2},
-                            {"label": "Março", "value": 3},
-                            {"label": "Abril", "value": 4},
-                            {"label": "Maio", "value": 5},
-                            {"label": "Junho", "value": 6},
-                            {"label": "Julho", "value": 7},
-                            {"label": "Agosto", "value": 8},
-                            {"label": "Setembro", "value": 9},
-                            {"label": "Outubro", "value": 10},
-                            {"label": "Novembro", "value": 11},
-                            {"label": "Dezembro", "value": 12},
-                        ],
-                        value=mes_atual,
-                        clearable=False,
-                        style={"borderRadius": "8px", "minWidth": "150px"}
-                    ),
+                    html.Label("Mês/Ano", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                    dbc.Row([
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="filtro-mes-pgtos",
+                                options=MESES,
+                                value=mes_atual,
+                                clearable=False,
+                                style={"borderRadius": "8px"}
+                            ), width=6, className="pe-1"
+                        ),
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id="filtro-ano-pgtos",
+                                options=get_anos(),
+                                value=ano_atual,
+                                clearable=False,
+                                style={"borderRadius": "8px"}
+                            ), width=6, className="ps-1"
+                        )
+                    ])
                 ],
-                width=2
+                width=3
             ),
             dbc.Col(
-                [
-                    html.Label("Ano", className="fw-bold mb-1",
-                               style={"color": "var(--text-muted)", "fontSize": "13px"}),
-                    dcc.Dropdown(
-                        id="filtro-ano-pgtos",
-                        options=[
-                            {"label": str(ano), "value": ano} for ano in range(2023, ano_atual + 2)
-                        ],
-                        value=ano_atual,
-                        clearable=False,
-                        style={"borderRadius": "8px", "minWidth": "100px"}
-                    ),
-                ],
-                width=2
+                criar_filtro_data_range("pgtos"),
+                width=4
             ),
             # FILTRO DE FASE - MULTIPLA SELEÇÃO
             dbc.Col(
@@ -109,10 +80,10 @@ def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str
                         style={"borderRadius": "8px", "minWidth": "250px"}
                     ),
                 ],
-                width=4
+                width=5
             ),
         ],
-        className="mb-3 align-items-end"
+        className="mb-4 align-items-start"
     )
 
     # Seletor de banco — só aparece para ADM

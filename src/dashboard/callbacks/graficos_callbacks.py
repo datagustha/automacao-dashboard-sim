@@ -26,6 +26,7 @@ from src.services.analytics_service import (
     calcular_pagamentos_por_fase,
     calcular_performance_operador
 )
+from src.dashboard.components.filtros import aplicar_filtro_data, obter_mes_ano_do_range
 
 # ================================================================
 # DEFINIÇÃO DO retorno_vazio
@@ -102,19 +103,22 @@ def register_callbacks(app):
             Output('kpi-meta-barra', 'style'),
             Output('kpi-meta-percentual', 'children'),
             Output('kpi-pgtos-anterior', 'children'),
+            Output('badge-data-range', 'style'),
         ],
         [
             Input('url', 'pathname'),
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-texto-busca', 'value'),
-            Input('filtro-fase', 'value')
+            Input('filtro-fase', 'value'),
+            Input('filtro-data-range', 'start_date'),
+            Input('filtro-data-range', 'end_date')
         ],
         [
             State('login-success-store', 'data')
         ]
     )
-    def atualizar_dashboard(pathname, mes, ano, texto_busca, fase, dados_operador):
+    def atualizar_dashboard(pathname, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador):
         """
         CORRIGIDO: 
         - Removeu n_intervals (causava recarga desnecessária)
@@ -160,29 +164,27 @@ def register_callbacks(app):
         df['dtPgto'] = pd.to_datetime(df['dtPgto'])
         
         # ================================================================
-        # FILTROS DE MÊS E ANO
+        # FILTROS DE MÊS, ANO E DATA-RANGE
         # ================================================================
-        mes = int(mes) if mes else datetime.datetime.now().month
-        ano = int(ano) if ano else datetime.datetime.now().year
+        df_mes_atual, usando_range, label_periodo = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
         
-        if mes == 1:
+        # Lógica para mês anterior (se usando range, apenas usamos o mês/ano dos dropdowns como base)
+        mes_base = int(mes) if mes else datetime.datetime.now().month
+        ano_base = int(ano) if ano else datetime.datetime.now().year
+        
+        if mes_base == 1:
             mes_anterior = 12
-            ano_anterior = ano - 1
+            ano_anterior = ano_base - 1
         else:
-            mes_anterior = mes - 1
-            ano_anterior = ano
-        
-        df_mes_atual = df[
-            (df['dtPgto'].dt.month == mes) & 
-            (df['dtPgto'].dt.year == ano)
-        ].copy()
+            mes_anterior = mes_base - 1
+            ano_anterior = ano_base
         
         df_mes_anterior = df[
             (df['dtPgto'].dt.month == mes_anterior) & 
             (df['dtPgto'].dt.year == ano_anterior)
         ].copy()
         
-        log_debug(f"Registros no mês atual ({mes}/{ano}): {len(df_mes_atual)}")
+        log_debug(f"Registros no período selecionado ({label_periodo}): {len(df_mes_atual)}")
         log_debug(f"Registros no mês anterior ({mes_anterior}/{ano_anterior}): {len(df_mes_anterior)}")
         
         # ================================================================
@@ -267,10 +269,12 @@ def register_callbacks(app):
         meta_valor = 0.0
 
         if metas:
+            # Pega o mês/ano atual para metas, respeitando o range
+            mes_meta, ano_meta = obter_mes_ano_do_range(data_inicio, data_fim) or (int(mes) if mes else datetime.datetime.now().month, int(ano) if ano else datetime.datetime.now().year)
             for meta in metas:
                 data_meta = meta.get('data')
                 if data_meta and hasattr(data_meta, 'year'):
-                    if data_meta.year == ano and data_meta.month == mes:
+                    if data_meta.year == ano_meta and data_meta.month == mes_meta:
                         meta_valor = meta.get('meta100', 0)
                         break
 
@@ -339,7 +343,7 @@ def register_callbacks(app):
                 margin=dict(b=40, t=50, l=60, r=40)  # Margens consistentes
             )
             
-            figura_evolucao = aplicar_estilo_padrao(figura_evolucao, f"Evolução Diária - {mes}/{ano}", 400)
+            figura_evolucao = aplicar_estilo_padrao(figura_evolucao, f"Evolução Diária - {label_periodo}", 400)
         else:
             figura_evolucao = fig_blank
 
@@ -436,7 +440,10 @@ def register_callbacks(app):
         dados_tabela = df_tabela.to_dict('records')
         colunas_tabela = [{"name": i, "id": i} for i in df_tabela.columns]
         
-        log_debug(f"✅ FINALIZADO - {total} pagamentos | Banco: {banco} | Mês: {mes}/{ano}")
+        log_debug(f"✅ FINALIZADO - {total} pagamentos | Banco: {banco} | Período: {label_periodo}")
+        
+        # Badge de status para mostrar quando data range está ativo
+        badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
         
         return (
             txt_faturamento,
@@ -451,6 +458,7 @@ def register_callbacks(app):
             estilo_barra,
             f"{percentual_meta:.1f}% da meta",
             txt_pgtos_anterior,
+            badge_style,
         )
 
     # ================================================================
@@ -464,11 +472,13 @@ def register_callbacks(app):
         ],
         [
             Input('filtro-mes', 'value'),
-            Input('filtro-ano', 'value')
+            Input('filtro-ano', 'value'),
+            Input('filtro-data-range', 'start_date'),
+            Input('filtro-data-range', 'end_date')
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_tabela_performance(mes, ano, dados_operador):
+    def atualizar_tabela_performance(mes, ano, data_inicio, data_fim, dados_operador):
         """Atualiza tabela de performance com os filtros corretos"""
         
         if not dados_operador:
@@ -489,14 +499,22 @@ def register_callbacks(app):
         if not pagamentos:
             return [], [{"name": "Sem dados", "id": "sem_dados"}], ""
         
-        mes = int(mes) if mes else datetime.datetime.now().month
-        ano = int(ano) if ano else datetime.datetime.now().year
+        # Para performance, precisamos de um mês/ano base para metas e dias úteis
+        mes_calc, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else datetime.datetime.now().month,
+            int(ano) if ano else datetime.datetime.now().year
+        )
+        
+        # Filtra pagamentos para o cálculo de performance (que não tem start/end date parametrizado ainda,
+        # mas como estamos passando os pagamentos já buscados, a função de performance vai filtrar pelo mes_calc)
+        # Idealmente performance deveria aceitar o df já filtrado, mas a função calcular_performance_operador
+        # filtra internamente por mês/ano. Então se usamos range, a performance vai ser do mês do inicio do range.
         
         perf = calcular_performance_operador(
             pagamentos=pagamentos,
             metas=metas,
-            ano=ano,
-            mes=mes,
+            ano=ano_calc,
+            mes=mes_calc,
             login=login,
             banco=banco
         )

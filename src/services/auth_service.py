@@ -411,7 +411,7 @@ def validar_token_2fa(login: str, token_digitado: str) -> dict:
                     'mensagem': 'Muitas tentativas. Solicite um novo código.'
                 }
             
-            if token.codigo == token_digitado:
+            if str(token.codigo).strip() == str(token_digitado).strip():
                 token.usado = True
                 session.commit()
                 return {

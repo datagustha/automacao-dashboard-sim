@@ -15,6 +15,7 @@ from dash.exceptions import PreventUpdate
 
 from src.services.db_service import buscar_pagamentos_todos_operadores_por_banco, buscar_todos_operadores_por_banco
 from src.services.analytics_service import calcular_performance_operador
+from src.dashboard.components.filtros import aplicar_filtro_data, obter_mes_ano_do_range
 
 
 # ─── helpers de formatação ───────────────────────────────────────────────────
@@ -34,11 +35,13 @@ def _num(n):
 # =========================================================================
 # FUNÇÃO AUXILIAR PARA CRIAR GRÁFICO POR BANCO (DEFINIDA FORA DOS CALLBACKS)
 # =========================================================================
-def criar_grafico_por_banco(banco, mes, ano, filtro_atividade, operador_filtro, cor, nome_banco):
+def criar_grafico_por_banco(banco, mes, ano, data_inicio, data_fim, filtro_atividade, operador_filtro, cor, nome_banco):
     """Cria gráfico de evolução diária para um banco específico"""
     
-    mes_int = int(mes) if mes else pd.Timestamp.now().month
-    ano_int = int(ano) if ano else pd.Timestamp.now().year
+    mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+        int(mes) if mes else pd.Timestamp.now().month,
+        int(ano) if ano else pd.Timestamp.now().year
+    )
     
     dados = buscar_pagamentos_todos_operadores_por_banco(banco)
     if not dados:
@@ -87,10 +90,7 @@ def criar_grafico_por_banco(banco, mes, ano, filtro_atividade, operador_filtro, 
     df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
     df = df.dropna(subset=['dtPgto'])
     
-    df = df[
-        (df['dtPgto'].dt.month == mes_int) &
-        (df['dtPgto'].dt.year == ano_int)
-    ]
+    df, usando_range, label_periodo = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
     
     if banco == 'SEMEAR' and 'faseAtraso' in df.columns:
         df = df[df['faseAtraso'] != 'Fora da fase']
@@ -123,7 +123,7 @@ def criar_grafico_por_banco(banco, mes, ano, filtro_atividade, operador_filtro, 
     
     fig.update_layout(
         title=dict(
-            text=f"<b>Evolução Diária - {mes_int}/{ano_int}</b>",
+            text=f"<b>Evolução Diária - {label_periodo}</b>",
             font=dict(color='#111827', size=14),
             x=0,
             xanchor='left'
@@ -169,6 +169,7 @@ def register_callbacks(app):
             Output('tabela-adm-semear',        'columns'),
             Output('tabela-adm-agoracred',     'data'),
             Output('tabela-adm-agoracred',     'columns'),
+            Output('badge-data-range-adm',     'style'),
         ],
         [
             Input('intervalo-atualizacao-adm', 'n_intervals'),
@@ -177,21 +178,25 @@ def register_callbacks(app):
             Input('filtro-ano-adm', 'value'),
             Input('filtro-atividade-adm', 'value'),
             Input('filtro-operador-adm', 'value'),
+            Input('filtro-data-range-adm', 'start_date'),
+            Input('filtro-data-range-adm', 'end_date'),
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_dashboard_adm(n, pathname, mes, ano, filtro_atividade, operador_filtro, dados_operador):
+    def atualizar_dashboard_adm(n, pathname, mes, ano, filtro_atividade, operador_filtro, data_inicio, data_fim, dados_operador):
         """Consolida dados de todos os operadores de ambos os bancos, com filtro opcional por operador."""
         
         if pathname != '/dashboard' or not dados_operador:
-            return [dash.no_update] * 11
+            return [dash.no_update] * 12
             
         perfil = dados_operador.get('perfil', 'operador')
         if perfil != 'adm':
-            return [dash.no_update] * 11
+            return [dash.no_update] * 12
 
-        mes_int = int(mes) if mes else pd.Timestamp.now().month
-        ano_int = int(ano) if ano else pd.Timestamp.now().year
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else pd.Timestamp.now().month,
+            int(ano) if ano else pd.Timestamp.now().year
+        )
 
         if mes_int == 1:
             mes_ant, ano_ant = 12, ano_int - 1
@@ -257,10 +262,8 @@ def register_callbacks(app):
                 if banco == 'SEMEAR' and 'faseAtraso' in df.columns:
                     df = df[df['faseAtraso'] != 'Fora da fase']
 
-                df_atual = df[
-                    (df['dtPgto'].dt.month == mes_int) &
-                    (df['dtPgto'].dt.year  == ano_int)
-                ]
+                df_atual, usando_range, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+                
                 df_ant = df[
                     (df['dtPgto'].dt.month == mes_ant) &
                     (df['dtPgto'].dt.year  == ano_ant)
@@ -327,6 +330,9 @@ def register_callbacks(app):
         tickets_total = tickets_s + tickets_a
         ticket_medio  = tickets_total / ops_total if ops_total > 0 else 0.0
 
+        usando_range = True if data_inicio and data_fim else False
+        badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
+
         return (
             _brl(fat_s),
             f"Mês anterior: {_brl(fat_s_ant)}",
@@ -337,6 +343,7 @@ def register_callbacks(app):
             _brl(ticket_medio),
             dados_s, colunas,
             dados_a, colunas,
+            badge_style
         )
 
     # =========================================================================
@@ -349,12 +356,14 @@ def register_callbacks(app):
             Input('filtro-ano-adm', 'value'),
             Input('filtro-atividade-adm', 'value'),
             Input('filtro-operador-adm', 'value'),
+            Input('filtro-data-range-adm', 'start_date'),
+            Input('filtro-data-range-adm', 'end_date'),
             Input('intervalo-atualizacao-adm', 'n_intervals'),
         ]
     )
-    def atualizar_grafico_evolucao_semear(mes, ano, filtro_atividade, operador_filtro, n):
+    def atualizar_grafico_evolucao_semear(mes, ano, filtro_atividade, operador_filtro, data_inicio, data_fim, n):
         """Gráfico de evolução diária - SEMEAR"""
-        return criar_grafico_por_banco('SEMEAR', mes, ano, filtro_atividade, operador_filtro, '#7e3d97', 'SEMEAR')
+        return criar_grafico_por_banco('SEMEAR', mes, ano, data_inicio, data_fim, filtro_atividade, operador_filtro, '#7e3d97', 'SEMEAR')
 
     # =========================================================================
     # CALLBACK 3 — GRÁFICO DE EVOLUÇÃO DIÁRIA AGORACRED
@@ -366,12 +375,14 @@ def register_callbacks(app):
             Input('filtro-ano-adm', 'value'),
             Input('filtro-atividade-adm', 'value'),
             Input('filtro-operador-adm', 'value'),
+            Input('filtro-data-range-adm', 'start_date'),
+            Input('filtro-data-range-adm', 'end_date'),
             Input('intervalo-atualizacao-adm', 'n_intervals'),
         ]
     )
-    def atualizar_grafico_evolucao_agoracred(mes, ano, filtro_atividade, operador_filtro, n):
+    def atualizar_grafico_evolucao_agoracred(mes, ano, filtro_atividade, operador_filtro, data_inicio, data_fim, n):
         """Gráfico de evolução diária - AGORACRED"""
-        return criar_grafico_por_banco('AGORACRED', mes, ano, filtro_atividade, operador_filtro, '#10B981', 'AGORACRED')
+        return criar_grafico_por_banco('AGORACRED', mes, ano, data_inicio, data_fim, filtro_atividade, operador_filtro, '#10B981', 'AGORACRED')
 
     # =========================================================================
     # CALLBACK 4 — TABELA DE VALORES DIÁRIOS CONSOLIDADA
@@ -386,10 +397,12 @@ def register_callbacks(app):
             Input('filtro-ano-adm', 'value'),
             Input('filtro-atividade-adm', 'value'),
             Input('filtro-operador-adm', 'value'),
+            Input('filtro-data-range-adm', 'start_date'),
+            Input('filtro-data-range-adm', 'end_date'),
             Input('intervalo-atualizacao-adm', 'n_intervals'),
         ]
     )
-    def atualizar_tabela_evolucao_adm(mes, ano, filtro_atividade, operador_filtro, n):
+    def atualizar_tabela_evolucao_adm(mes, ano, filtro_atividade, operador_filtro, data_inicio, data_fim, n):
         """Tabela de valores diários: Dia | SEMEAR | AGORACRED | TOTAL"""
         
         mes_int = int(mes) if mes else pd.Timestamp.now().month
@@ -424,10 +437,7 @@ def register_callbacks(app):
             df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
             df = df.dropna(subset=['dtPgto'])
             
-            df = df[
-                (df['dtPgto'].dt.month == mes_int) &
-                (df['dtPgto'].dt.year == ano_int)
-            ]
+            df, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
             
             if banco == 'SEMEAR' and 'faseAtraso' in df.columns:
                 df = df[df['faseAtraso'] != 'Fora da fase']
@@ -488,34 +498,33 @@ def register_callbacks(app):
         [
             Input('filtro-mes-adm', 'value'),
             Input('filtro-ano-adm', 'value'),
+            Input('filtro-atividade-adm', 'value')
         ]
     )
-    def carregar_operadores_dashboard(mes, ano):
-        """Carrega TODOS os operadores para o filtro do dashboard ADM"""
+    def carregar_operadores_dashboard(mes, ano, atividade):
+        """Carrega operadores filtrando por atividade e retornando apenas o login"""
         
-        # Busca operadores de ambos os bancos usando a mesma função que funciona na página de operadores
         todos_operadores = []
         
-        # Busca operadores SEMEAR
         try:
-            operadores_semear = buscar_todos_operadores_por_banco('SEMEAR')
-            if operadores_semear:
-                todos_operadores.extend(operadores_semear)
-        except Exception as e:
-            print(f"[ERRO] ao buscar operadores SEMEAR: {e}")
+            op_semear = buscar_todos_operadores_por_banco('SEMEAR')
+            if op_semear: todos_operadores.extend(op_semear)
+        except Exception:
+            pass
         
-        # Busca operadores AGORACRED
         try:
-            operadores_agoracred = buscar_todos_operadores_por_banco('AGORACRED')
-            if operadores_agoracred:
-                todos_operadores.extend(operadores_agoracred)
-        except Exception as e:
-            print(f"[ERRO] ao buscar operadores AGORACRED: {e}")
+            op_agoracred = buscar_todos_operadores_por_banco('AGORACRED')
+            if op_agoracred: todos_operadores.extend(op_agoracred)
+        except Exception:
+            pass
         
         if not todos_operadores:
             return [{"label": "📊 Todos os Operadores", "value": "TODOS"}]
         
-        # Remove duplicatas por login
+        # Filtro de Atividade
+        if atividade == "ATIVO":
+            todos_operadores = [op for op in todos_operadores if op.get('atividade') == 'ativo']
+            
         logins_vistos = set()
         operadores_unicos = []
         for op in todos_operadores:
@@ -524,17 +533,15 @@ def register_callbacks(app):
                 logins_vistos.add(login)
                 operadores_unicos.append(op)
         
-        # Ordena por nome
-        operadores_unicos.sort(key=lambda x: x.get('nome', x.get('login', '')))
+        # Ordena por login já que vamos exibir só o login
+        operadores_unicos.sort(key=lambda x: x.get('login', ''))
         
         opcoes = [{"label": "📊 Todos os Operadores", "value": "TODOS"}]
         for op in operadores_unicos:
             login = op.get('login')
-            nome = op.get('nome', login)
             if login:
-                opcoes.append({"label": f"{nome} ({login})", "value": login})
+                opcoes.append({"label": login, "value": login})
         
-        print(f"[DEBUG] Total de operadores carregados: {len(opcoes)-1}")
         return opcoes
 
     # =========================================================================
@@ -556,9 +563,9 @@ def register_callbacks(app):
         if atividade == "ativo":
             operadores = [op for op in operadores if op.get('atividade') == 'ativo']
             
-        opcoes = [{"label": "🌟 Todos os Operadores (Consolidado)", "value": "TODOS"}]
+        opcoes = [{"label": "🌟 Todos", "value": "TODOS"}]
         opcoes.extend(
-            [{"label": f"{op['nome']} ({op['login']})", "value": op['login']} for op in operadores if op.get('login')]
+            [{"label": op['login'], "value": op['login']} for op in operadores if op.get('login')]
         )
         return opcoes
 

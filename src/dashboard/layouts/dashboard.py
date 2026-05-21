@@ -15,34 +15,11 @@ from src.dashboard.components.cards import card_indicador, card_meta
 from src.dashboard.components.tabelas import container_grafico, container_tabela, container_tabela_cheia
 from src.dashboard.components.graficos import grafico_barras_fase, grafico_evolucao_diaria
 
-anos = [{"label": str(ano), "value": ano} for ano in range(2020, date.today().year + 2)]
-meses = [
-    {"label": "Janeiro", "value": 1}, {"label": "Fevereiro", "value": 2}, {"label": "Março", "value": 3},
-    {"label": "Abril", "value": 4}, {"label": "Maio", "value": 5}, {"label": "Junho", "value": 6},
-    {"label": "Julho", "value": 7}, {"label": "Agosto", "value": 8}, {"label": "Setembro", "value": 9},
-    {"label": "Outubro", "value": 10}, {"label": "Novembro", "value": 11}, {"label": "Dezembro", "value": 12}
-]
+from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos, OPCOES_FASES
 
-# ================================================================
-# LISTA COMPLETA DE FASES EM ORDEM PARA O FILTRO DO DASHBOARD
-# ================================================================
-OPCOES_FASES_DASHBOARD = [
-    {"label": "📊 Todas as fases", "value": "todas"},
-    {"label": "📈 Fase 10 a 30", "value": "Fase 10 a 30"},
-    {"label": "📈 Fase 31 a 60", "value": "Fase 31 a 60"},
-    {"label": "📈 Fase 61 a 90", "value": "Fase 61 a 90"},
-    {"label": "📈 Fase 91 a 120", "value": "Fase 91 a 120"},
-    {"label": "📈 Fase 121 a 180", "value": "Fase 121 a 180"},
-    {"label": "📈 Fase 181 a 240", "value": "Fase 181 a 240"},
-    {"label": "📈 Fase 241 a 360", "value": "Fase 241 a 360"},
-    {"label": "📈 Fase 361 a 720", "value": "Fase 361 a 720"},
-    {"label": "📈 Fase 721 a 1080", "value": "Fase 721 a 1080"},
-    {"label": "📈 Fase 1081 a 1440", "value": "Fase 1081 a 1440"},
-    {"label": "📈 Fase 1081 a 1800", "value": "Fase 1081 a 1800"},
-    {"label": "📈 Fase 1441 a 1800", "value": "Fase 1441 a 1800"},
-    {"label": "📈 Fase 1801 a 9999", "value": "Fase 1801 a 9999"},
-    {"label": "🚫 Fora da fase", "value": "Fora da fase"},
-]
+# Usaremos get_anos() no layout para ter anos atualizados
+meses = MESES
+OPCOES_FASES_DASHBOARD = OPCOES_FASES
 
 def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str = "SEMEAR"):
     """
@@ -66,36 +43,54 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             dbc.Row(
                 [
                     dbc.Col(
-                        dbc.InputGroup([
-                            dbc.InputGroupText(DashIconify(icon="lucide:search", width=18, color="var(--text-muted)"), style={"backgroundColor": "white", "borderRight": "none"}),
-                            dbc.Input(id='filtro-texto-busca', type='text', placeholder="Procurar contrato / cliente...", style={"borderLeft": "none"})
-                        ], className="shadow-sm mb-4", style={"borderRadius": "8px"}),
-                        width=4
+                        [
+                            html.Label("Busca", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.InputGroup([
+                                dbc.InputGroupText(DashIconify(icon="lucide:search", width=18, color="var(--text-muted)"), style={"backgroundColor": "white", "borderRight": "none"}),
+                                dbc.Input(id='filtro-texto-busca', type='text', placeholder="Procurar contrato / cliente...", style={"borderLeft": "none"})
+                            ], className="shadow-sm", style={"borderRadius": "8px"})
+                        ],
+                        width=12, md=3, className="mb-4"
                     ),
                     # FILTRO DE FASE - MULTIPLA SELEÇÃO (visível só para SEMEAR)
                     dbc.Col(
-                        dcc.Dropdown(
-                            id="filtro-fase",
-                            options=OPCOES_FASES_DASHBOARD,
-                            value=["todas"],
-                            multi=True,
-                            clearable=True,
-                            placeholder="Selecione uma ou mais fases...",
-                            className="shadow-sm mb-4",
-                            style={"borderRadius": "8px", **fase_style}
-                        ),
-                        width=4,
-                        style=fase_style
+                        [
+                            html.Label("Fase", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dcc.Dropdown(
+                                id="filtro-fase",
+                                options=OPCOES_FASES_DASHBOARD,
+                                value=["todas"],
+                                multi=True,
+                                clearable=True,
+                                placeholder="Selecione fases...",
+                                className="shadow-sm",
+                                style={"borderRadius": "8px", **fase_style}
+                            )
+                        ],
+                        width=12, md=2,
+                        style=fase_style,
+                        className="mb-4"
                     ),
+                    # FILTRO DE MÊS/ANO
                     dbc.Col(
-                        dbc.Select(id="filtro-mes", options=meses, value=datetime.today().month, className="shadow-sm mb-4", style={"borderRadius": "8px"}),
-                        width=2
+                        [
+                            html.Label("Mês/Ano", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Row([
+                                dbc.Col(dbc.Select(id="filtro-mes", options=meses, value=datetime.today().month, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="pe-1"),
+                                dbc.Col(dbc.Select(id="filtro-ano", options=get_anos(), value=datetime.today().year, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="ps-1"),
+                            ])
+                        ],
+                        width=12, md=3,
+                        className="mb-4"
                     ),
+                    # FILTRO DE DATA RANGE
                     dbc.Col(
-                        dbc.Select(id="filtro-ano", options=anos, value=datetime.today().year, className="shadow-sm mb-4", style={"borderRadius": "8px"}),
-                        width=2
+                        criar_filtro_data_range(""),
+                        width=12, md=4,
+                        className="mb-4"
                     )
-                ]
+                ],
+                className="align-items-start"
             ),
             
             # === KPIs ===

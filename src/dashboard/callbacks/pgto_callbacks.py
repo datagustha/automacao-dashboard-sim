@@ -17,6 +17,7 @@ from src.services.db_service import (
     Buscar_pagamento_por_operador,
     buscar_pagamentos_todos_operadores_por_banco
 )
+from src.dashboard.components.filtros import aplicar_filtro_data
 
 def register_callbacks(app):
     
@@ -24,6 +25,7 @@ def register_callbacks(app):
         [
             Output('tabela-pagamentos-completa', 'data'),
             Output('tabela-pagamentos-completa', 'columns'),
+            Output('badge-data-range-pgtos', 'style')
         ],
         [
             Input('intervalo-atualizacao-pgtos', 'n_intervals'),
@@ -34,27 +36,29 @@ def register_callbacks(app):
             Input('filtro-texto-pgtos-completo', 'value'),
             Input('banco-selecionado-pgtos', 'value'),
             Input('adm-filtro-atividade-pgtos', 'value'),
+            Input('filtro-data-range-pgtos', 'start_date'),
+            Input('filtro-data-range-pgtos', 'end_date'),
         ],
         [
             State('login-success-store', 'data')
         ]
     )
     def atualizar_tabela_mestra(n_intervals, pathname, mes, ano, fases_selecionadas, texto_busca, 
-                                 banco_escolhido, atividade_escolhida, dados_operador):
+                                 banco_escolhido, atividade_escolhida, data_inicio, data_fim, dados_operador):
         """
         CORRIGIDO: 
-        - Agora filtra por MÊS e ANO
+        - Agora filtra por MÊS e ANO ou RANGE
         - Filtro de FASE com multi-select (lista)
         - Operador vê APENAS seus pagamentos do mês
         - Admin vê todos do banco no mês
         """
         
         if pathname != '/pagamentos' or not dados_operador:
-            return no_update, no_update
+            return no_update, no_update, no_update
         
         login = dados_operador.get('login')
         if not login:
-            return [], []
+            return [], [], {"display": "none"}
 
         perfil = dados_operador.get('perfil', 'operador')
         banco_usuario = dados_operador.get('banco', 'SEMEAR')
@@ -87,12 +91,12 @@ def register_callbacks(app):
             # OPERADOR: Busca apenas seus pagamentos
             operador = Buscar_login(login)
             if not operador:
-                return [], []
+                return [], [], {"display": "none"}
             pagamentos_brutos = Buscar_pagamento_por_operador(operador)
 
         if not pagamentos_brutos:
             print(f"[PAGAMENTOS] Nenhum pagamento encontrado")
-            return [], []
+            return [], [], {"display": "none"}
 
         # ── CONVERTE PARA DATAFRAME ─────────────────────────────────────────
         df = pd.DataFrame(pagamentos_brutos)
@@ -102,16 +106,13 @@ def register_callbacks(app):
             df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
             df = df.dropna(subset=['dtPgto'])
             
-            # FILTRO POR MÊS/ANO
-            df = df[
-                (df['dtPgto'].dt.month == mes) & 
-                (df['dtPgto'].dt.year == ano)
-            ]
-            print(f"[PAGAMENTOS] Após filtro de mês/ano: {len(df)} registros")
+            # FILTRO POR MÊS/ANO OU RANGE
+            df, usando_range, label_periodo = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+            print(f"[PAGAMENTOS] Após filtro de datas: {len(df)} registros")
         
         if df.empty:
-            print(f"[PAGAMENTOS] Sem dados para {mes}/{ano}")
-            return [], []
+            print(f"[PAGAMENTOS] Sem dados para o período")
+            return [], [], {"display": "none"}
         
         # ── FILTRO DE FASE (multi-select) ──────────────────────────────────
         banco_atual = banco_escolhido if perfil == 'adm' else banco_usuario
@@ -140,7 +141,7 @@ def register_callbacks(app):
             print(f"[PAGAMENTOS] Após filtro de texto: {len(df)} registros")
             
         if df.empty:
-            return [], []
+            return [], [], {"display": "none"}
 
         # ── PREPARA TABELA PARA EXIBIÇÃO ───────────────────────────────────
         # Define colunas visíveis
@@ -185,6 +186,7 @@ def register_callbacks(app):
         
         dados_tabela = df_tabela.to_dict('records')
         colunas_tabela = [{"name": i, "id": i} for i in df_tabela.columns]
+        badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
 
         print(f"[PAGAMENTOS] ✅ Finalizado - {len(dados_tabela)} pagamentos exibidos")
-        return dados_tabela, colunas_tabela
+        return dados_tabela, colunas_tabela, badge_style

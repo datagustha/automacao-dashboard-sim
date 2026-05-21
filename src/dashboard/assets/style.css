@@ -186,3 +186,59 @@ body {
         font-size: 0.7rem;
     }
 }
+
+/* ================================================================
+   ESTILOS PARA O FILTRO DE DATAS (DatePickerRange)
+   ================================================================ */
+.filtro-data-range-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.dash-date-range {
+    margin-top: 2px;
+}
+
+.dash-date-range .DateRangePickerInput {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    overflow: hidden;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.dash-date-range .DateInput {
+    width: 50%;
+    background: transparent;
+}
+
+.dash-date-range .DateInput_input {
+    font-size: 14px;
+    padding: 7px 12px; /* Reduzido para equiparar altura com dbc.Select */
+    color: var(--text-main);
+    width: 100%;
+    text-align: center;
+}
+
+.dash-date-range .DateRangePickerInput_arrow {
+    padding: 0 4px;
+    color: #6B7280;
+}
+
+.dash-date-range .DateInput_input__focused {
+    border-bottom: 2px solid var(--purple-main);
+}
+
+.badge-data-range-ativo {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--purple-light);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-top: 4px;
+    font-weight: 500;
+}

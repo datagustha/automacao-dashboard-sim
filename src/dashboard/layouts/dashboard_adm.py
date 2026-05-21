@@ -17,15 +17,8 @@ from src.dashboard.components.menus import get_sidebar, get_header
 from src.dashboard.components.cards import card_indicador
 from src.dashboard.components.tabelas import container_tabela_cheia
 
-anos  = [{"label": str(ano), "value": ano} for ano in range(2020, date.today().year + 2)]
-meses = [
-    {"label": "Janeiro",   "value": 1},  {"label": "Fevereiro", "value": 2},
-    {"label": "Março",     "value": 3},  {"label": "Abril",     "value": 4},
-    {"label": "Maio",      "value": 5},  {"label": "Junho",     "value": 6},
-    {"label": "Julho",     "value": 7},  {"label": "Agosto",    "value": 8},
-    {"label": "Setembro",  "value": 9},  {"label": "Outubro",   "value": 10},
-    {"label": "Novembro",  "value": 11}, {"label": "Dezembro",  "value": 12},
-]
+from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos
+meses = MESES
 
 
 def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
@@ -42,31 +35,17 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                 [
                     dbc.Col(
                         [
-                            html.Label("Mês", className="fw-bold mb-1",
-                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
-                            dbc.Select(
-                                id="filtro-mes-adm",
-                                options=meses,
-                                value=datetime.today().month,
-                                className="shadow-sm",
-                                style={"borderRadius": "8px"}
-                            ),
+                            html.Label("Mês/Ano", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.Row([
+                                dbc.Col(dbc.Select(id="filtro-mes-adm", options=meses, value=datetime.today().month, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="pe-1"),
+                                dbc.Col(dbc.Select(id="filtro-ano-adm", options=get_anos(), value=datetime.today().year, className="shadow-sm", style={"borderRadius": "8px"}), width=6, className="ps-1"),
+                            ])
                         ],
-                        width=2
+                        width=3
                     ),
                     dbc.Col(
-                        [
-                            html.Label("Ano", className="fw-bold mb-1",
-                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
-                            dbc.Select(
-                                id="filtro-ano-adm",
-                                options=anos,
-                                value=datetime.today().year,
-                                className="shadow-sm",
-                                style={"borderRadius": "8px"}
-                            ),
-                        ],
-                        width=2
+                        criar_filtro_data_range("adm"),
+                        width=4
                     ),
                     dbc.Col(
                         [
@@ -83,7 +62,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                                 style={"borderRadius": "8px"}
                             ),
                         ],
-                        width=3
+                        width=2
                     ),
                     dbc.Col(
                         [
@@ -98,10 +77,10 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                                 style={"borderRadius": "8px"}
                             ),
                         ],
-                        width=4
+                        width=3
                     ),
                 ],
-                className="mb-4 align-items-end"
+                className="mb-4 align-items-start"
             ),
 
             # ── Cards globais do grupo ──────────────────────────────────

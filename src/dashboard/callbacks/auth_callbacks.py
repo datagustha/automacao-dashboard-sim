@@ -5,6 +5,13 @@ Gerencia todo o fluxo de autenticação:
   - Callback 1: Roteador de páginas (decide qual layout renderizar)
   - Callback 2: Fluxo de login completo (login → senha → 2FA → dashboard)
   - Callback 3: Logout completo (limpa Stores + redireciona)
+
+🔧 CORREÇÃO APLICADA:
+  - Bug: step_store resetava para 'login' quando o login do store estava em
+    caixa diferente do login digitado, derrubando o fluxo 2FA mesmo com
+    código correto.
+  - Fix: comparação agora é case-insensitive (.upper().strip()) na linha
+    que verifica se o login mudou.
 """
 
 import dash
@@ -37,9 +44,6 @@ def register_callbacks(app):
     Registra todos os callbacks de autenticação no aplicativo Dash.
     """
 
-    # ================================================================
-    # CALLBACK 1: ROTEADOR DE PÁGINAS (render_page)
-    # ================================================================
     # ================================================================
     # CALLBACK 1: ROTEADOR DE PÁGINAS (render_page)
     # ================================================================
@@ -244,8 +248,10 @@ def register_callbacks(app):
         
         # ============================================================
         # RESETAR STEP SE FOR UM NOVO LOGIN
+        # 🔧 CORREÇÃO: comparação case-insensitive para não resetar o
+        #    fluxo 2FA quando o login vier com capitalização diferente.
         # ============================================================
-        if step_store and step_store.get('login') != login:
+        if step_store and step_store.get('login', '').upper().strip() != login:
             step_store = {'step': 'login'}
         
         # Garante que step_store tem valor padrão
@@ -319,7 +325,6 @@ def register_callbacks(app):
                     # Envia por email
                     email = obter_email_operador(login)
                     if email:
-                        # Você precisa criar esta função no email_service.py
                         enviar_token_2fa_email(email, login, token_2fa)
                     
                     return (dash.no_update, "", f"📱 Código 2FA enviado para seu e-mail!",
