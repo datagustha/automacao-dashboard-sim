@@ -7,10 +7,11 @@ LOCAL: src/services/
 """
 
 import pandas as pd
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from datetime import datetime, date
 import calendar
 import holidays
+from dateutil.relativedelta import relativedelta
 
 
 # ================================================================
@@ -26,29 +27,37 @@ def _extrair_valor(pagamento, campo: str):
 
 
 def _contar_dias_uteis(ano, mes, data_referencia: datetime = None):
-    """Calcula quantos dias úteis no mês e quantos já passaram."""
+    """Calcula quantos dias úteis no mês e quantos já passaram.
+    Inclui Corpus Christi (feriado facultativo/estadual — 60 dias após a Páscoa).
+    """
+    from dateutil.easter import easter
+
     ano = int(ano)
     mes = int(mes)
-    
+
     total_dias = calendar.monthrange(ano, mes)[1]
-    
+
     feriados_br = holidays.country_holidays('BR', years=ano)
-    
+    # Corpus Christi: não incluso na lib como feriado nacional, mas amplamente observado
+    from datetime import timedelta as _td
+    corpus_christi = easter(ano) + _td(days=60)
+    feriados_br.update({corpus_christi: "Corpus Christi"})
+
     dias_uteis = []
     for dia in range(1, total_dias + 1):
         data_atual = date(ano, mes, dia)
         if data_atual.weekday() < 5 and data_atual not in feriados_br:
             dias_uteis.append(dia)
-    
+
     total_dias_uteis = len(dias_uteis)
-    
+
     if data_referencia:
         dias_uteis_passados = 0
         for dia in dias_uteis:
             if dia <= data_referencia.day:
                 dias_uteis_passados += 1
         return total_dias_uteis, dias_uteis_passados
-    
+
     return total_dias_uteis, total_dias_uteis
 
 
@@ -349,3 +358,232 @@ def calcular_performance_todos_operadores(
         df = df.sort_values('faturamento', ascending=False)
     
     return df
+
+
+# ================================================================
+# 6. TEMPO DE CASA
+# ================================================================
+
+def calcular_tempo_de_casa(admissao) -> str:
+    # Se a admissao for vazia ou nula, retorna formato padrao zerado
+    if not admissao:
+        # Retorna o texto indicando zero de tempo de casa
+        return "0 anos, 0 meses, 0 dias"
+
+    try:
+        # Importa timedelta para manipulação de intervalo de dias
+        from datetime import timedelta
+        # Inicializa a variável que armazenará a data de admissão convertida
+        admissao_dt = None
+        
+        # Se a admissão fornecida for do tipo string (texto)
+        if isinstance(admissao, str):
+            # Remove horas e espacos extras se houver (por exemplo, '2024-03-15 00:00:00' vira '2024-03-15')
+            admissao_limpa = admissao.split(" ")[0].strip()
+            # Loop pelos formatos de data suportados para conversao
+            for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%Y/%m/%d', '%Y-%m-%dT%H:%M:%S'):
+                try:
+                    # Tenta converter a string de admissão limpa no formato atual
+                    admissao_dt = datetime.strptime(admissao_limpa, fmt).date()
+                    # Se converter com sucesso, interrompe o loop
+                    break
+                except ValueError:
+                    # Se der erro de formato, continua testando o próximo formato do loop
+                    continue
+            else:
+                # Se nenhum formato der certo, tenta converter usando o método genérico do pandas
+                admissao_dt = pd.to_datetime(admissao).date()
+        # Se o objeto de admissão já tiver o método .date() (tipo datetime do python)
+        elif hasattr(admissao, 'date'):
+            # Converte e extrai apenas a parte da data
+            admissao_dt = admissao.date()
+        # Se o objeto já for do tipo date diretamente
+        elif isinstance(admissao, date):
+            # Atribui diretamente a data de admissão
+            admissao_dt = admissao
+        else:
+            # Caso o tipo não seja suportado, retorna formato zerado padrão
+            return "0 anos, 0 meses, 0 dias"
+
+        # Obtém a data atual do sistema (hoje)
+        hoje = date.today()
+        # Calcula a data de hoje inclusiva (hoje + 1 dia) para incluir o dia de admissão e o dia atual
+        hoje_inclusive = hoje + timedelta(days=1)
+        # Calcula a diferença detalhada usando o relativedelta
+        delta = relativedelta(hoje_inclusive, admissao_dt)
+
+        # Formata a string de retorno estritamente no formato requisitado: X anos, Y meses, Z dias
+        return f"{delta.years} anos, {delta.months} meses, {delta.days} dias"
+
+    except Exception as e:
+        # Imprime o erro no console de debug do sistema
+        print(f"[ERRO] calcular_tempo_de_casa: {e}")
+        # Retorna o formato zerado padrão em caso de exceção no cálculo
+        return "0 anos, 0 meses, 0 dias"
+
+
+
+# ================================================================
+# 7. VISÃO POR SEMANA
+# ================================================================
+
+def calcular_semanas_do_mes(
+    pagamentos: List[Any],
+    ano: int,
+    mes: int,
+    banco: str = "SEMEAR"
+) -> List[Dict]:
+    """
+    Agrupa o faturamento por semana do mês.
+
+    REGRAS:
+    - Semana 1: dias 01–07, Semana 2: 08–14, Semana 3: 15–21, Semana 4: 22–28,
+      Semana 5: 29 até fim do mês (quando houver)
+    - Exclui "Fora da fase" para SEMEAR
+    - Retorna lista de dicts prontos para DataTable do Dash
+    """
+    if not pagamentos:
+        return []
+
+    df = pd.DataFrame(pagamentos)
+    if df.empty or 'dtPgto' not in df.columns or 'valorTotal' not in df.columns:
+        return []
+
+    df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
+    df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
+    df = df.dropna(subset=['dtPgto'])
+
+    # Filtra mês/ano
+    df = df[(df['dtPgto'].dt.month == mes) & (df['dtPgto'].dt.year == ano)]
+
+    # Remove "Fora da fase" para SEMEAR
+    if banco == "SEMEAR" and 'faseAtraso' in df.columns:
+        df = df[df['faseAtraso'] != 'Fora da fase']
+
+    if df.empty:
+        return []
+
+    ultimo_dia_mes = calendar.monthrange(ano, mes)[1]
+
+    # Define faixas de semanas (calendário fixo)
+    faixas = [
+        (1,  7),
+        (8,  14),
+        (15, 21),
+        (22, 28),
+        (29, ultimo_dia_mes),
+    ]
+
+    resultado = []
+    for num, (inicio, fim) in enumerate(faixas, start=1):
+        if inicio > ultimo_dia_mes:
+            break
+
+        fim_real = min(fim, ultimo_dia_mes)
+        mascara = (df['dtPgto'].dt.day >= inicio) & (df['dtPgto'].dt.day <= fim_real)
+        faturamento = float(df.loc[mascara, 'valorTotal'].sum())
+
+        periodo = (
+            f"{inicio:02d}/{mes:02d} a {fim_real:02d}/{mes:02d}"
+        )
+
+        resultado.append({
+            'semana': f"Semana {num}",
+            'periodo': periodo,
+            'faturamento_raw': faturamento,
+            'faturamento': (
+                f"R$ {faturamento:,.2f}"
+                .replace(",", "X").replace(".", ",").replace("X", ".")
+            ),
+        })
+
+    return resultado
+
+
+# ================================================================
+# 8. META DIÁRIA POR DIA (para a tabela Dia a Dia enriquecida)
+# ================================================================
+
+def calcular_meta_diaria_por_dia(
+    pagamentos: List[Any],
+    metas: List[Any],
+    ano: int,
+    mes: int,
+    banco: str = "SEMEAR"
+) -> List[Dict]:
+    """
+    Retorna lista com faturamento de cada dia do mês e indica se a meta
+    diária foi atingida.
+
+    REGRAS:
+    - Meta diária = meta100 do mês / total de dias úteis do mês
+    - Exclui "Fora da fase" para SEMEAR
+    - Só inclui dias que tiveram pagamento
+    - Retorna dicts prontos para DataTable
+    """
+    if not pagamentos:
+        return []
+
+    df = pd.DataFrame(pagamentos)
+    if df.empty or 'dtPgto' not in df.columns or 'valorTotal' not in df.columns:
+        return []
+
+    df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
+    df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
+    df = df.dropna(subset=['dtPgto'])
+
+    # Filtra mês/ano
+    df = df[(df['dtPgto'].dt.month == mes) & (df['dtPgto'].dt.year == ano)]
+
+    # Remove "Fora da fase" para SEMEAR
+    if banco == "SEMEAR" and 'faseAtraso' in df.columns:
+        df = df[df['faseAtraso'] != 'Fora da fase']
+
+    if df.empty:
+        return []
+
+    # Busca meta do mês
+    meta_total = buscar_meta_do_mes(metas, ano, mes) if metas else 0.0
+
+    # Calcula total de dias úteis do mês
+    from dateutil.easter import easter
+    feriados_br = holidays.country_holidays('BR', years=ano)
+    from datetime import timedelta as _td
+    corpus_christi = easter(ano) + _td(days=60)
+    feriados_br.update({corpus_christi: "Corpus Christi"})
+    total_dias_mes = calendar.monthrange(ano, mes)[1]
+    dias_uteis = [
+        d for d in range(1, total_dias_mes + 1)
+        if date(ano, mes, d).weekday() < 5 and date(ano, mes, d) not in feriados_br
+    ]
+    total_du = len(dias_uteis)
+    meta_diaria = meta_total / total_du if total_du > 0 and meta_total > 0 else 0.0
+
+    # Agrupa por dia
+    df['dia'] = df['dtPgto'].dt.day
+    por_dia = df.groupby('dia')['valorTotal'].sum().reset_index()
+    por_dia = por_dia.sort_values('dia')
+
+    resultado = []
+    for _, row in por_dia.iterrows():
+        fat = float(row['valorTotal'])
+        bateu = fat >= meta_diaria if meta_diaria > 0 else None
+
+        resultado.append({
+            'dia': int(row['dia']),
+            'realizado': (
+                f"R$ {fat:,.2f}"
+                .replace(",", "X").replace(".", ",").replace("X", ".")
+            ),
+            'meta_diaria': (
+                f"R$ {meta_diaria:,.2f}"
+                .replace(",", "X").replace(".", ",").replace("X", ".")
+                if meta_diaria > 0 else "—"
+            ),
+            'meta_batida': (
+                "✅ Sim" if bateu is True
+                else ("❌ Não" if bateu is False else "—")
+            ),
+        })
+
+    return resultado

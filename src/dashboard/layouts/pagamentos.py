@@ -17,7 +17,7 @@ from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get
 # Usaremos o OPCOES_FASES_PGTOS
 OPCOES_FASES = OPCOES_FASES_PGTOS
 
-def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str = 'operador'):
+def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str = 'operador', admissao: str = None):
     """
     Constrói o layout de pagamentos.
     
@@ -25,6 +25,7 @@ def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str
         nome_usuario: Nome do usuário logado
         imagem_url: URL da foto
         perfil: 'adm' ou 'operador' — ADM tem seletor de banco
+        admissao: Data de admissão do usuário logado
     """
     sidebar = get_sidebar("pagamentos", perfil=perfil)
 
@@ -134,9 +135,11 @@ def get_pagamentos_layout(nome_usuario: str, imagem_url: str = None, perfil: str
         ]
     )
 
+    # Bloco de conteudo principal da pagina de listagem de pagamentos
     conteudo = html.Div(
         [
-            get_header(nome_usuario, imagem_url, "📋 Controle Geral de Pagamentos"),
+            # Renderiza o header superior com o tempo de casa e o perfil correto do usuario logado
+            get_header(nome_usuario, imagem_url, "📋 Controle Geral de Pagamentos", admissao=admissao, perfil=perfil),
 
             # Filtros de data e fase
             filtros_data,

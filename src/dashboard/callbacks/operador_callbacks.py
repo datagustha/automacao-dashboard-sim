@@ -2,553 +2,818 @@
 CALLBACKS DA TELA DE DETALHE DO OPERADOR
 =========================================
 Gerencia as tabelas e gráficos do operador.
+
+CORREÇÕES:
+- tabela-unificada: dados reais do dia a dia com meta diária
+- tabela-mes-mes: linha TOTAL com fundo roxo via style_data_conditional
+- Filtro de atividade corrigido (lowercase)
+- Meta diária calculada: meta_mensal / total_dias_úteis
 """
 
 from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc
+from dash import html
 import pandas as pd
 import plotly.express as px
 import calendar
 from datetime import datetime, date
 import holidays
 
-from src.services.db_service import Buscar_login, Buscar_pagamento_por_operador, buscar_metas_por_operador
-from src.services.analytics_service import calcular_performance_operador
+from src.services.db_service import Buscar_pagamento_por_operador, buscar_metas_por_operador
+from src.services.analytics_service import (
+    calcular_performance_operador,
+    calcular_tempo_de_casa,
+    calcular_semanas_do_mes,
+)
 from src.dashboard.components.filtros import aplicar_filtro_data, obter_mes_ano_do_range
 
 
 def register_callbacks(app):
     """Registra os callbacks da tela de detalhe do operador."""
-    
+
     # ================================================================
     # FUNÇÃO AUXILIAR: DIAS ÚTEIS DO MÊS
     # ================================================================
     def get_dias_uteis(ano, mes):
-        """Retorna lista de dias úteis (segunda a sexta) do mês."""
-        dias_uteis = []
-        feriados_br = holidays.country_holidays('BR', years=ano)
-        ultimo_dia = calendar.monthrange(ano, mes)[1]
-        for dia in range(1, ultimo_dia + 1):
-            data = date(ano, mes, dia)
-            if data.weekday() < 5 and data not in feriados_br:
-                dias_uteis.append(dia)
-        return dias_uteis
-    
+        """Retorna lista de dias úteis (segunda a sexta, sem feriados) do mês.
+        Inclui Corpus Christi (feriado facultativo, 60 dias após a Páscoa).
+        """
+        from dateutil.easter import easter
+        from datetime import timedelta
+        feriados_br = holidays.country_holidays("BR", years=ano)
+        # Corpus Christi: não incluso na lib como feriado nacional, mas amplamente observado
+        corpus_christi = easter(ano) + timedelta(days=60)
+        feriados_br.update({corpus_christi: "Corpus Christi"})
+        ultimo_dia  = calendar.monthrange(ano, mes)[1]
+        return [
+            dia for dia in range(1, ultimo_dia + 1)
+            if date(ano, mes, dia).weekday() < 5 and date(ano, mes, dia) not in feriados_br
+        ]
+
     # ================================================================
     # FUNÇÃO AUXILIAR: FILTRAR "FORA DA FASE" PARA SEMEAR
     # ================================================================
     def filtrar_fora_da_fase(df, banco):
         """Remove pagamentos 'Fora da fase' apenas para operadores SEMEAR."""
         if banco == "SEMEAR":
-            if 'faseAtraso' in df.columns:
-                return df[df['faseAtraso'] != "Fora da fase"]
-            elif 'fase' in df.columns:
-                return df[df['fase'] != "Fora da fase"]
+            if "faseAtraso" in df.columns:
+                return df[df["faseAtraso"] != "Fora da fase"]
+            elif "fase" in df.columns:
+                return df[df["fase"] != "Fora da fase"]
         return df
-    
+
     # ================================================================
-    # TABELA DIA A DIA
+    # FUNÇÃO AUXILIAR: EXTRAIR META DO MÊS
     # ================================================================
-    @app.callback(
-        [
-            Output('tabela-dia-dia', 'data'),
-            Output('tabela-dia-dia', 'columns')
-        ],
-        [
-            Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value'),
-            Input('filtro-data-range-operador', 'start_date'),
-            Input('filtro-data-range-operador', 'end_date'),
-        ],
-        [
-            State('operador-selecionado-store', 'data'),
-            State('banco-operador-store', 'data')
-        ]
-    )
-    def atualizar_tabela_dia_dia(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
-        """Atualiza a tabela Dia a Dia."""
-        
-        print(f"[DEBUG] Dia a Dia - Banco: {banco}")
-        
-        if not operador_selecionado:
-            return [], []
-        
-        pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
-        if not pagamentos:
-            return [], []
-        
-        df = pd.DataFrame(pagamentos)
-        df['dtPgto'] = pd.to_datetime(df['dtPgto'])
-        
-        df_mes, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
-        
-        print(f"[DEBUG] Dia a Dia - Pagamentos no período: {len(df_mes)}")
-        
-        if df_mes.empty:
-            return [], []
-        
-        df_mes = filtrar_fora_da_fase(df_mes, banco)
-        
-        print(f"[DEBUG] Dia a Dia - Após filtro: {len(df_mes)}")
-        
-        if df_mes.empty:
-            return [], []
-        
-        ultima_data = df_mes['dtPgto'].max()
-        df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
-        
-        df_mes['dia'] = df_mes['dtPgto'].dt.day
-        df_dia = df_mes.groupby('dia').agg(
-            quantidade=('valorTotal', 'count'),
-            faturamento=('valorTotal', 'sum')
-        ).reset_index()
-        df_dia = df_dia.sort_values('dia')
-        
-        total_quantidade = df_dia['quantidade'].sum()
-        total_faturamento = df_dia['faturamento'].sum()
-        
-        dados = []
-        for _, row in df_dia.iterrows():
-            dados.append({
-                'dia': row['dia'],
-                'quantidade': row['quantidade'],
-                'faturamento': f"R$ {row['faturamento']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            })
-        
-        dados.append({
-            'dia': 'TOTAL',
-            'quantidade': total_quantidade,
-            'faturamento': f"R$ {total_faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        })
-        
-        colunas = [
-            {"name": "Dia", "id": "dia"},
-            {"name": "Quantidade", "id": "quantidade"},
-            {"name": "Faturamento", "id": "faturamento"}
-        ]
-        
-        return dados, colunas
-    
+    def extrair_meta_mensal(metas, ano_int, mes_int):
+        if not metas:
+            return 0.0
+        for meta in metas:
+            md = meta.get("data")
+            if md:
+                if hasattr(md, "year"):
+                    if md.year == ano_int and md.month == mes_int:
+                        return float(meta.get("meta100") or 0)
+                elif isinstance(md, str):
+                    mdt = pd.to_datetime(md, errors="coerce")
+                    if not pd.isna(mdt) and mdt.year == ano_int and mdt.month == mes_int:
+                        return float(meta.get("meta100") or 0)
+        return 0.0
+
     # ================================================================
-    # TABELA DIA ÚTIL (CORRIGIDA - MOSTRA SÓ DIAS COM PAGAMENTO)
+    # TABELA UNIFICADA
     # ================================================================
     @app.callback(
         [
-            Output('tabela-dia-util', 'data'),
-            Output('tabela-dia-util', 'columns')
+            Output("tabela-unificada", "data"),
+            Output("tabela-unificada", "columns"),
+            Output("info-meta-diaria", "children"),
         ],
         [
-            Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value'),
-            Input('filtro-data-range-operador', 'start_date'),
-            Input('filtro-data-range-operador', 'end_date'),
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-mes-operador", "value"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
+            Input("adm-banco-select", "value"),
+            Input("adm-filtro-atividade", "value"),
+            Input("adm-operador-select", "value"),
         ],
         [
-            State('operador-selecionado-store', 'data'),
-            State('banco-operador-store', 'data')
-        ]
+            State("operador-selecionado-store", "data"),
+            State("banco-operador-store", "data"),
+        ],
     )
-    def atualizar_tabela_dia_util(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
+    def atualizar_tabela_unificada(n, mes, ano, data_inicio, data_fim,
+                                   adm_banco, adm_atividade, adm_operador,
+                                   operador_selecionado, banco_store):
         """
-        Atualiza a tabela Dia Útil.
-        
-        CORREÇÕES APLICADAS:
-        - Mostra APENAS os dias que tiveram pagamento
-        - Para no último dia com pagamento (não mostra dias futuros)
-        - Remove R$ nan (usa fillna(0))
+        TABELA UNIFICADA:
+        Dia | Dia Útil | Data | Quantidade | Faturamento | Meta Diária | Bateu Meta?
         """
-        
-        print(f"[DEBUG] Dia Útil - Banco: {banco}")
-        
+        vazio = [], [], ""
+
         if not operador_selecionado:
-            return [], []
-        
+            return vazio
+
         pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
         if not pagamentos:
-            return [], []
-        
+            return vazio
+
         df = pd.DataFrame(pagamentos)
-        df['dtPgto'] = pd.to_datetime(df['dtPgto'])
-        
-        df_mes, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
-        
-        print(f"[DEBUG] Dia Útil - Pagamentos no período: {len(df_mes)}")
-        
-        df_mes = filtrar_fora_da_fase(df_mes, banco)
-        
-        print(f"[DEBUG] Dia Útil - Após filtro: {len(df_mes)}")
-        
-        # Se não tem dados, retorna vazio
-        if df_mes.empty:
-            return [], []
-        
-        # ============================================================
-        # CORREÇÃO: Só considera dados até o último dia com pagamento
-        # ============================================================
-        ultima_data = df_mes['dtPgto'].max()
-        df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
-        
-        # ============================================================
-        # CORREÇÃO: Agrupa SOMENTE os dias que tiveram pagamento
-        # ============================================================
-        faturamento_por_dia = {}
-        quantidade_por_dia = {}
-        
-        for _, row in df_mes.iterrows():
-            dia = row['dtPgto'].day
-            faturamento_por_dia[dia] = faturamento_por_dia.get(dia, 0) + row['valorTotal']
-            quantidade_por_dia[dia] = quantidade_por_dia.get(dia, 0) + 1
-        
-        # ============================================================
-        # CORREÇÃO: Ordena os dias que tiveram pagamento
-        # ============================================================
-        dias_com_pagamento = sorted(faturamento_por_dia.keys())
-        
-        if not dias_com_pagamento:
-            return [], []
-        
-        # ============================================================
-        # CORREÇÃO: Gera linhas APENAS para os dias com pagamento
-        # ============================================================
+        df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+        df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+        df = df.dropna(subset=["dtPgto"])
+
+        if df.empty:
+            return vazio
+
+        # Obtém mês/ano efetivos
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else date.today().month,
+            int(ano) if ano else date.today().year,
+        )
+
+        # Aplica filtro de data
+        df_filtrado, _, _ = aplicar_filtro_data(df, mes_int, ano_int, data_inicio, data_fim)
+
+        if df_filtrado.empty:
+            return vazio
+
+        # Filtra "Fora da fase" se for SEMEAR
+        banco_atual = adm_banco if adm_banco else banco_store
+        df_filtrado = filtrar_fora_da_fase(df_filtrado, banco_atual)
+
+        if df_filtrado.empty:
+            return vazio
+
+        # Calcula meta mensal
+        metas = buscar_metas_por_operador(operador_selecionado)
+        meta_mensal = extrair_meta_mensal(metas, ano_int, mes_int)
+
+        # Dias úteis do mês
+        dias_uteis_lista = get_dias_uteis(ano_int, mes_int)
+        total_dias_uteis = len(dias_uteis_lista)
+
+        # Meta diária = meta mensal / total dias úteis
+        meta_diaria = meta_mensal / total_dias_uteis if (total_dias_uteis > 0 and meta_mensal > 0) else 0.0
+
+        # Mapeamento dia → número do dia útil
+        dia_util_map = {dia: idx + 1 for idx, dia in enumerate(dias_uteis_lista)}
+
+        # Agrupa por dia do mês
+        df_filtrado["_dia"] = df_filtrado["dtPgto"].dt.day
+        df_dia = df_filtrado.groupby("_dia").agg(
+            quantidade=("valorTotal", "count"),
+            faturamento=("valorTotal", "sum"),
+        ).reset_index().rename(columns={"_dia": "dia"})
+        df_dia = df_dia.sort_values("dia")
+
+        def _brl(v):
+            return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
         resultado = []
-        for i, dia in enumerate(dias_com_pagamento, start=1):
-            faturamento = faturamento_por_dia.get(dia, 0.0)
-            quantidade = quantidade_por_dia.get(dia, 0)
-            
+        for _, row in df_dia.iterrows():
+            dia        = int(row["dia"])
+            quantidade = int(row["quantidade"])
+            faturamento = float(row["faturamento"])
+            dia_util   = dia_util_map.get(dia, "-")
+            data_str   = f"{dia:02d}/{mes_int:02d}/{ano_int}"
+            bateu_meta = "✅ Sim" if (meta_diaria > 0 and faturamento >= meta_diaria) else "❌ Não"
+
             resultado.append({
-                'dia_util': i,
-                'dia': dia,
-                'quantidade': quantidade,
-                'faturamento': faturamento
+                "dia":        dia,
+                "dia_util":   dia_util,
+                "data":       data_str,
+                "quantidade": quantidade,
+                "faturamento": _brl(faturamento),
+                "meta_diaria": _brl(meta_diaria) if meta_diaria > 0 else "—",
+                "bateu_meta":  bateu_meta,
             })
-        
-        df_resultado = pd.DataFrame(resultado)
-        
-        # ============================================================
-        # CORREÇÃO: Garante que não tem NaN nos valores
-        # ============================================================
-        df_resultado['faturamento'] = df_resultado['faturamento'].fillna(0)
-        df_resultado['quantidade'] = df_resultado['quantidade'].fillna(0)
-        
-        total_quantidade = int(df_resultado['quantidade'].sum())
-        total_faturamento = df_resultado['faturamento'].sum()
-        
-        # ============================================================
-        # Formata os valores para exibição
-        # ============================================================
-        dados = []
-        for _, row in df_resultado.iterrows():
-            if row['faturamento'] == 0:
-                faturamento_str = "R$ 0,00"
-            else:
-                faturamento_str = f"R$ {row['faturamento']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            
-            dados.append({
-                'dia_util': row['dia_util'],
-                'dia': row['dia'],
-                'quantidade': row['quantidade'],
-                'faturamento': faturamento_str
-            })
-        
-        # Linha de TOTAL
-        total_faturamento_str = f"R$ {total_faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        
-        dados.append({
-            'dia_util': 'TOTAL',
-            'dia': '-',
-            'quantidade': total_quantidade,
-            'faturamento': total_faturamento_str
+
+        # Linha TOTAL
+        total_qtd = df_dia["quantidade"].sum()
+        total_fat = df_dia["faturamento"].sum()
+        resultado.append({
+            "dia":        "TOTAL",
+            "dia_util":   "-",
+            "data":       "-",
+            "quantidade": int(total_qtd),
+            "faturamento": _brl(total_fat),
+            "meta_diaria": "-",
+            "bateu_meta":  "-",
         })
-        
+
+        # Resumo de dias
+        dias_batidos   = sum(1 for r in resultado if r.get("bateu_meta") == "✅ Sim")
+        dias_nao_bat   = sum(1 for r in resultado if r.get("bateu_meta") == "❌ Não")
+        dias_trabalhados = dias_batidos + dias_nao_bat
+
+        hoje = date.today()
+        if ano_int == hoje.year and mes_int == hoje.month:
+            dias_restantes = sum(1 for d in dias_uteis_lista if d > hoje.day)
+        else:
+            dias_restantes = 0
+
+        resumo = html.Div([
+            html.Span(f"📅 Dias trabalhados: {dias_trabalhados}",
+                      style={"marginRight": "16px", "fontWeight": "600"}),
+            html.Span(f"✅ Dias com meta: {dias_batidos}",
+                      style={"marginRight": "16px", "color": "#16a34a", "fontWeight": "600"}),
+            html.Span(f"❌ Dias sem meta: {dias_nao_bat}",
+                      style={"marginRight": "16px", "color": "#dc2626", "fontWeight": "600"}),
+            html.Span(f"⏳ Dias úteis restantes: {dias_restantes}",
+                      style={"marginRight": "16px", "color": "#7c3aed", "fontWeight": "600"}),
+            html.Span(f"📆 Total dias úteis: {total_dias_uteis}",
+                      style={"fontWeight": "600"}),
+        ], style={"fontSize": "13px", "padding": "4px 0"})
+
         colunas = [
-            {"name": "Dia Útil", "id": "dia_util"},
-            {"name": "Data", "id": "dia"},
-            {"name": "Quantidade", "id": "quantidade"},
-            {"name": "Faturamento", "id": "faturamento"}
+            {"name": "Dia",         "id": "dia"},
+            {"name": "Dia Útil",    "id": "dia_util"},
+            {"name": "Data",        "id": "data"},
+            {"name": "Quantidade",  "id": "quantidade"},
+            {"name": "Faturamento", "id": "faturamento"},
+            {"name": "Meta Diária", "id": "meta_diaria"},
+            {"name": "Bateu Meta?", "id": "bateu_meta"},
         ]
-        
-        return dados, colunas
-    
+
+        return resultado, colunas, resumo
+
     # ================================================================
     # TABELA MÊS A MÊS
     # ================================================================
     @app.callback(
         [
-            Output('tabela-mes-mes', 'data'),
-            Output('tabela-mes-mes', 'columns')
+            Output("tabela-mes-mes", "data"),
+            Output("tabela-mes-mes", "columns"),
+            Output("tabela-mes-mes", "style_data_conditional"),
         ],
         [
-            Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-ano-operador', 'value'),
-            Input('filtro-data-range-operador', 'start_date'),
-            Input('filtro-data-range-operador', 'end_date'),
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
         ],
         [
-            State('operador-selecionado-store', 'data'),
-            State('banco-operador-store', 'data')
-        ]
+            State("operador-selecionado-store", "data"),
+            State("banco-operador-store", "data"),
+        ],
     )
-    def atualizar_tabela_mes_mes(n, ano, data_inicio, data_fim, operador_selecionado, banco):
-        """Atualiza a tabela Mês a Mês."""
-        
-        print(f"[DEBUG] Mês a Mês - Banco: {banco}")
-        
-        if not operador_selecionado:
-            return [], []
-        
-        pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
-        metas = buscar_metas_por_operador(operador_selecionado)
-        
-        if not pagamentos:
-            return [], []
-        
-        df = pd.DataFrame(pagamentos)
-        df['dtPgto'] = pd.to_datetime(df['dtPgto'])
-        
-        _, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (None, int(ano) if ano else pd.Timestamp.now().year)
-        ano_int = ano_calc
-        
-        df_ano = df[df['dtPgto'].dt.year == ano_int]
-        
-        metas_dict = {}
-        if metas:
-            for meta in metas:
-                if meta['data'].year == ano_int:
-                    metas_dict[meta['data'].month] = meta.get('meta100', 0)
-        
-        meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-        resultado = []
-        
-        for mes in range(1, 13):
-            df_mes = df_ano[df_ano['dtPgto'].dt.month == mes].copy()
-            
-            df_mes = filtrar_fora_da_fase(df_mes, banco)
-            
-            if not df_mes.empty:
-                ultima_data = df_mes['dtPgto'].max()
-                df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
-            
-            faturamento = df_mes['valorTotal'].sum() if not df_mes.empty else 0
-            quantidade = len(df_mes) if not df_mes.empty else 0
-            meta = metas_dict.get(mes, 0)
-            
-            percentual = (faturamento / meta) * 100 if meta > 0 else 0
-            bateu = faturamento >= meta
-            
-            resultado.append({
-                'mes': mes,
-                'nome_mes': meses_nomes[mes-1],
-                'quantidade': quantidade,
-                'faturamento': faturamento,
-                'meta': meta,
-                'percentual': percentual,
-                'bateu': '✅ Sim' if bateu else '❌ Não'
-            })
-        
-        df_resultado = pd.DataFrame(resultado)
-        
-        # Encontra o último mês com dado
-        ultimo_mes_com_dado = 0
-        for mes in range(12, 0, -1):
-            if df_resultado.iloc[mes-1]['faturamento'] > 0:
-                ultimo_mes_com_dado = mes
-                break
-        
-        if ultimo_mes_com_dado > 0:
-            df_resultado = df_resultado[df_resultado['mes'] <= ultimo_mes_com_dado]
-        
-        total_quantidade = df_resultado['quantidade'].sum()
-        total_faturamento = df_resultado['faturamento'].sum()
-        
-        dados = []
-        for _, row in df_resultado.iterrows():
-            dados.append({
-                'nome_mes': row['nome_mes'],
-                'quantidade': row['quantidade'],
-                'faturamento': f"R$ {row['faturamento']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                'meta': f"R$ {row['meta']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                'percentual': f"{row['percentual']:.1f}%",
-                'bateu': row['bateu']
-            })
-        
-        dados.append({
-            'nome_mes': 'TOTAL',
-            'quantidade': total_quantidade,
-            'faturamento': f"R$ {total_faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-            'meta': '-',
-            'percentual': '-',
-            'bateu': '-'
-        })
-        
-        colunas = [
-            {"name": "Mês", "id": "nome_mes"},
-            {"name": "Quantidade", "id": "quantidade"},
-            {"name": "Faturamento", "id": "faturamento"},
-            {"name": "Meta", "id": "meta"},
-            {"name": "% Meta", "id": "percentual"},
-            {"name": "Bateu?", "id": "bateu"}
+    def atualizar_tabela_mes_mes(n, ano, data_inicio, data_fim, operador_selecionado, banco_store):
+        """Atualiza a tabela Mês a Mês — só mostra meses com meta > 0."""
+
+        estilos_base = [
+            # Zebra (menor prioridade - vem primeiro)
+            {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+            # Meta batida: verde (sobrescreve zebra)
+            {
+                "if": {"filter_query": '{bateu} = "✅ Sim"'},
+                "backgroundColor": "#d4edda",
+                "color": "#155724",
+                "fontWeight": "500",
+            },
+            # Linha TOTAL em roxo (maior prioridade - vem por último)
+            {
+                "if": {"filter_query": '{nome_mes} = "TOTAL"'},
+                "backgroundColor": "#e9d8fd",
+                "color": "#4a1d8c",
+                "fontWeight": "bold",
+                "fontSize": "14px",
+            },
         ]
-        
-        return dados, colunas
-    
+
+        if not operador_selecionado:
+            return [], [], estilos_base
+
+        pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
+        if not pagamentos:
+            return [], [], estilos_base
+
+        metas = buscar_metas_por_operador(operador_selecionado)
+        metas_dict = {}
+        for meta in (metas or []):
+            md = meta.get("data")
+            if md:
+                if hasattr(md, "year"):
+                    metas_dict[(md.year, md.month)] = float(meta.get("meta100") or 0)
+                elif isinstance(md, str):
+                    mdt = pd.to_datetime(md, errors="coerce")
+                    if not pd.isna(mdt):
+                        metas_dict[(mdt.year, mdt.month)] = float(meta.get("meta100") or 0)
+
+        df = pd.DataFrame(pagamentos)
+        df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+        df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+        df = df.dropna(subset=["dtPgto"])
+
+        _, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            None,
+            int(ano) if ano else date.today().year,
+        )
+
+        df_ano = df[df["dtPgto"].dt.year == ano_int]
+
+        meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                       "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        resultado = []
+
+        for mes in range(1, 13):
+            meta = metas_dict.get((ano_int, mes), 0.0)
+            if meta <= 0:
+                continue
+
+            df_mes = df_ano[df_ano["dtPgto"].dt.month == mes].copy()
+            df_mes = filtrar_fora_da_fase(df_mes, banco_store)
+
+            faturamento = float(df_mes["valorTotal"].sum()) if not df_mes.empty else 0.0
+            quantidade  = len(df_mes)
+            percentual  = (faturamento / meta) * 100 if meta > 0 else 0.0
+            bateu       = faturamento >= meta
+
+            def _brl(v):
+                return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+            resultado.append({
+                "mes":         mes,
+                "nome_mes":    meses_nomes[mes - 1],
+                "quantidade":  quantidade,
+                "faturamento": _brl(faturamento),
+                "meta":        _brl(meta),
+                "percentual":  f"{percentual:.1f}%",
+                "bateu":       "✅ Sim" if bateu else "❌ Não",
+            })
+
+        if not resultado:
+            return [], [], estilos_base
+
+        total_qtd = sum(r["quantidade"] for r in resultado)
+        total_fat_raw = sum(
+            float(r["faturamento"].replace("R$ ", "").replace(".", "").replace(",", "."))
+            for r in resultado
+        )
+
+        def _brl(v):
+            return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        resultado.append({
+            "mes":         9999,
+            "nome_mes":    "TOTAL",
+            "quantidade":  total_qtd,
+            "faturamento": _brl(total_fat_raw),
+            "meta":        "-",
+            "percentual":  "-",
+            "bateu":       "-",
+        })
+
+        colunas = [
+            {"name": "Mês",        "id": "nome_mes"},
+            {"name": "Quantidade", "id": "quantidade"},
+            {"name": "Faturamento","id": "faturamento"},
+            {"name": "Meta",       "id": "meta"},
+            {"name": "% Meta",     "id": "percentual"},
+            {"name": "Bateu?",     "id": "bateu"},
+        ]
+
+        return resultado, colunas, estilos_base
+
     # ================================================================
     # TABELA DE PERFORMANCE
     # ================================================================
     @app.callback(
         [
-            Output('tabela-performance-operador', 'data'),
-            Output('tabela-performance-operador', 'columns'),
-            Output('info-dias-operador', 'children'),
+            Output("tabela-performance-operador", "data"),
+            Output("tabela-performance-operador", "columns"),
+            Output("info-dias-operador", "children"),
         ],
         [
-            Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-mes-operador', 'value'),
-            Input('filtro-ano-operador', 'value'),
-            Input('filtro-data-range-operador', 'start_date'),
-            Input('filtro-data-range-operador', 'end_date'),
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-mes-operador", "value"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
+            Input("adm-banco-select", "value"),
+            Input("adm-filtro-atividade", "value"),
+            Input("adm-operador-select", "value"),
         ],
         [
-            State('operador-selecionado-store', 'data'),
-            State('banco-operador-store', 'data')
-        ]
+            State("operador-selecionado-store", "data"),
+            State("banco-operador-store", "data"),
+        ],
     )
-    def atualizar_tabela_performance(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
-        """Atualiza a tabela de performance. Dias trabalhados/restantes vão como subtítulo."""
-        
+    def atualizar_tabela_performance(n, mes, ano, data_inicio, data_fim,
+                                     adm_banco, adm_atividade, adm_operador,
+                                     operador_selecionado, banco_store):
+        """Atualiza a tabela de performance."""
+
         if not operador_selecionado:
             return [], [], ""
-        
-        pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
-        metas = buscar_metas_por_operador(operador_selecionado)
-        
-        if not pagamentos:
-            return [], [], ""
-        
+
+        banco_atual = adm_banco if adm_banco else banco_store
         mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
-            int(mes) if mes else pd.Timestamp.now().month,
-            int(ano) if ano else pd.Timestamp.now().year
+            int(mes) if mes else date.today().month,
+            int(ano) if ano else date.today().year,
         )
-        
-        perf = calcular_performance_operador(
-            pagamentos=pagamentos,
-            metas=metas,
-            ano=ano_int,
-            mes=mes_int,
-            login=operador_selecionado.get('login'),
-            banco=banco
-        )
-        
-        txt_dias = (
-            f"📅 Dias trabalhados: {perf['dias_trabalhados']}  "
-            f"|  ⏳ Dias úteis restantes: {perf['dias_restantes']}  "
-            f"|  📆 Total dias úteis: {perf['total_dias_uteis']}"
-        )
-        
-        dados_tabela = [{
-            "login":            perf['login'],
-            "faturamento":      f"R$ {perf['faturamento']:,.2f}".replace(",","X").replace(".",",").replace("X","."),
-            "feito_diario":     f"R$ {perf['feito_diario']:,.2f}".replace(",","X").replace(".",",").replace("X","."),
-            "meta":             f"R$ {perf['meta']:,.2f}".replace(",","X").replace(".",",").replace("X","."),
-            "atingido_meta":    f"{perf['atingido_meta']:.1f}%",
-            "projecao":         f"R$ {perf['projecao']:,.2f}".replace(",","X").replace(".",",").replace("X","."),
-        }]
-        
-        colunas = [
-            {"name": "Login",         "id": "login"},
-            {"name": "Faturamento",   "id": "faturamento"},
-            {"name": "Feito Diário",  "id": "feito_diario"},
-            {"name": "Meta",          "id": "meta"},
-            {"name": "% Meta",        "id": "atingido_meta"},
-            {"name": "Projeção (R$)", "id": "projecao"},
-        ]
-        
-        return dados_tabela, colunas, txt_dias
-    
+
+        def _brl(v):
+            return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # Se for login TODOS, calcula a performance consolidada do grupo
+        if operador_selecionado.get("login") == "TODOS":
+            from src.services.db_service import buscar_pagamentos_todos_operadores_por_banco
+            dados_banco = buscar_pagamentos_todos_operadores_por_banco(banco_atual)
+            if not dados_banco:
+                return [], [], "Sem dados no banco"
+
+            todos_pagamentos = []
+            meta_total = 0.0
+            
+            # Filtro de atividade
+            atividade_filtro = adm_atividade if adm_atividade else "ativo"
+            
+            for operador, pagamentos_op, metas_op in dados_banco:
+                # Filtra conforme atividade
+                if atividade_filtro and atividade_filtro.lower() == "ativo":
+                    if str(operador.get("atividade", "")).strip().lower() != "ativo":
+                        continue
+                
+                if pagamentos_op:
+                    todos_pagamentos.extend(pagamentos_op)
+                
+                # Soma a meta desse operador para o mês/ano
+                if metas_op:
+                    for m in metas_op:
+                        md = m.get("data")
+                        if md:
+                            if hasattr(md, "year"):
+                                if md.year == ano_int and md.month == mes_int:
+                                    meta_total += float(m.get("meta100") or 0)
+                                    break
+                            elif isinstance(md, str):
+                                mdt = pd.to_datetime(md, errors="coerce")
+                                if not pd.isna(mdt) and mdt.year == ano_int and mdt.month == mes_int:
+                                    meta_total += float(m.get("meta100") or 0)
+                                    break
+
+            # Se não tiver pagamentos, cria df vazio, mas com a meta correta
+            if todos_pagamentos:
+                df_mes = pd.DataFrame(todos_pagamentos)
+                df_mes['dtPgto'] = pd.to_datetime(df_mes['dtPgto'])
+                df_mes = df_mes[
+                    (df_mes['dtPgto'].dt.month == mes_int) & 
+                    (df_mes['dtPgto'].dt.year == ano_int)
+                ].copy()
+                
+                if banco_atual == "SEMEAR":
+                    if 'faseAtraso' in df_mes.columns:
+                        df_mes = df_mes[df_mes['faseAtraso'] != "Fora da fase"]
+                    elif 'fase' in df_mes.columns:
+                        df_mes = df_mes[df_mes['fase'] != "Fora da fase"]
+            else:
+                df_mes = pd.DataFrame()
+
+            faturamento = df_mes['valorTotal'].astype(float).sum() if not df_mes.empty else 0.0
+
+            # Dias úteis do mês
+            dias_uteis_lista = get_dias_uteis(ano_int, mes_int)
+            total_dias_uteis = len(dias_uteis_lista)
+
+            # Dias trabalhados e restantes
+            hoje = date.today()
+            if ano_int == hoje.year and mes_int == hoje.month:
+                dias_trabalhados = sum(1 for d in dias_uteis_lista if d <= hoje.day)
+                dias_restantes = total_dias_uteis - dias_trabalhados
+            else:
+                dias_trabalhados = total_dias_uteis
+                dias_restantes = 0
+
+            feito_diario = faturamento / dias_trabalhados if dias_trabalhados > 0 else 0
+            atingido_meta = (faturamento / meta_total) * 100 if meta_total > 0 else 0
+            
+            falta_70 = max(0, (meta_total * 0.7) - faturamento)
+            falta_80 = max(0, (meta_total * 0.8) - faturamento)
+            falta_90 = max(0, (meta_total * 0.9) - faturamento)
+            falta_100 = max(0, meta_total - faturamento)
+            
+            if dias_restantes > 0 and feito_diario > 0:
+                projecao = faturamento + (feito_diario * dias_restantes)
+            else:
+                projecao = faturamento
+            
+            projecao_percentual = (projecao / meta_total) * 100 if meta_total > 0 else 0
+
+            # Barra visual de % meta
+            bar_width  = min(atingido_meta, 100)
+            bar_color  = "#10B981" if atingido_meta >= 100 else "#7e3d97"
+            perc_html  = (
+                f'<div style="display:flex;align-items:center;gap:6px;min-width:110px;">'
+                f'<div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;">'
+                f'<div style="width:{bar_width:.0f}%;background:{bar_color};'
+                f'height:8px;border-radius:4px;"></div></div>'
+                f'<span style="white-space:nowrap;font-weight:700;color:{bar_color};'
+                f'font-size:12px;">{atingido_meta:.1f}%</span></div>'
+            )
+
+            txt_dias = (
+                f"📅 Dias trabalhados: {dias_trabalhados}  "
+                f"|  ⏳ Dias úteis restantes: {dias_restantes}  "
+                f"|  📆 Total dias úteis: {total_dias_uteis}"
+            )
+
+            dados_tabela = [{
+                "login":               f"GRUPO {banco_atual}",
+                "faturamento":         _brl(faturamento),
+                "feito_dia":           _brl(feito_diario),
+                "meta":                _brl(meta_total),
+                "atingido_meta":       perc_html,
+                "falta_70":            _brl(falta_70),
+                "falta_80":            _brl(falta_80),
+                "falta_90":            _brl(falta_90),
+                "falta_100":           _brl(falta_100),
+                "ranking":             "—",
+                "projecao":            _brl(projecao),
+                "projecao_percentual": f"{projecao_percentual:.1f}%",
+            }]
+
+            colunas = [
+                {"name": "Login",         "id": "login"},
+                {"name": "Faturamento",   "id": "faturamento"},
+                {"name": "Feito/Dia",     "id": "feito_dia"},
+                {"name": "Meta",          "id": "meta"},
+                {"name": "% Meta",        "id": "atingido_meta", "presentation": "markdown"},
+                {"name": "Falta 70%",     "id": "falta_70"},
+                {"name": "Falta 80%",     "id": "falta_80"},
+                {"name": "Falta 90%",     "id": "falta_90"},
+                {"name": "Falta 100%",    "id": "falta_100"},
+                {"name": "Ranking",       "id": "ranking"},
+                {"name": "Projeção (R$)", "id": "projecao"},
+                {"name": "Proj. %",       "id": "projecao_percentual"},
+            ]
+
+            return dados_tabela, colunas, txt_dias
+
+        try:
+            pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
+            metas      = buscar_metas_por_operador(operador_selecionado)
+
+            if not pagamentos:
+                return [], [], ""
+
+            perf = calcular_performance_operador(
+                pagamentos=pagamentos,
+                metas=metas or [],
+                ano=ano_int,
+                mes=mes_int,
+                login=operador_selecionado.get("login"),
+                banco=banco_atual,
+            )
+
+            # Barra visual de % meta
+            val_perc   = float(perf.get("atingido_meta", 0))
+            bar_width  = min(val_perc, 100)
+            bar_color  = "#10B981" if val_perc >= 100 else "#7e3d97"
+            perc_html  = (
+                f'<div style="display:flex;align-items:center;gap:6px;min-width:110px;">'
+                f'<div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;">'
+                f'<div style="width:{bar_width:.0f}%;background:{bar_color};'
+                f'height:8px;border-radius:4px;"></div></div>'
+                f'<span style="white-space:nowrap;font-weight:700;color:{bar_color};'
+                f'font-size:12px;">{val_perc:.1f}%</span></div>'
+            )
+
+            txt_dias = (
+                f"📅 Dias trabalhados: {perf['dias_trabalhados']}  "
+                f"|  ⏳ Dias úteis restantes: {perf['dias_restantes']}  "
+                f"|  📆 Total dias úteis: {perf['total_dias_uteis']}"
+            )
+
+            dados_tabela = [{
+                "login":               perf["login"],
+                "faturamento":         _brl(perf["faturamento"]),
+                "feito_dia":           _brl(perf["feito_diario"]),
+                "meta":                _brl(perf["meta"]),
+                "atingido_meta":       perc_html,
+                "falta_70":            _brl(perf["falta_70"]),
+                "falta_80":            _brl(perf["falta_80"]),
+                "falta_90":            _brl(perf["falta_90"]),
+                "falta_100":           _brl(perf["falta_100"]),
+                "ranking":             _brl(perf["meta_ranking"]),
+                "projecao":            _brl(perf["projecao"]),
+                "projecao_percentual": f"{perf['projecao_percentual']:.1f}%",
+            }]
+
+            colunas = [
+                {"name": "Login",         "id": "login"},
+                {"name": "Faturamento",   "id": "faturamento"},
+                {"name": "Feito/Dia",     "id": "feito_dia"},
+                {"name": "Meta",          "id": "meta"},
+                {"name": "% Meta",        "id": "atingido_meta", "presentation": "markdown"},
+                {"name": "Falta 70%",     "id": "falta_70"},
+                {"name": "Falta 80%",     "id": "falta_80"},
+                {"name": "Falta 90%",     "id": "falta_90"},
+                {"name": "Falta 100%",    "id": "falta_100"},
+                {"name": "Ranking",       "id": "ranking"},
+                {"name": "Projeção (R$)", "id": "projecao"},
+                {"name": "Proj. %",       "id": "projecao_percentual"},
+            ]
+
+            return dados_tabela, colunas, txt_dias
+
+        except Exception as e:
+            print(f"[ERRO] atualizar_tabela_performance: {e}")
+            import traceback; traceback.print_exc()
+            return [], [], f"⚠️ Erro ao calcular performance: {e}"
+
     # ================================================================
-    # GRÁFICO - Faturamento por Mês (Barras)
+    # GRÁFICO - Faturamento por Mês
     # ================================================================
     @app.callback(
-        Output('grafico-fase-operador', 'figure'),
+        Output("grafico-fase-operador", "figure"),
         [
-            Input('intervalo-operador', 'n_intervals'),
-            Input('filtro-ano-operador', 'value'),
-            Input('filtro-data-range-operador', 'start_date'),
-            Input('filtro-data-range-operador', 'end_date'),
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
         ],
         [
-            State('operador-selecionado-store', 'data'),
-            State('banco-operador-store', 'data')
-        ]
+            State("operador-selecionado-store", "data"),
+            State("banco-operador-store", "data"),
+        ],
     )
     def atualizar_grafico_mensal(n, ano, data_inicio, data_fim, operador_selecionado, banco):
         """Gráfico de barras: faturamento por mês do ano selecionado."""
-        
-        fig_blank = px.bar(title="Sem dados").update_layout(plot_bgcolor='white')
-        
+
+        fig_blank = px.bar().update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            title="",
+        )
+
         if not operador_selecionado:
             return fig_blank
-        
+
         pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
-        
         if not pagamentos:
             return fig_blank
-        
+
         df = pd.DataFrame(pagamentos)
-        df['dtPgto'] = pd.to_datetime(df['dtPgto'])
-        
-        _, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (None, int(ano) if ano else pd.Timestamp.now().year)
-        ano_int = ano_calc
-        
-        df_ano = df[df['dtPgto'].dt.year == ano_int]
-        
+        df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+        df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+        df = df.dropna(subset=["dtPgto"])
+
+        _, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            None,
+            int(ano) if ano else date.today().year,
+        )
+
+        df_ano = df[df["dtPgto"].dt.year == ano_int]
         if df_ano.empty:
             return fig_blank
-        
-        meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+        meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                       "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
         faturamento_mensal = []
-        
+
         for mes in range(1, 13):
-            df_mes = df_ano[df_ano['dtPgto'].dt.month == mes].copy()
-            
+            df_mes = df_ano[df_ano["dtPgto"].dt.month == mes].copy()
             df_mes = filtrar_fora_da_fase(df_mes, banco)
-            
-            if not df_mes.empty:
-                ultima_data = df_mes['dtPgto'].max()
-                df_mes = df_mes[df_mes['dtPgto'] <= ultima_data]
-                faturamento = df_mes['valorTotal'].sum()
-            else:
-                faturamento = 0
-            
+            fat = float(df_mes["valorTotal"].sum()) if not df_mes.empty else 0.0
             faturamento_mensal.append({
-                'mes': mes,
-                'mes_nome': meses_nomes[mes-1],
-                'faturamento': faturamento
+                "mes":      mes,
+                "mes_nome": meses_nomes[mes - 1],
+                "faturamento": fat,
             })
-        
+
         df_mensal = pd.DataFrame(faturamento_mensal)
-        
+        df_plot = df_mensal[df_mensal["faturamento"] > 0]
+
+        if df_plot.empty:
+            return fig_blank
+
         fig = px.bar(
-            df_mensal[df_mensal['faturamento'] > 0], 
-            x='mes_nome', 
-            y='faturamento',
-            title=f"Faturamento Mensal - {ano_int}",
-            text='faturamento',
-            color_discrete_sequence=['#7e3d97']
+            df_plot,
+            x="mes_nome",
+            y="faturamento",
+            text="faturamento",
+            color_discrete_sequence=["#7e3d97"],
         )
-        
-        if not df_mensal[df_mensal['faturamento'] > 0].empty:
-            fig.update_traces(
-                texttemplate='R$ %{y:,.0f}',
-                textposition='outside'
-            )
-        
+        fig.update_traces(
+            texttemplate="R$ %{y:,.0f}",
+            textposition="outside",
+        )
         fig.update_layout(
-            plot_bgcolor='white',
-            paper_bgcolor='white',
+            title="",  # Sem título duplicado
+            plot_bgcolor="white",
+            paper_bgcolor="white",
             xaxis_title="Mês",
             yaxis_title="Faturamento (R$)",
-            font=dict(color='#111827')
+            font=dict(color="#111827"),
         )
-        
         return fig
+
+    # ================================================================
+    # CALLBACK: TEMPO DE CASA DO OPERADOR
+    # ================================================================
+    @app.callback(
+        Output("tempo-de-casa", "children"),
+        [Input("intervalo-operador", "n_intervals")],
+        [
+            State("operador-selecionado-store", "data"),
+            State("login-success-store", "data")
+        ],
+    )
+    def atualizar_tempo_de_casa(n, operador_selecionado, login_dados):
+        """Exibe o tempo de casa calculado com relativedelta."""
+
+        if not operador_selecionado:
+            return ""
+
+        login_op = operador_selecionado.get("login")
+        admissao = None
+        if login_op == "TODOS" and login_dados:
+            admissao = login_dados.get("admissao")
+            if not admissao:
+                op_banco = Buscar_login(login_dados.get("login"))
+                if op_banco:
+                    admissao = op_banco.get("admissao")
+        else:
+            admissao = operador_selecionado.get("admissao")
+            if not admissao and login_op and login_op != "TODOS":
+                op_banco = Buscar_login(login_op)
+                if op_banco:
+                    admissao = op_banco.get("admissao")
+
+        tempo = calcular_tempo_de_casa(admissao)
+        return html.Span([
+            html.Span("🏠 Tempo de casa: ",
+                      style={"fontWeight": "700", "color": "var(--text-muted)"}),
+            html.Span(tempo,
+                      style={"fontWeight": "600", "color": "#7c3aed"}),
+        ])
+
+    # ================================================================
+    # CALLBACK: TABELA FATURAMENTO POR SEMANA
+    # ================================================================
+    @app.callback(
+        [
+            Output("tabela-semanas", "data"),
+            Output("tabela-semanas", "columns"),
+        ],
+        [
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-mes-operador", "value"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
+        ],
+        [
+            State("operador-selecionado-store", "data"),
+            State("banco-operador-store", "data"),
+        ],
+    )
+    def atualizar_tabela_semanas(n, mes, ano, data_inicio, data_fim, operador_selecionado, banco):
+        """Tabela: Semana | Período | Faturamento Total."""
+
+        vazio = [], []
+
+        if not operador_selecionado:
+            return vazio
+
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else date.today().month,
+            int(ano) if ano else date.today().year,
+        )
+
+        pagamentos = Buscar_pagamento_por_operador(operador_selecionado)
+        if not pagamentos:
+            return vazio
+
+        linhas = calcular_semanas_do_mes(
+            pagamentos=pagamentos,
+            ano=ano_int,
+            mes=mes_int,
+            banco=banco or "SEMEAR",
+        )
+
+        if not linhas:
+            return vazio
+
+        total_raw = sum(r["faturamento_raw"] for r in linhas)
+        total_str = (
+            f"R$ {total_raw:,.2f}"
+            .replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+        linhas.append({
+            "semana":          "TOTAL",
+            "periodo":         "—",
+            "faturamento_raw": total_raw,
+            "faturamento":     total_str,
+        })
+
+        colunas = [
+            {"name": "Semana",            "id": "semana"},
+            {"name": "Período",           "id": "periodo"},
+            {"name": "Faturamento Total", "id": "faturamento"},
+        ]
+
+        return linhas, colunas

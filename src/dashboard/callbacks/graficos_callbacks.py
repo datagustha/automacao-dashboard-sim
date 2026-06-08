@@ -46,7 +46,8 @@ fig_blank = go.Figure().update_layout(
     yaxis=dict(visible=False)
 )
 
-retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], texto_zero, fig_blank, texto_zero, {"width": "0%"}, "0%", texto_zero)
+retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], texto_zero, fig_blank, texto_zero, {"width": "0%"}, "0%", texto_zero, {"display": "none"})
+
 
 # ================================================================
 # FUNÇÃO PARA APLICAR ESTILO PADRÃO A QUALQUER GRÁFICO
@@ -74,6 +75,7 @@ def aplicar_estilo_padrao(figura, titulo: str, altura: int = 400):
     )
     return figura
 
+
 # ================================================================
 # CONFIGURAÇÃO DE LOG PARA DEBUG
 # ================================================================
@@ -85,6 +87,7 @@ def log_debug(mensagem):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{timestamp}] {mensagem}\n")
     print(mensagem)
+
 
 def register_callbacks(app):
     """Função principal que registra todos os callbacks do dashboard."""
@@ -128,7 +131,7 @@ def register_callbacks(app):
         
         # VERIFICA SE ESTÁ NO DASHBOARD
         if pathname != '/dashboard':
-            return [no_update] * 12
+            return [no_update] * 13
             
         if not dados_operador:
             log_debug("Nenhum dado de operador no store")
@@ -168,7 +171,7 @@ def register_callbacks(app):
         # ================================================================
         df_mes_atual, usando_range, label_periodo = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
         
-        # Lógica para mês anterior (se usando range, apenas usamos o mês/ano dos dropdowns como base)
+        # Lógica para mês anterior
         mes_base = int(mes) if mes else datetime.datetime.now().month
         ano_base = int(ano) if ano else datetime.datetime.now().year
         
@@ -242,7 +245,8 @@ def register_callbacks(app):
         # ================================================================
         if df_mes_atual.empty:
             log_debug("DataFrame vazio - retornando sem dados")
-            return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior)
+            badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
+            return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior, badge_style)
         
         # ================================================================
         # CONVERTE PARA LISTA
@@ -269,7 +273,6 @@ def register_callbacks(app):
         meta_valor = 0.0
 
         if metas:
-            # Pega o mês/ano atual para metas, respeitando o range
             mes_meta, ano_meta = obter_mes_ano_do_range(data_inicio, data_fim) or (int(mes) if mes else datetime.datetime.now().month, int(ano) if ano else datetime.datetime.now().year)
             for meta in metas:
                 data_meta = meta.get('data')
@@ -298,15 +301,13 @@ def register_callbacks(app):
         }
         
         # ================================================================
-        # GRÁFICO 1: EVOLUÇÃO DIÁRIA (CORRIGIDO - sem scroll para dias negativos/33)
+        # GRÁFICO 1: EVOLUÇÃO DIÁRIA (sem título duplicado)
         # ================================================================
         df_grafico = calcular_faturamento_por_dia(pagamentos_filtrados, banco=banco)
         
         if not df_grafico.empty:
-            # Extrai apenas o dia do mês para o eixo X
             df_grafico['dia'] = pd.to_datetime(df_grafico['data']).dt.day
             
-            # Pega os dias que realmente existem no mês
             dias_existentes = sorted(df_grafico['dia'].unique())
             primeiro_dia = min(dias_existentes) if dias_existentes else 1
             ultimo_dia = max(dias_existentes) if dias_existentes else 31
@@ -325,12 +326,13 @@ def register_callbacks(app):
             )
             
             figura_evolucao.update_layout(
+                title="",  # Remove título duplicado
                 xaxis=dict(
                     title="",
                     tickmode='linear',
                     tick0=primeiro_dia,
                     dtick=1,
-                    range=[primeiro_dia - 0.5, ultimo_dia + 0.5],  # LIMITA O SCROLL
+                    range=[primeiro_dia - 0.5, ultimo_dia + 0.5],
                     showgrid=True,
                     gridcolor='#E5E7EB',
                     tickangle=0
@@ -340,15 +342,15 @@ def register_callbacks(app):
                     showgrid=True,
                     gridcolor='#E5E7EB'
                 ),
-                margin=dict(b=40, t=50, l=60, r=40)  # Margens consistentes
+                margin=dict(b=40, t=50, l=60, r=40),
+                plot_bgcolor='white',
+                paper_bgcolor='white'
             )
-            
-            figura_evolucao = aplicar_estilo_padrao(figura_evolucao, f"Evolução Diária - {label_periodo}", 400)
         else:
             figura_evolucao = fig_blank
 
         # ================================================================
-        # GRÁFICO 2: PAGAMENTOS POR FASE (CORRIGIDO - sem corte dos rótulos)
+        # GRÁFICO 2: PAGAMENTOS POR FASE (sem título duplicado)
         # ================================================================
         if banco == 'SEMEAR':
             df_fases = calcular_pagamentos_por_fase(pagamentos_filtrados, banco=banco)
@@ -368,6 +370,7 @@ def register_callbacks(app):
                     textfont_size=10
                 )
                 figura_fase.update_layout(
+                    title="",  # Remove título duplicado
                     xaxis=dict(
                         title="",
                         tickangle=-45,
@@ -380,20 +383,16 @@ def register_callbacks(app):
                     ),
                     uniformtext_minsize=8,
                     uniformtext_mode='hide',
-                    margin=dict(b=120, t=50, l=60, r=40)  # AUMENTADO b=120 para não cortar
+                    margin=dict(b=120, t=50, l=60, r=40),
+                    plot_bgcolor='white',
+                    paper_bgcolor='white'
                 )
-                figura_fase = aplicar_estilo_padrao(figura_fase, "Pagamentos por Fase", 400)
             else:
                 figura_fase = fig_blank
         else:
             # AGORACRED - gráfico informativo
             figura_fase = go.Figure().update_layout(
-                title=dict(
-                    text="<b>Pagamentos por Fase</b>",
-                    font=dict(color='#111827', size=14),
-                    x=0,
-                    xanchor='left'
-                ),
+                title="",  # Remove título duplicado
                 height=400,
                 plot_bgcolor='white',
                 paper_bgcolor='white',
@@ -442,7 +441,6 @@ def register_callbacks(app):
         
         log_debug(f"✅ FINALIZADO - {total} pagamentos | Banco: {banco} | Período: {label_periodo}")
         
-        # Badge de status para mostrar quando data range está ativo
         badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
         
         return (
@@ -499,16 +497,10 @@ def register_callbacks(app):
         if not pagamentos:
             return [], [{"name": "Sem dados", "id": "sem_dados"}], ""
         
-        # Para performance, precisamos de um mês/ano base para metas e dias úteis
         mes_calc, ano_calc = obter_mes_ano_do_range(data_inicio, data_fim) or (
             int(mes) if mes else datetime.datetime.now().month,
             int(ano) if ano else datetime.datetime.now().year
         )
-        
-        # Filtra pagamentos para o cálculo de performance (que não tem start/end date parametrizado ainda,
-        # mas como estamos passando os pagamentos já buscados, a função de performance vai filtrar pelo mes_calc)
-        # Idealmente performance deveria aceitar o df já filtrado, mas a função calcular_performance_operador
-        # filtra internamente por mês/ano. Então se usamos range, a performance vai ser do mês do inicio do range.
         
         perf = calcular_performance_operador(
             pagamentos=pagamentos,
@@ -521,6 +513,19 @@ def register_callbacks(app):
         
         txt_dias = f"📅 Dias trabalhados: {perf['dias_trabalhados']}  |  ⏳ Dias úteis restantes: {perf['dias_restantes']}  |  📆 Total dias úteis: {perf['total_dias_uteis']}"
         
+        # Barra visual de % meta
+        val_perc = float(perf.get("atingido_meta", 0))
+        bar_width = min(val_perc, 100)
+        bar_color = "#10B981" if val_perc >= 100 else "#7e3d97"
+        perc_html = (
+            f'<div style="display:flex;align-items:center;gap:6px;min-width:110px;">'
+            f'<div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;">'
+            f'<div style="width:{bar_width:.0f}%;background:{bar_color};'
+            f'height:8px;border-radius:4px;"></div></div>'
+            f'<span style="white-space:nowrap;font-weight:700;color:{bar_color};'
+            f'font-size:12px;">{val_perc:.1f}%</span></div>'
+        )
+
         dados_tabela = [{
             "login": perf['login'],
             "turno": operador.get('turno', ''),
@@ -528,7 +533,7 @@ def register_callbacks(app):
             "feito_diario": f"R$ {perf['feito_diario']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
             "meta": f"R$ {perf['meta']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
             "meta_diaria": f"R$ {perf['meta_diaria']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-            "atingido_meta": f"{perf['atingido_meta']:.1f}%",
+            "atingido_meta": perc_html,
             "falta_70": f"R$ {perf['falta_70']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
             "falta_80": f"R$ {perf['falta_80']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
             "falta_90": f"R$ {perf['falta_90']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
@@ -545,7 +550,7 @@ def register_callbacks(app):
             {"name": "Feito/Dia", "id": "feito_diario"},
             {"name": "Meta", "id": "meta"},
             {"name": "Meta/Dia", "id": "meta_diaria"},
-            {"name": "% Meta", "id": "atingido_meta"},
+            {"name": "% Meta", "id": "atingido_meta", "presentation": "markdown"},
             {"name": "Falta 70%", "id": "falta_70"},
             {"name": "Falta 80%", "id": "falta_80"},
             {"name": "Falta 90%", "id": "falta_90"},

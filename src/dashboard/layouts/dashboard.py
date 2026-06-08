@@ -21,7 +21,7 @@ from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get
 meses = MESES
 OPCOES_FASES_DASHBOARD = OPCOES_FASES
 
-def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str = "SEMEAR"):
+def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str = "SEMEAR", admissao: str = None):
     """
     Constrói o layout do dashboard do operador.
     
@@ -29,15 +29,20 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
         nome_usuario: Nome do operador logado
         imagem_url: URL da foto do operador
         banco: 'SEMEAR' ou 'AGORACRED' — controla quais filtros e gráficos aparecem
+        admissao: Data de admissão do operador logado
     """
+    # Cria o menu lateral (sidebar) destacado na rota 'dashboard'
     sidebar = get_sidebar("dashboard")
 
     # Filtro de fase: visível só para SEMEAR
     fase_style = {"display": "block"} if banco == "SEMEAR" else {"display": "none"}
 
+    # Bloco principal de conteúdo da página
     conteudo = html.Div(
         [
-            get_header(nome_usuario, imagem_url, "Painel Global Analítico"),
+            # Renderiza o cabeçalho superior passando o nome, avatar, título, admissão e perfil do operador
+            get_header(nome_usuario, imagem_url, "Painel Global Analítico", admissao=admissao, perfil="operador"),
+
 
             # === FILTROS ===
             dbc.Row(

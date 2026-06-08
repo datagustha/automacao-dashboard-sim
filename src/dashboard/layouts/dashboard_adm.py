@@ -2,33 +2,37 @@
 LAYOUT DO DASHBOARD ADM
 ========================
 Exibe visão consolidada do grupo com duas seções:
-- Faturamento + Tabela de operadores SEMEAR
-- Faturamento + Tabela de operadores AGORACRED
-- NOVO: Gráficos + Tabela de evolução diária separados por banco
+- Faturamento + Meta + % + Barra de progresso (SEMEAR e AGORACRED separados)
+- Tabela de operadores SEMEAR
+- Tabela de operadores AGORACRED
+- Gráficos + Tabela de evolução diária separados por banco
 
 Só é exibido quando o login tem banco='ADM'.
 """
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc, html, dash_table
 from datetime import date, datetime
 from dash_iconify import DashIconify
 
 from src.dashboard.components.menus import get_sidebar, get_header
-from src.dashboard.components.cards import card_indicador
+from src.dashboard.components.cards import card_indicador, card_com_meta
 from src.dashboard.components.tabelas import container_tabela_cheia
 
 from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos
 meses = MESES
 
 
-def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
+def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao: str = None):
     """Constrói o layout do dashboard do ADM com as duas seções de banco e filtro de operador."""
 
+    # Cria o menu lateral destacado como dashboard e com perfil adm
     sidebar = get_sidebar("dashboard", perfil="adm")
 
+    # Bloco principal de conteúdo do painel ADM
     conteudo = html.Div(
         [
-            get_header(nome_usuario, imagem_url, "Painel ADM — Visão Geral do Grupo"),
+            # Renderiza o cabeçalho superior
+            get_header(nome_usuario, imagem_url, "Painel ADM — Visão Geral do Grupo", admissao=admissao, perfil="adm"),
 
             # ── Filtros ──────────────────────────────────────
             dbc.Row(
@@ -83,31 +87,48 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                 className="mb-4 align-items-start"
             ),
 
-            # ── Cards globais do grupo ──────────────────────────────────
+            # ── LINHA 1: Cards SEMEAR e AGORACRED ────────────────
             dbc.Row(
                 [
                     dbc.Col(
-                        card_indicador(
+                        id="card-semear",
+                        children=card_com_meta(
                             titulo="FATURAMENTO SEMEAR",
-                            valor_default="R$ 0,00",
+                            valor="R$ 0,00",
+                            meta="R$ 0,00",
+                            percentual=0,
+                            cor="#7e3d97",
                             id_valor="kpi-fat-semear",
-                            cor_icone="#7e3d97",
-                            icon_name="lucide:trending-up",
+                            id_meta="kpi-meta-semear",
+                            id_percentual="kpi-percentual-semear",
+                            id_barra="barra-progresso-semear",
                             id_sub_texto="kpi-fat-semear-anterior"
                         ),
-                        width=12, md=3, className="mb-4"
+                        width=12, md=6, className="mb-3"
                     ),
                     dbc.Col(
-                        card_indicador(
+                        id="card-agoracred",
+                        children=card_com_meta(
                             titulo="FATURAMENTO AGORACRED",
-                            valor_default="R$ 0,00",
+                            valor="R$ 0,00",
+                            meta="R$ 0,00",
+                            percentual=0,
+                            cor="#10B981",
                             id_valor="kpi-fat-agoracred",
-                            cor_icone="#A0CD4A",
-                            icon_name="lucide:trending-up",
+                            id_meta="kpi-meta-agoracred",
+                            id_percentual="kpi-percentual-agoracred",
+                            id_barra="barra-progresso-agoracred",
                             id_sub_texto="kpi-fat-agoracred-anterior"
                         ),
-                        width=12, md=3, className="mb-4"
+                        width=12, md=6, className="mb-3"
                     ),
+                ],
+                className="g-3 mb-0"
+            ),
+
+            # ── LINHA 2: Cards complementares (mesmo tamanho md=6) ──
+            dbc.Row(
+                [
                     dbc.Col(
                         card_indicador(
                             titulo="OPERAÇÕES PAGAS",
@@ -117,7 +138,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                             icon_name="lucide:credit-card",
                             id_sub_texto="kpi-ops-adm-anterior"
                         ),
-                        width=12, md=3, className="mb-4"
+                        width=12, md=6, className="mb-3"
                     ),
                     dbc.Col(
                         card_indicador(
@@ -127,13 +148,13 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                             cor_icone="#7e3d97",
                             icon_name="lucide:ticket",
                         ),
-                        width=12, md=3, className="mb-4"
+                        width=12, md=6, className="mb-3"
                     ),
                 ],
                 className="g-3"
             ),
 
-            # ── GRÁFICOS DE EVOLUÇÃO DIÁRIA SEPARADOS ─────────────────────
+            # ── GRÁFICOS DE EVOLUÇÃO DIÁRIA SEPARADOS ────────────
             html.Div(
                 [
                     html.Hr(style={"borderColor": "#7e3d97", "borderWidth": "2px"}),
@@ -164,10 +185,62 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
                 ),
             ], className="mb-3"),
             
-            # TABELA DE VALORES DIÁRIOS
+            # TABELA DE VALORES DIÁRIOS (COM LINHA TOTAL ROXA)
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-evolucao-diaria-adm", "📊 Valores Diários por Banco"),
+                    html.Div(
+                        [
+                            html.H5(
+                                "📊 Valores Diários por Banco",
+                                className="m-0 font-weight-bold mb-3",
+                                style={"color": "var(--text-main)"}
+                            ),
+                            dcc.Loading(
+                                id="loading-tabela-evolucao",
+                                type="circle",
+                                children=[
+                                    dash_table.DataTable(
+                                        id="tabela-evolucao-diaria-adm",
+                                        columns=[
+                                            {"name": "📅 Dia", "id": "dia"},
+                                            {"name": "🟣 SEMEAR (R$)", "id": "semear"},
+                                            {"name": "🟢 AGORACRED (R$)", "id": "agoracred"},
+                                            {"name": "⚫ TOTAL (R$)", "id": "total"}
+                                        ],
+                                        page_size=32,
+                                        sort_action="native",
+                                        style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                        style_header={
+                                            "backgroundColor": "var(--purple-main)",
+                                            "color": "white",
+                                            "fontWeight": "600",
+                                            "textAlign": "center",
+                                            "padding": "10px",
+                                        },
+                                        style_cell={
+                                            "textAlign": "center",
+                                            "padding": "10px",
+                                            "borderBottom": "1px solid #E5E7EB",
+                                            "color": "var(--text-main)",
+                                            "fontSize": "13px",
+                                        },
+                                        style_data_conditional=[
+                                            # LINHA TOTAL EM ROXO
+                                            {
+                                                "if": {"filter_query": '{dia} = "📊 TOTAL DO PERÍODO"'},
+                                                "backgroundColor": "#e9d8fd",
+                                                "color": "#4a1d8c",
+                                                "fontWeight": "bold",
+                                                "fontSize": "14px",
+                                            },
+                                            {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+                                        ],
+                                    )
+                                ],
+                            ),
+                        ],
+                        className="dashboard-panel"
+                    ),
                     width=12
                 )
             ], className="mb-4"),
@@ -193,10 +266,10 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
             # ── Seção AGORACRED ─────────────────────────────────────────
             html.Div(
                 [
-                    html.Hr(style={"borderColor": "#A0CD4A", "borderWidth": "2px"}),
+                    html.Hr(style={"borderColor": "#10B981", "borderWidth": "2px"}),
                     html.H4(
                         [DashIconify(icon="lucide:building-2", width=22, className="me-2"), "AGORACRED"],
-                        style={"color": "#A0CD4A", "fontWeight": "700"}
+                        style={"color": "#10B981", "fontWeight": "700"}
                     ),
                 ],
                 className="mb-3 mt-2"
@@ -209,6 +282,10 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None):
             ], className="mb-4"),
 
             dcc.Interval(id='intervalo-atualizacao-adm', interval=300 * 1000, n_intervals=0),
+            
+            # Stores para armazenar valores calculados
+            dcc.Store(id="store-meta-semear", data=0),
+            dcc.Store(id="store-meta-agoracred", data=0),
         ],
         className="main-content"
     )

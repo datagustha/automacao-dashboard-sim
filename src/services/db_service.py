@@ -22,6 +22,7 @@ ESTRUTURA DO ARQUIVO:
 3. FUNÇÕES DE BUSCA - PAGAMENTOS (SEMEAR e AGORACRED)
 4. FUNÇÕES DE BUSCA - METAS (SEMEAR e AGORACRED)
 5. FUNÇÕES GENÉRICAS (para o dashboard)
+6. FUNÇÕES PARA O ADM (busca coletiva por banco)
 """
 
 import pandas as pd
@@ -266,6 +267,8 @@ def Buscar_login(login: str):
                 "email": operador.email,
                 "senha_hash": operador.senha_hash,
                 "primeiro_acesso": operador.primeiro_acesso,
+                # Converte date para string ISO para garantir serialização no dcc.Store
+                "admissao": str(operador.admissao) if operador.admissao else None,
             }
             
             print(f"[OK] Operador localizado: {dados['nome']}")
@@ -544,32 +547,13 @@ def buscar_metas_agoracred(dados_operador: dict):
 
 
 # ================================================================
-# 5. FUNÇÕES GENÉRICAS (PARA O DASHBOARD)
+# 5. FUNÇÕES GENÉRICAS (para o dashboard)
 # ================================================================
 
-def Buscar_pagamento_por_operador(dados_operador: dict):
+def Buscar_pagamento_por_operador(dados_operador: dict, atividade: str = None):
     """
     BUSCA PAGAMENTOS DO OPERADOR BASEADO NO BANCO DELE (FUNÇÃO GENÉRICA).
-    
-    O QUE FAZ:
-    - Verifica o campo 'banco' do operador
-    - Se for 'SEMEAR', chama Buscar_pagamento_semear
-    - Se for 'AGORACRED', chama Buscar_pagamento_agoracred
-    - Se for 'ADM' ou outro, tenta ambos
-    
-    POR QUE USAR:
-    - Simplifica o código do dashboard
-    - O callback não precisa saber qual banco chamar
-    - Centraliza a lógica de decisão
-    
-    ARGS:
-        dados_operador: Dicionário com dados do operador
-    
-    RETORNO:
-        list: Lista de pagamentos
-        None: Se não houver pagamentos
     """
-    
     if not dados_operador:
         return None
     
@@ -578,10 +562,13 @@ def Buscar_pagamento_por_operador(dados_operador: dict):
     
     if login == 'TODOS':
         dados_gerais = buscar_pagamentos_todos_operadores_por_banco(banco)
-        if not dados_gerais: return []
+        if not dados_gerais:
+            return []
         
         pag_consolidados = []
         for op, pgtos, mts in dados_gerais:
+            if atividade == 'ativo' and str(op.get('atividade', '')).strip().lower() != 'ativo':
+                continue
             if pgtos:
                 pag_consolidados.extend(pgtos)
         return pag_consolidados
@@ -597,35 +584,62 @@ def Buscar_pagamento_por_operador(dados_operador: dict):
         return Buscar_pagamento_agoracred(dados_operador)
 
 
-def buscar_metas_por_operador(dados_operador: dict):
+def buscar_metas_por_operador(dados_operador: dict, atividade: str = None):
     """BUSCA METAS DO OPERADOR (COM SUPORTE A TODOS)."""
+    # Se o dicionario de dados do operador estiver vazio, retorna nulo
     if not dados_operador:
+        # Retorna nulo
         return None
     
+    # Extrai o login do operador (ex: 'TODOS' ou login individual)
     login = dados_operador.get('login')
+    # Extrai o banco associado (por padrao 'SEMEAR' se nao informado)
     banco = dados_operador.get('banco', 'SEMEAR')
     
+    # Se o login solicitado for 'TODOS' para visao consolidada
     if login == 'TODOS':
+        # Importa pandas localmente para tratar a conversao de datas das metas
         import pandas as pd
+        # Busca os dados de faturamento, pagamentos e metas de todos os operadores do banco
         dados_gerais = buscar_pagamentos_todos_operadores_por_banco(banco)
+        # Se o retorno for nulo ou vazio, retorna lista vazia
         if not dados_gerais: return []
         
+        # Inicializa dicionario para consolidar as metas acumuladas por data (dia do mes)
         meta_dict = {}
+        # Itera sobre cada operador, seus pagamentos e metas cadastrados
         for op, pgtos, mts in dados_gerais:
-            if not mts: continue
+            # Se for solicitado filtrar por atividade 'ativo' e o operador for inativo
+            if atividade == 'ativo' and str(op.get('atividade', '')).strip().lower() != 'ativo':
+                # Ignora este operador e pula para o proximo
+                continue
+            # Se o operador nao tiver nenhuma meta cadastrada no historico
+            if not mts:
+                # Pula para o proximo operador
+                continue
+            # Itera sobre cada registro de meta individual do operador
             for m in mts:
+                # Obtem a data associada a meta
                 data_obj = m.get('data')
+                # Se a data for string (texto)
                 if isinstance(data_obj, str):
                     try:
+                        # Tenta converter em string de data simplificada YYYY-MM-DD
                         data_chave = str(pd.to_datetime(data_obj).date())
                     except:
+                        # Em caso de erro na conversao, usa o valor original convertido para string
                         data_chave = str(data_obj)
+                # Se a data ja for um objeto de data/datetime
                 elif hasattr(data_obj, 'date'):
+                    # Converte em string no formato YYYY-MM-DD
                     data_chave = str(data_obj.date())
                 else:
+                    # Em outro caso, usa a string direta
                     data_chave = str(data_obj)
                 
+                # Se a data correspondente ainda nao existir no dicionario de metas consolidadas
                 if data_chave not in meta_dict:
+                    # Inicializa o dicionario daquela data com valores zerados
                     meta_dict[data_chave] = {
                         'data': m.get('data'),
                         'meta70': 0.0,
@@ -635,22 +649,36 @@ def buscar_metas_por_operador(dados_operador: dict):
                         'meta_ranking': 0.0
                     }
                 
+                # Acumula a meta de 70% somando o valor do operador atual
                 meta_dict[data_chave]['meta70'] += float(m.get('meta70') or 0.0)
+                # Acumula a meta de 80% somando o valor do operador atual
                 meta_dict[data_chave]['meta80'] += float(m.get('meta80') or 0.0)
+                # Acumula a meta de 90% somando o valor do operador atual
                 meta_dict[data_chave]['meta90'] += float(m.get('meta90') or 0.0)
+                # Acumula a meta de 100% somando o valor do operador atual
                 meta_dict[data_chave]['meta100'] += float(m.get('meta100') or 0.0)
+                # Acumula a meta de ranking somando o valor do operador atual
                 meta_dict[data_chave]['meta_ranking'] += float(m.get('meta_ranking') or m.get('metaRanking') or 0.0)
                 
+        # Retorna a lista contendo as metas acumuladas de todas as datas
         return list(meta_dict.values())
         
+    # Se o banco do operador individual for 'SEMEAR'
     if banco == 'SEMEAR':
+        # Retorna as metas do Semear
         return buscar_metas_semear(dados_operador)
+    # Se o banco do operador individual for 'AGORACRED'
     elif banco == 'AGORACRED':
+        # Retorna as metas do Agoracred
         return buscar_metas_agoracred(dados_operador)
     else:
+        # Se nao especificado, tenta buscar no Semear primeiro
         metas = buscar_metas_semear(dados_operador)
+        # Se encontrar registros de metas no Semear, retorna eles
         if metas:
+            # Retorna metas do Semear
             return metas
+        # Caso contrario, busca e retorna registros de metas do Agoracred
         return buscar_metas_agoracred(dados_operador)
 
 
@@ -675,6 +703,8 @@ def buscar_todos_operadores_por_banco(banco: str) -> list:
                     "turno": op.turno,
                     "imagem": op.imagem,
                     "atividade": op.atividade,
+                    # Converte date para string ISO para garantir serialização no dcc.Store
+                    "admissao": str(op.admissao) if op.admissao else None,
                 })
             
             return lista
@@ -682,6 +712,7 @@ def buscar_todos_operadores_por_banco(banco: str) -> list:
         except Exception as e:
             print(f"[ERRO] Erro ao buscar operadores: {e}")
             return []
+
 
 def buscar_pagamentos_todos_operadores_por_banco(banco: str) -> list:
     """BUSCA TODOS OS PAGAMENTOS DE UM BANCO."""

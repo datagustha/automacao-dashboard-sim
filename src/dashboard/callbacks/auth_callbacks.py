@@ -69,34 +69,58 @@ def register_callbacks(app):
             return get_login_layout()
 
         # 3. USUÁRIO LOGADO...
+        # Obtém o perfil do usuário logado (ex: 'adm' ou 'operador')
         perfil = login_dados.get('perfil', 'operador')
+        # Obtém o banco ativo do operador (ex: 'SEMEAR' ou 'AGORACRED')
         banco  = login_dados.get('banco', 'SEMEAR')
+        # Obtém o nome completo do operador logado
         nome   = login_dados.get('nome')
+        # Obtém a foto (imagem de perfil) do operador
         imagem = login_dados.get('imagem')
+        # Obtém a data de admissão gravada na sessão
+        admissao = login_dados.get('admissao')
+        
+        # Se a data de admissão não estiver nos dados da sessão (ex: login antigo)
+        if not admissao:
+            # Busca os dados do operador no banco de dados como fallback
+            op_dados = Buscar_login(login_dados.get('login'))
+            # Se o operador for localizado no banco
+            if op_dados:
+                # Recupera a data de admissão cadastrada no banco
+                admissao = op_dados.get('admissao')
 
         # --- ROTA: RAIZ (se logado, vai pro dashboard) ---
         if pathname in ['/', None]:
+            # Se o perfil for administrador
             if perfil == 'adm':
-                return get_dashboard_adm_layout(nome, imagem)
+                # Retorna o layout do dashboard de administrador passando admissao
+                return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
             else:
-                return get_dashboard_layout(nome, imagem, banco=banco)
+                # Retorna o layout do operador comum passando admissao e o banco
+                return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
 
         # --- ROTA: DASHBOARD ---
         elif pathname == '/dashboard':
+            # Se o perfil for administrador
             if perfil == 'adm':
-                return get_dashboard_adm_layout(nome, imagem)
+                # Retorna o layout do dashboard de administrador passando admissao
+                return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
             else:
-                return get_dashboard_layout(nome, imagem, banco=banco)
+                # Retorna o layout do operador comum passando admissao e o banco
+                return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
 
         # --- ROTA: PAGAMENTOS ---
         elif pathname == '/pagamentos':
-            return get_pagamentos_layout(nome, imagem, perfil=perfil)
+            # Retorna o layout de pagamentos passando admissao e o perfil correspondente
+            return get_pagamentos_layout(nome, imagem, perfil=perfil, admissao=admissao)
 
         # --- ROTA: OPERADORES ---
         elif pathname.startswith('/operadores'):
+            # Se o usuário logado NÃO for administrador
             if perfil != 'adm':
-                # Operador vê APENAS seu próprio detalhe de produção
-                op_data = {"login": login_dados.get('login'), "banco": banco, "nome": nome, "imagem": imagem}
+                # Operador vê APENAS seu próprio detalhe de produção (passando seus dados de sessão)
+                op_data = {"login": login_dados.get('login'), "banco": banco, "nome": nome, "imagem": imagem, "admissao": admissao}
+                # Retorna o layout de detalhe do operador passando admissao
                 return get_operador_detalhe_layout(
                     nome_usuario=nome,
                     imagem_url=imagem,
@@ -105,17 +129,24 @@ def register_callbacks(app):
                     is_adm=False
                 )
             else:
-                # ADM tem acesso à tela com filtros (dropdown)
+                # ADM tem acesso à tela com filtros de banco, atividade e operador
                 partes = pathname.strip('/').split('/')
+                # Define o banco alvo a ser visualizado
                 banco_alvo = partes[1].upper() if len(partes) >= 2 else "SEMEAR"
+                # Define o login do operador alvo a ser visualizado
                 login_alvo = partes[2]         if len(partes) >= 3 else "TODOS"
                 
+                # Se for selecionado "TODOS" os operadores
                 if login_alvo == "TODOS":
+                    # Cria dados gerais do operador contendo TODOS e o banco correspondente
                     op_data = {"login": "TODOS", "banco": banco_alvo}
                 else:
+                    # Busca os dados do operador no banco de dados pelo login
                     op_banco = Buscar_login(login_alvo)
+                    # Se localizado, usa os dados do banco. Senha e demais campos nao sao afetados.
                     op_data  = op_banco if op_banco else {"login": "TODOS", "banco": banco_alvo}
                     
+                # Retorna o detalhe do operador indicando is_adm=True
                 return get_operador_detalhe_layout(
                     nome_usuario=nome,
                     imagem_url=imagem,
@@ -126,16 +157,24 @@ def register_callbacks(app):
 
         # --- ROTA: DETALHE DO OPERADOR (Vista Individual) ---
         elif pathname.startswith('/operador/'):
+            # Obtem o login do operador a partir da URL
             operador_login = pathname.split('/')[-1]
+            # Busca os dados desse operador no banco de dados
             operador = Buscar_login(operador_login)
+            # Se encontrar o operador
             if operador:
+                # Retorna o layout de detalhe do operador com seus respectivos dados
                 return get_operador_detalhe_layout(nome, imagem, operador, operador.get('banco', 'SEMEAR'))
-            return dbc.Alert("❌ Operador não encontrado.", color="danger")
+            # Caso contrário, mostra alerta de não encontrado
+            return dbc.Alert("Erro: Operador nao encontrado.", color="danger")
 
         # --- FALLBACK: Se a rota não existir mas está logado, volta pro Dashboard ---
+        # Se for administrador
         if perfil == 'adm':
-            return get_dashboard_adm_layout(nome, imagem)
-        return get_dashboard_layout(nome, imagem, banco=banco)
+            # Retorna o dashboard administrativo correspondente
+            return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
+        # Se for operador comum, retorna o dashboard do operador correspondente
+        return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
 
 
 
@@ -355,12 +394,14 @@ def register_callbacks(app):
                 # 🔥 2FA OK! Login concluído com sucesso
                 banco_op = operador.get('banco', 'SEMEAR')
                 perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
+                # Cria o dicionario de dados do usuario que sera salvo na sessao do navegador
                 dados_usuario = {
                     'nome': operador['nome'],
                     'login': operador['login'],
                     'imagem': operador.get('imagem'),
                     'banco': banco_op,
-                    'perfil': perfil_op
+                    'perfil': perfil_op,
+                    'admissao': operador.get('admissao')
                 }
                 
                 return (dados_usuario, "", "", 
@@ -423,12 +464,14 @@ def register_callbacks(app):
                 operador = Buscar_login(login)
                 banco_op = operador.get('banco', 'SEMEAR')
                 perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
+                # Popula os dados do usuario que logou pela primeira vez apos criar senha
                 dados_usuario = {
                     'nome': operador['nome'],
                     'login': operador['login'],
                     'imagem': operador.get('imagem'),
                     'banco': banco_op,
-                    'perfil': perfil_op
+                    'perfil': perfil_op,
+                    'admissao': operador.get('admissao')
                 }
                 return (dados_usuario, "Senha criada com sucesso!", "", 
                         {"display": "none"}, {"display": "none"}, {"display": "none"},
