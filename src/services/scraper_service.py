@@ -35,6 +35,7 @@ def _criar_navegador_headless(pasta_downloads: str = None):
     opcoes.add_argument("--disable-dev-shm-usage")
     opcoes.add_argument("--disable-gpu")
     opcoes.add_argument("--window-size=1920,1080")
+    opcoes.add_argument("--remote-debugging-port=9222")
 
     if pasta_downloads is None:
         pasta_downloads = str(BASE_DIR / "data" / "downloads")
