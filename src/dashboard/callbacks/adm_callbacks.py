@@ -8,6 +8,7 @@ CORRIGIDO:
 - Cards de faturamento populados corretamente
 - Tabela de evolução diária com linha TOTAL roxa
 - Gráficos de evolução diária por banco funcionando
+- 🔧 CORRIGIDO: Callback de navegação não entra mais em loop infinito
 """
 
 import pandas as pd
@@ -699,6 +700,7 @@ def register_callbacks(app):
 
     # =========================================================================
     # CALLBACK 7 — Navega automaticamente ao alterar banco ou operador
+    # 🔧 CORRIGIDO: Não entra mais em loop infinito
     # =========================================================================
     @app.callback(
         Output("url", "pathname", allow_duplicate=True),
@@ -710,16 +712,26 @@ def register_callbacks(app):
         prevent_initial_call=True,
     )
     def navegar_para_operador(banco, login_operador, current_pathname):
+        """
+        Navega para a URL do operador selecionado.
+        🔧 CORREÇÃO: Verifica se a URL já está correta antes de navegar.
+        """
+        # Se não tem banco, não faz nada
         if not banco:
             raise PreventUpdate
-
-        # Se o filtro foi limpo (None) ou selecionado TODOS → volta para view geral
-        if not login_operador or login_operador == "TODOS":
+        
+        # Se não tem operador selecionado, não faz nada
+        if not login_operador:
+            raise PreventUpdate
+        
+        # Constrói a URL de destino
+        if login_operador == "TODOS":
             nova_url = f"/operadores/{banco}/TODOS"
         else:
             nova_url = f"/operadores/{banco}/{login_operador}"
-
+        
+        # 🔥 SÓ NAVEGA SE A URL FOR DIFERENTE
         if current_pathname == nova_url:
             raise PreventUpdate
-
+        
         return nova_url
