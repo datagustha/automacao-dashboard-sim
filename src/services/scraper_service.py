@@ -30,6 +30,7 @@ def _criar_navegador_headless(pasta_downloads: str = None):
     Se pasta_downloads não for informada, usa a padrão do projeto.
     """
     opcoes = Options()
+    opcoes.binary_location = "/usr/bin/google-chrome-stable"
     opcoes.add_argument("--headless=new")
     opcoes.add_argument("--no-sandbox")
     opcoes.add_argument("--disable-dev-shm-usage")
