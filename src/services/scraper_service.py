@@ -16,6 +16,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 
 from src.utils.web_utils import clicar_com_seguranca, aguardar_toast_fechar
 
@@ -30,7 +32,7 @@ def _criar_navegador_headless(pasta_downloads: str = None):
     Se pasta_downloads não for informada, usa a padrão do projeto.
     """
     opcoes = Options()
-    opcoes.binary_location = "/usr/bin/google-chrome-stable"
+    opcoes.binary_location = "/usr/bin/google-chrome"
     opcoes.add_argument("--headless=new")
     opcoes.add_argument("--no-sandbox")
     opcoes.add_argument("--disable-dev-shm-usage")
@@ -45,7 +47,9 @@ def _criar_navegador_headless(pasta_downloads: str = None):
     prefs = {"download.default_directory": pasta_downloads}
     opcoes.add_experimental_option("prefs", prefs)
 
-    return webdriver.Chrome(options=opcoes), pasta_downloads
+    # Usa webdriver-manager para gerenciar o chromedriver
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=opcoes), pasta_downloads
 
 
 def _fazer_login(navegador):
