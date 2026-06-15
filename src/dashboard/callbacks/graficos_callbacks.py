@@ -3,6 +3,7 @@ CALLBACKS DOS GRÁFICOS E TABELAS - DASHBOARD
 =============================================
 CORRIGIDO: Filtros de mês funcionando, diferencia ADMIN/OPERADOR
 PADRONIZADO: Gráficos com mesmo estilo, títulos, tamanhos
+CORRIGIDO: Atualização automática a cada 5 minutos (dcc.Interval)
 """
 
 import plotly.graph_objects as go
@@ -110,6 +111,7 @@ def register_callbacks(app):
         ],
         [
             Input('url', 'pathname'),
+            Input('interval-component', 'n_intervals'),  # ← ADICIONADO! Atualização automática a cada 5 minutos
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-texto-busca', 'value'),
@@ -121,10 +123,10 @@ def register_callbacks(app):
             State('login-success-store', 'data')
         ]
     )
-    def atualizar_dashboard(pathname, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador):
+    def atualizar_dashboard(pathname, n_interval, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador):
         """
         CORRIGIDO: 
-        - Removeu n_intervals (causava recarga desnecessária)
+        - Adicionado Input('interval-component', 'n_intervals') para atualização automática
         - Filtro de mês aplicado CORRETAMENTE
         - Gráficos padronizados com mesmo estilo
         """
@@ -151,7 +153,12 @@ def register_callbacks(app):
             return retorno_vazio
         
         banco = operador.get('banco', 'SEMEAR')
-        log_debug(f"=== DASHBOARD - Operador: {login} | Banco: {banco} | Tipo: {tipo_usuario} | Mês: {mes}/{ano} ===")
+        
+        # Log para debug da atualização automática
+        if n_interval and n_interval > 0:
+            log_debug(f"🔄 ATUALIZAÇÃO AUTOMÁTICA #{n_interval} - Operador: {login} | Banco: {banco} | {datetime.datetime.now().strftime('%H:%M:%S')}")
+        else:
+            log_debug(f"=== DASHBOARD - Operador: {login} | Banco: {banco} | Tipo: {tipo_usuario} | Mês: {mes}/{ano} ===")
         
         # BUSCA PAGAMENTOS
         pagamentos_brutos = Buscar_pagamento_por_operador(operador)
@@ -469,6 +476,7 @@ def register_callbacks(app):
             Output('info-dias-performance', 'children'),
         ],
         [
+            Input('interval-component', 'n_intervals'),  # ← ADICIONADO! Também atualiza a tabela automaticamente
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-data-range', 'start_date'),
@@ -476,8 +484,8 @@ def register_callbacks(app):
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_tabela_performance(mes, ano, data_inicio, data_fim, dados_operador):
-        """Atualiza tabela de performance com os filtros corretos"""
+    def atualizar_tabela_performance(n_interval, mes, ano, data_inicio, data_fim, dados_operador):
+        """Atualiza tabela de performance com os filtros corretos e atualização automática"""
         
         if not dados_operador:
             return [], [], ""
@@ -489,6 +497,10 @@ def register_callbacks(app):
         operador = Buscar_login(login)
         if not operador:
             return [], [], ""
+        
+        # Log para debug
+        if n_interval and n_interval > 0:
+            log_debug(f"🔄 ATUALIZAÇÃO AUTOMÁTICA DA TABELA #{n_interval}")
         
         banco = operador.get('banco', 'SEMEAR')
         pagamentos = Buscar_pagamento_por_operador(operador)
