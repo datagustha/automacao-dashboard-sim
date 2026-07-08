@@ -730,3 +730,69 @@ def buscar_pagamentos_todos_operadores_por_banco(banco: str) -> list:
         resultado.append((operador, pagamentos or [], metas or []))
     
     return resultado
+
+
+# ================================================================
+# 7. FUNÇÕES DE TMA (Acionamento por Operadores)
+# ================================================================
+
+def buscar_tma_operador(login: str, banco: str, anoatual: int = None, mesnum: int = None) -> dict | None:
+    """
+    Lê o CSV de TMA processado e retorna os dados de acionamento
+    do operador especificado para o mês/ano indicados.
+
+    O CSV é gerado por processar_arquivo_tma() em data_processor.py e
+    fica em: data/processed/<banco>/tma/<ano>/tma_<banco>_<mes>_<mesabrev>_<ano>.csv
+
+    Args:
+        login:    Login do operador (ex: '2552ROSELI')
+        banco:    Banco do operador ('SEMEAR' ou 'AGORACRED')
+        anoatual: Ano de referência (default = ano corrente)
+        mesnum:   Número do mês de referência (default = mês corrente)
+
+    Returns:
+        dict com os campos do TMA do operador, ou None se não encontrado.
+    """
+    import pathlib
+    import os
+    from datetime import datetime
+
+    try:
+        if not anoatual:
+            anoatual = datetime.now().year
+        if not mesnum:
+            mesnum = datetime.now().month
+
+        # Gera a abreviação do mês em inglês (Jan, Feb, …) para montar o nome do arquivo
+        mesabrev = datetime(anoatual, mesnum, 1).strftime("%b")
+        banco_lower = banco.lower()
+
+        # Caminho do CSV gerado por processar_arquivo_tma()
+        BASE_DIR = pathlib.Path(__file__).resolve().parent.parent.parent
+        caminho_csv = (
+            BASE_DIR / "data" / "processed" / banco_lower / "tma" / str(anoatual)
+            / f"tma_{banco_lower}_{mesnum}_{mesabrev}_{anoatual}.csv"
+        )
+
+        if not caminho_csv.exists():
+            print(f"[TMA] CSV não encontrado: {caminho_csv}")
+            return None
+
+        df = pd.read_csv(caminho_csv)
+
+        if "operador" not in df.columns:
+            print("[TMA] Coluna 'operador' não encontrada no CSV.")
+            return None
+
+        # Comparação case-insensitive para tolerar diferenças de caixa
+        df_op = df[df["operador"].astype(str).str.strip().str.upper() == login.strip().upper()]
+
+        if df_op.empty:
+            print(f"[TMA] Operador '{login}' não encontrado no CSV de TMA.")
+            return None
+
+        return df_op.iloc[0].to_dict()
+
+    except Exception as e:
+        print(f"[TMA] Erro ao buscar TMA do operador {login}: {e}")
+        return None

@@ -2,6 +2,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
+from selenium.webdriver.common.action_chains import ActionChains
+import time
 
 # Esta função de utilidade foi criada para isolar comportamentos repetitivos da web
 
@@ -60,4 +62,22 @@ def clicar_com_seguranca(navegador, by, value, timeout=10):
     except Exception as e:
         # Pega qualquer outro problema imprevisível
         print(f"❌ Erro ao clicar: {e}")
+        return False
+
+
+def passar_mouse_sobre_elemento(navegador, by, value, timeout=10):
+    """
+    Move o mouse até um elemento específico (hover).
+    Útil para menus dropdown que só aparecem com o mouse por cima.
+    """
+    try:
+        elemento = WebDriverWait(navegador, timeout).until(
+            EC.presence_of_element_located((by, value))
+        )
+        action = ActionChains(navegador)
+        action.move_to_element(elemento).perform()
+        time.sleep(0.5)  # Pequena pausa para o submenu aparecer
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao passar mouse sobre elemento: {e}")
         return False

@@ -735,3 +735,140 @@ def register_callbacks(app):
             raise PreventUpdate
         
         return nova_url
+
+    # =========================================================================
+    # CALLBACK 8 — Tabela de Ranking de TMA (Acionamento por Operadores)
+    # =========================================================================
+    @app.callback(
+        [
+            Output("tabela-tma-adm", "data"),
+            Output("tabela-tma-adm", "columns"),
+        ],
+        [
+            Input("filtro-mes-adm", "value"),
+            Input("filtro-ano-adm", "value"),
+            Input("filtro-atividade-adm", "value"),
+            Input("filtro-operador-adm", "value"),
+            Input("intervalo-atualizacao-adm", "n_intervals"),
+        ],
+        [State("login-success-store", "data")],
+    )
+    def atualizar_tabela_tma_adm(mes, ano, filtro_atividade, operador_filtro, n, dados_operador):
+        """
+        Lê os CSVs de TMA processados de ambos os bancos (SEMEAR e AGORACRED)
+        e monta um ranking de acionamentos para o ADM.
+        """
+        import pathlib
+        from datetime import datetime
+
+        if not dados_operador:
+            return [], []
+
+        perfil = dados_operador.get("perfil", "operador")
+        if perfil != "adm":
+            return [], []
+
+        mes_int  = int(mes) if mes else datetime.now().month
+        ano_int  = int(ano) if ano else datetime.now().year
+        mesabrev = datetime(ano_int, mes_int, 1).strftime("%b")
+
+        BASE_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent
+
+        # Busca operadores ativos se o filtro estiver setado para ATIVO
+        ativos_por_banco = {}
+        if filtro_atividade and filtro_atividade.upper() == "ATIVO":
+            for b in ("SEMEAR", "AGORACRED"):
+                try:
+                    ops = buscar_todos_operadores_por_banco(b)
+                    if ops:
+                        ativos_por_banco[b.lower()] = {
+                            str(op.get("login")).strip().upper() for op in ops
+                            if str(op.get("atividade", "")).strip().lower() == "ativo" and op.get("login")
+                        }
+                except Exception as e:
+                    print(f"[TMA-ADM] Erro ao buscar ativos para {b}: {e}")
+
+        linhas = []
+
+        for banco in ("semear", "agoracred"):
+            caminho_csv = (
+                BASE_DIR / "data" / "processed" / banco / "tma" / str(ano_int)
+                / f"tma_{banco}_{mes_int}_{mesabrev}_{ano_int}.csv"
+            )
+
+            if not caminho_csv.exists():
+                continue
+
+            try:
+                df = pd.read_csv(caminho_csv)
+            except Exception as e:
+                print(f"[TMA-ADM] Erro ao ler CSV {banco}: {e}")
+                continue
+
+            if df.empty or "operador" not in df.columns:
+                continue
+
+            # Filtro por operador específico
+            if operador_filtro and operador_filtro != "TODOS":
+                df = df[df["operador"].astype(str).str.strip().str.upper()
+                        == operador_filtro.strip().upper()]
+
+            for _, row in df.iterrows():
+                op_login = str(row.get("operador", "")).strip()
+
+                # Filtro de atividade: se estiver marcado ATIVO, ignora os inativos
+                if filtro_atividade and filtro_atividade.upper() == "ATIVO":
+                    banco_key = banco.lower()
+                    if banco_key in ativos_por_banco:
+                        if op_login.upper() not in ativos_por_banco[banco_key]:
+                            continue
+
+                tts = int(row.get("tempoTotalSegundos", 0) or 0)
+                h   = tts // 3600
+                m   = (tts % 3600) // 60
+                tempo_falado = f"{h}h {m:02d}min"
+
+                ritmo = float(row.get("acionamentosPorHoraAtiva", 0) or 0)
+                taxa  = float(row.get("taxaAcionamentoCliente", 0) or 0)
+
+                # Formata data para o padrão BR: DD/MM/YYYY HH:MM:SS
+                def _fmt_data(val):
+                    if pd.isna(val) or not val or str(val).strip() in ("—", "nan", "None", ""):
+                        return "—"
+                    try:
+                        dt = pd.to_datetime(val)
+                        return dt.strftime("%d/%m/%Y %H:%M:%S")
+                    except:
+                        return str(val)
+
+                linhas.append({
+                    "operador":      op_login,
+                    "tma":           str(row.get("tempoMedio", "—")),
+                    "acionamentos":  int(row.get("qtdeAcionamentos", 0) or 0),
+                    "clientes":      int(row.get("qtdeClientes", 0) or 0),
+                    "ritmo":         f"{ritmo:.1f}",
+                    "reacionamento": round(taxa, 2),
+                    "tempo_falado":  tempo_falado,
+                    "primeiro":      _fmt_data(row.get("primeiroAcionamento")),
+                    "ultimo":        _fmt_data(row.get("ultimoAcionamento")),
+                })
+
+        if not linhas:
+            return [], []
+
+        # Ordena por quantidade de acionamentos (desc)
+        linhas.sort(key=lambda x: x.get("acionamentos", 0), reverse=True)
+
+        colunas = [
+            {"name": "Operador",      "id": "operador"},
+            {"name": "TMA",           "id": "tma"},
+            {"name": "Acionamentos",  "id": "acionamentos"},
+            {"name": "Clientes",      "id": "clientes"},
+            {"name": "Ritmo/Hora",    "id": "ritmo"},
+            {"name": "Reacionamento", "id": "reacionamento"},
+            {"name": "Tempo Falado",  "id": "tempo_falado"},
+            {"name": "1º Acion.",     "id": "primeiro"},
+            {"name": "Últ. Acion.",   "id": "ultimo"},
+        ]
+
+        return linhas, colunas

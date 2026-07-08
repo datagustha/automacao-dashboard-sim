@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 
-from src.utils.web_utils import clicar_com_seguranca, aguardar_toast_fechar
+from src.utils.web_utils import clicar_com_seguranca, aguardar_toast_fechar, passar_mouse_sobre_elemento
 
 load_dotenv()
 
@@ -98,7 +98,7 @@ def _navegar_ate_relatorio_pagamentos(navegador):
     time.sleep(1)
     clicar_com_seguranca(navegador, By.XPATH, '//*[@id="lkbRelatorios"]')
     time.sleep(1)
-    clicar_com_seguranca(navegador, By.XPATH, "//span[@class='nav-item-text' and text()='Financeiro']")
+    passar_mouse_sobre_elemento(navegador, By.XPATH, "//span[@class='nav-item-text' and text()='Financeiro']")
     time.sleep(1)
     clicar_com_seguranca(navegador, By.XPATH, "//span[@class='nav-item-text' and text()='Pagamentos']")
     time.sleep(3)
@@ -292,7 +292,7 @@ def _gerar_e_aguardar_download(navegador, pasta_downloads: str):
 
 def _mover_para_storage(caminho_origem: str, banco: str, anoatual: int, mesnum: int, mesabrev: str, diaatual: int) -> str:
     """Move o arquivo baixado para a pasta de storage com o nome padronizado."""
-    destino = BASE_DIR / "data" / "storage" / banco / str(anoatual) / f"{mesnum}. {mesabrev}"
+    destino = BASE_DIR / "data" / "storage" / banco / "recebimento" / str(anoatual) / f"{mesnum}. {mesabrev}"
     os.makedirs(destino, exist_ok=True)
 
     novo_nome = f"{mesnum}. Recebimento boleto {mesabrev} {diaatual} {anoatual}.xlsx"

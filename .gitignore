@@ -9,3 +9,8 @@ data/raw/
 .agent/
 .vscode/
 .ipynb_checkpoints/
+.pytest_cache/
+data/downloads/
+data/storage/
+data/processed/
+

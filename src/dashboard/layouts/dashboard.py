@@ -147,6 +147,47 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                 className="g-3"
             ),
 
+            # === KPIs DE LIGAÇÕES (TMA / ACIONAMENTO) ===
+            dbc.Row(
+                [
+                    dbc.Col(
+                        card_indicador(
+                            titulo="TEMPO MÉDIO DE ATENDIMENTO (TMA)",
+                            valor_default="—",
+                            id_valor="kpi-tma-valor",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:phone-call",
+                            id_sub_texto="kpi-tma-subtexto"
+                        ),
+                        width=12, md=4, className="mb-4"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="QUANTIDADE DE ACIONAMENTOS",
+                            valor_default="0",
+                            id_valor="kpi-tma-acionamentos",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:list-todo",
+                            id_sub_texto="kpi-tma-ritmo"
+                        ),
+                        width=12, md=4, className="mb-4"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="TAXA DE REACIONAMENTO",
+                            valor_default="0,0",
+                            id_valor="kpi-tma-reacionamento",
+                            cor_icone="var(--purple-main)",
+                            icon_name="lucide:refresh-cw",
+                            id_sub_texto="kpi-tma-clientes"
+                        ),
+                        width=12, md=4, className="mb-4"
+                    ),
+                ],
+                className="g-3"
+            ),
+
+
             # === GRÁFICOS ===
             dbc.Row([
                 dbc.Col(

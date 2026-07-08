@@ -27,7 +27,8 @@ except Exception:
         print("⚠️  Locale pt_BR não disponível. Nomes de mês podem vir em inglês.")
 
 from src.services.scraper_service import baixar_relatorio_portal
-from src.analysis.data_processor import processar_arquivo_banco
+from src.services.scraper_tma_service import baixar_relatorio_tma
+from src.analysis.data_processor import processar_arquivo_banco, processar_arquivo_tma
 from src.services.db_service import enviar_para_banco_semear, enviar_para_banco_agoracred
 
 
@@ -36,55 +37,86 @@ def main():
     print("  FLUXO PAGAMENTOS AUTOMATIZADOS — SEMEAR + AGORACRED")
     print("=" * 60)
 
-    # ── PASSO 1: Scraping ──────────────────────────────────────────────
-    # Abre o navegador UMA vez, baixa ambos os relatórios, fecha o navegador.
-    print("\n[PASSO 1] Iniciando Web Scraping do portal...")
-    info = baixar_relatorio_portal()
+    # ── PASSO 1: Scraping Recebimentos ─────────────────────────────────
+    print("\n[PASSO 1] Iniciando Web Scraping de recebimentos...")
+    try:
+        info = baixar_relatorio_portal()
+    except Exception as e:
+        print(f"❌ Erro crítico no Web Scraping de recebimentos: {e}")
+        info = None
 
-    if not info or not info.get("arquivos"):
-        print("❌ Falha na etapa de Web Scraping. Encerrando.")
-        return
+    if info and info.get("arquivos"):
+        mesnum   = info["mesnum"]
+        mesabrev = info["mesabrev"]
+        anoatual = info["anoatual"]
+        arquivos = info["arquivos"]
 
-    # Metadados de data (compartilhados entre os bancos)
-    mesnum   = info["mesnum"]
-    mesabrev = info["mesabrev"]
-    anoatual = info["anoatual"]
-    arquivos = info["arquivos"]  # {"semear": "/path/...", "agoracred": "/path/..."}
+        bancos_config = {
+            "semear":    enviar_para_banco_semear,
+            "agoracred": enviar_para_banco_agoracred,
+        }
 
-    # ── PASSO 2: Processamento e Injeção por Banco ─────────────────────
-    # Mapeamos cada banco para sua função de envio correspondente
-    bancos_config = {
-        "semear":    enviar_para_banco_semear,
-        "agoracred": enviar_para_banco_agoracred,
-    }
+        for banco, enviar_func in bancos_config.items():
+            print(f"\n{'=' * 60}")
+            print(f"  BANCO: {banco.upper()} (RECEBIMENTOS)")
+            print(f"{'=' * 60}")
 
-    for banco, enviar_func in bancos_config.items():
-        print(f"\n{'=' * 60}")
-        print(f"  BANCO: {banco.upper()}")
-        print(f"{'=' * 60}")
+            caminho_arquivo = arquivos.get(banco)
+            if not caminho_arquivo:
+                print(f"  ⚠️  Arquivo do {banco} não encontrado nos resultados do scraper. Pulando.")
+                continue
 
-        caminho_arquivo = arquivos.get(banco)
-        if not caminho_arquivo:
-            print(f"  ⚠️  Arquivo do {banco} não encontrado nos resultados do scraper. Pulando.")
-            continue
+            print(f"\n[PASSO 2a] Processando dados — {banco.upper()}...")
+            try:
+                df = processar_arquivo_banco(
+                    caminho_arquivo=caminho_arquivo,
+                    banco=banco,
+                    anoatual=anoatual,
+                    mesnum=mesnum,
+                    mesabrev=mesabrev,
+                )
+                if df is not None and not df.empty:
+                    print(f"\n[PASSO 2b] Enviando para o banco de dados — {banco.upper()}...")
+                    enviar_func(df)
+                else:
+                    print(f"  ⚠️  DataFrame vazio após processamento de {banco}. Pulando injeção.")
+            except Exception as e:
+                print(f"❌ Erro ao processar/injetar recebimentos do banco {banco}: {e}")
+    else:
+        print("⚠️  Etapa de recebimentos pulada ou falhou.")
 
-        # PASSO 2a: Tratamento com Pandas
-        print(f"\n[PASSO 2a] Processando dados — {banco.upper()}...")
-        df = processar_arquivo_banco(
-            caminho_arquivo=caminho_arquivo,
-            banco=banco,
-            anoatual=anoatual,
-            mesnum=mesnum,
-            mesabrev=mesabrev,
-        )
+    # ── PASSO 3: Scraping TMA ──────────────────────────────────────────
+    print("\n[PASSO 3] Iniciando Web Scraping de TMA...")
+    try:
+        info_tma = baixar_relatorio_tma()
+    except Exception as e:
+        print(f"❌ Erro crítico no Web Scraping de TMA: {e}")
+        info_tma = None
 
-        if df is None or df.empty:
-            print(f"  ⚠️  DataFrame vazio após processamento de {banco}. Pulando injeção.")
-            continue
+    if info_tma and info_tma.get("arquivos"):
+        mesnum_tma   = info_tma["mesnum"]
+        mesabrev_tma = info_tma["mesabrev"]
+        anoatual_tma = info_tma["anoatual"]
+        arquivos_tma = info_tma["arquivos"]
 
-        # PASSO 2b: Injeção no Banco de Dados
-        print(f"\n[PASSO 2b] Enviando para o banco de dados — {banco.upper()}...")
-        enviar_func(df)
+        for banco, caminho_tma in arquivos_tma.items():
+            if not caminho_tma:
+                print(f"  ⚠️  Arquivo de TMA para {banco} não encontrado ou falhou. Pulando.")
+                continue
+
+            print(f"\n[PASSO 4] Processando TMA — {banco.upper()}...")
+            try:
+                processar_arquivo_tma(
+                    caminho_arquivo=caminho_tma,
+                    banco=banco,
+                    anoatual=anoatual_tma,
+                    mesnum=mesnum_tma,
+                    mesabrev=mesabrev_tma,
+                )
+            except Exception as e:
+                print(f"❌ Erro ao processar TMA do banco {banco}: {e}")
+    else:
+        print("⚠️  Etapa de TMA pulada ou falhou.")
 
     print("\n" + "=" * 60)
     print("  FLUXO FINALIZADO COM SUCESSO!")

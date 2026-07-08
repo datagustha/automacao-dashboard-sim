@@ -132,9 +132,9 @@ def processar_arquivo_banco(caminho_arquivo: str, banco: str,
         mesnum:          Número do mês (int)
         mesabrev:        Abreviação do mês (str, ex: 'Apr')
     """
-    print(f"\n{'─' * 50}")
-    print(f"▶ Processando dados: {banco.upper()}")
-    print(f"{'─' * 50}")
+    print(f"\n{'-' * 50}")
+    print(f">> Processando dados: {banco.upper()}")
+    print(f"{'-' * 50}")
 
     pd.set_option("display.max_columns", None)
     pd.set_option("display.width", 1000)
@@ -158,5 +158,140 @@ def processar_arquivo_banco(caminho_arquivo: str, banco: str,
 
     print(f"  ✅ Processamento concluído! Linhas: {len(df)}")
     print(f"  💾 CSV de auditoria salvo em: {caminho_csv}")
+
+    return df
+
+
+def _processar_arquivo_tma(caminho_arquivo: str) -> pd.DataFrame | None:
+    """
+    Lê e transforma um arquivo .xlsx de TMA (Acionamento por Operadores) do portal Cobmais.
+    Localiza dinamicamente o cabeçalho 'Operador' e realiza a limpeza e padronização dos dados.
+    """
+    arquivo = os.path.basename(caminho_arquivo)
+    print(f"  [TMA] Processando: {arquivo}")
+
+    try:
+        # 1. Leitura
+        engine = "openpyxl" if caminho_arquivo.endswith(".xlsx") else "xlrd"
+        df_raw = pd.read_excel(caminho_arquivo, engine=engine)
+
+        # 2. Localiza a linha do cabeçalho que contém exatamente 'Operador'
+        header_row_idx = None
+        for idx, row in df_raw.iterrows():
+            if row.astype(str).str.strip().eq('Operador').any():
+                header_row_idx = idx
+                break
+
+        if header_row_idx is None:
+            print(f"  [ERRO] Cabeçalho 'Operador' não localizado no arquivo {arquivo}")
+            return None
+
+        # 3. Corta o DataFrame a partir da linha de cabeçalho
+        df = df_raw.iloc[header_row_idx:].copy()
+        df.columns = df.iloc[0]
+        df = df.iloc[1:].reset_index(drop=True)
+
+        # 4. Remove colunas vazias e limpa nomes de colunas
+        df = df.loc[:, df.columns.notna()]
+        df.columns = df.columns.astype(str).str.strip()
+
+        # 5. Filtragem de linhas inválidas (linhas vazias ou totalizador geral)
+        df = df.dropna(subset=['Operador'])
+        df = df[~df['Operador'].astype(str).str.contains('Total|Geral', case=False, na=False)]
+
+        # 6. Conversão de tipos e normalização de datas/números
+        df['Primeiro Acionamento'] = pd.to_datetime(df['Primeiro Acionamento'], errors='coerce')
+        df['Último Acionamento'] = pd.to_datetime(df['Último Acionamento'], errors='coerce')
+
+        for col in ['Qtde Acionam.', 'Qtde Contratos', 'Qtde Clientes']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+
+        # Função auxiliar para converter "HH:MM:SS" em segundos
+        def _hms_para_segundos(t_str):
+            if pd.isna(t_str) or not isinstance(t_str, str):
+                return 0
+            try:
+                partes = t_str.split(':')
+                if len(partes) == 3:
+                    return int(partes[0]) * 3600 + int(partes[1]) * 60 + int(partes[2])
+                elif len(partes) == 2:
+                    return int(partes[0]) * 60 + int(partes[1])
+                return 0
+            except:
+                return 0
+
+        df['Tempo Total Segundos'] = df['Tempo Total'].apply(_hms_para_segundos)
+        df['Tempo Médio Segundos'] = df['Tempo Médio'].apply(_hms_para_segundos)
+
+        # 7. Cálculo de métricas adicionais de performance para o Dashboard
+        df['Taxa Acionamento/Cliente'] = (df['Qtde Acionam.'] / df['Qtde Clientes']).round(2)
+        df['Taxa Acionamento/Cliente'] = df['Taxa Acionamento/Cliente'].replace([np.inf, -np.inf], 0).fillna(0)
+
+        # Amplitude de atividade no dia (horas da janela de trabalho ativa)
+        df['Amplitude Atividade (Horas)'] = ((df['Último Acionamento'] - df['Primeiro Acionamento']).dt.total_seconds() / 3600).round(2)
+        df['Amplitude Atividade (Horas)'] = df['Amplitude Atividade (Horas)'].replace([np.inf, -np.inf], 0).fillna(0)
+
+        # Ritmo de acionamentos por hora ativa
+        df['Acionamentos por Hora Ativa'] = (df['Qtde Acionam.'] / df['Amplitude Atividade (Horas)']).round(2)
+        df['Acionamentos por Hora Ativa'] = df['Acionamentos por Hora Ativa'].replace([np.inf, -np.inf], 0).fillna(0)
+
+        # 8. Mapeia para colunas amigáveis (camelCase)
+        colunas_map = {
+            'Operador': 'operador',
+            'Primeiro Acionamento': 'primeiroAcionamento',
+            'Último Acionamento': 'ultimoAcionamento',
+            'Qtde Acionam.': 'qtdeAcionamentos',
+            'Qtde Contratos': 'qtdeContratos',
+            'Qtde Clientes': 'qtdeClientes',
+            'Tempo Total': 'tempoTotal',
+            'Tempo Médio': 'tempoMedio',
+            'Tempo Total Segundos': 'tempoTotalSegundos',
+            'Tempo Médio Segundos': 'tempoMedioSegundos',
+            'Taxa Acionamento/Cliente': 'taxaAcionamentoCliente',
+            'Amplitude Atividade (Horas)': 'amplitudeAtividadeHoras',
+            'Acionamentos por Hora Ativa': 'acionamentosPorHoraAtiva'
+        }
+        df = df.rename(columns=colunas_map)
+
+        # Filtra apenas colunas mapeadas de interesse
+        colunas_finais = list(colunas_map.values())
+        df = df[colunas_finais].copy()
+
+        return df
+
+    except Exception as e:
+        print(f"  [ERRO] Erro ao processar TMA {arquivo}: {e}")
+        return None
+
+
+def processar_arquivo_tma(caminho_arquivo: str, banco: str,
+                          anoatual: int, mesnum: int, mesabrev: str) -> pd.DataFrame | None:
+    """
+    Processa o arquivo de TMA (Acionamento por Operadores) de um banco.
+    Salva um CSV de auditoria em data/processed/<banco>/tma/<ano>/
+    e retorna o DataFrame final.
+    """
+    print(f"\n{'-' * 50}")
+    print(f">> Processando TMA: {banco.upper()}")
+    print(f"{'-' * 50}")
+
+    df = _processar_arquivo_tma(caminho_arquivo)
+
+    if df is None or df.empty:
+        print(f"  [ERRO] DataFrame de TMA vazio para {banco}. Nada a processar.")
+        return None
+
+    # Remove duplicatas baseadas no operador
+    df = df.drop_duplicates(subset=["operador"])
+
+    # Salva CSV de auditoria/debug
+    pasta_output = BASE_DIR / "data" / "processed" / banco / "tma" / str(anoatual)
+    os.makedirs(pasta_output, exist_ok=True)
+    caminho_csv = pasta_output / f"tma_{banco}_{mesnum}_{mesabrev}_{anoatual}.csv"
+    df.to_csv(caminho_csv, index=False)
+
+    print(f"  [OK] Processamento de TMA concluído! Linhas: {len(df)}")
+    print(f"  [SALVO] CSV de auditoria salvos em: {caminho_csv}")
 
     return df

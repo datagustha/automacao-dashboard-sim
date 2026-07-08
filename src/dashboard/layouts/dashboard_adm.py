@@ -282,7 +282,78 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ], className="mb-4"),
 
             dcc.Interval(id='intervalo-atualizacao-adm', interval=300 * 1000, n_intervals=0),
-            
+
+            # ── Seção TMA ───────────────────────────────────────────────
+            html.Div(
+                [
+                    html.Hr(style={"borderColor": "#0ea5e9", "borderWidth": "2px"}),
+                    html.H4(
+                        [DashIconify(icon="lucide:phone-call", width=22, className="me-2"),
+                         "Ranking de Acionamentos (TMA) — Mês Selecionado"],
+                        style={"color": "#0ea5e9", "fontWeight": "700"}
+                    ),
+                    html.P(
+                        "Dados gerados automaticamente pelo relatório de Acionamento por Operadores.",
+                        style={"color": "var(--text-muted)", "fontSize": "13px", "marginTop": "4px"}
+                    ),
+                ],
+                className="mb-3 mt-2"
+            ),
+            dbc.Row([
+                dbc.Col(
+                    html.Div(
+                        [
+                            dcc.Loading(
+                                type="circle",
+                                children=dash_table.DataTable(
+                                    id="tabela-tma-adm",
+                                    columns=[
+                                        {"name": "Operador",       "id": "operador"},
+                                        {"name": "TMA",            "id": "tma"},
+                                        {"name": "Acionamentos",   "id": "acionamentos"},
+                                        {"name": "Clientes",       "id": "clientes"},
+                                        {"name": "Ritmo/Hora",     "id": "ritmo"},
+                                        {"name": "Reacionamento",  "id": "reacionamento"},
+                                        {"name": "Tempo Falado",   "id": "tempo_falado"},
+                                        {"name": "1º Acion.",      "id": "primeiro"},
+                                        {"name": "Últ. Acion.",    "id": "ultimo"},
+                                    ],
+                                    data=[],
+                                    page_size=30,
+                                    sort_action="native",
+                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    style_header={
+                                        "backgroundColor": "#0ea5e9",
+                                        "color": "white",
+                                        "fontWeight": "600",
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                    },
+                                    style_cell={
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                        "borderBottom": "1px solid #E5E7EB",
+                                        "color": "var(--text-main)",
+                                        "fontSize": "13px",
+                                    },
+                                    style_data_conditional=[
+                                        {"if": {"row_index": "odd"}, "backgroundColor": "#F0F9FF"},
+                                        # Destaca quem tem TMA acima de 2 minutos (vermelho suave)
+                                        {
+                                            "if": {"filter_query": '{reacionamento} > 2'},
+                                            "backgroundColor": "#FEF2F2",
+                                            "color": "#991B1B",
+                                        },
+                                    ],
+                                ),
+                            ),
+                        ],
+                        className="dashboard-panel"
+                    ),
+                    width=12
+                )
+            ], className="mb-4"),
+
             # Stores para armazenar valores calculados
             dcc.Store(id="store-meta-semear", data=0),
             dcc.Store(id="store-meta-agoracred", data=0),

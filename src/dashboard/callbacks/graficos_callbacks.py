@@ -17,9 +17,10 @@ from dash.dependencies import Input, Output, State
 from dash import no_update
 
 from src.services.db_service import (
-    Buscar_login, 
-    Buscar_pagamento_por_operador, 
-    buscar_metas_por_operador
+    Buscar_login,
+    Buscar_pagamento_por_operador,
+    buscar_metas_por_operador,
+    buscar_tma_operador,
 )
 from src.services.analytics_service import (
     calcular_indicadores_operador, 
@@ -47,7 +48,7 @@ fig_blank = go.Figure().update_layout(
     yaxis=dict(visible=False)
 )
 
-retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], texto_zero, fig_blank, texto_zero, {"width": "0%"}, "0%", texto_zero, {"display": "none"})
+retorno_vazio = (texto_zero, texto_zero, "0", fig_blank, [], [], texto_zero, fig_blank, texto_zero, {"width": "0%"}, "0%", texto_zero, {"display": "none"}, "—", "Sem dados de ligações", "0", "Ritmo: —", "0,0", "Clientes únicos: —")
 
 
 # ================================================================
@@ -108,6 +109,12 @@ def register_callbacks(app):
             Output('kpi-meta-percentual', 'children'),
             Output('kpi-pgtos-anterior', 'children'),
             Output('badge-data-range', 'style'),
+            Output('kpi-tma-valor', 'children'),
+            Output('kpi-tma-subtexto', 'children'),
+            Output('kpi-tma-acionamentos', 'children'),
+            Output('kpi-tma-ritmo', 'children'),
+            Output('kpi-tma-reacionamento', 'children'),
+            Output('kpi-tma-clientes', 'children'),
         ],
         [
             Input('url', 'pathname'),
@@ -133,7 +140,7 @@ def register_callbacks(app):
         
         # VERIFICA SE ESTÁ NO DASHBOARD
         if pathname != '/dashboard':
-            return [no_update] * 13
+            return [no_update] * 19
             
         if not dados_operador:
             log_debug("Nenhum dado de operador no store")
@@ -253,7 +260,8 @@ def register_callbacks(app):
         if df_mes_atual.empty:
             log_debug("DataFrame vazio - retornando sem dados")
             badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
-            return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior, badge_style)
+            return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior, badge_style,
+                    "—", "Sem ligações no período", "0", "Ritmo: —", "—", "Clientes únicos: —")
         
         # ================================================================
         # CONVERTE PARA LISTA
@@ -447,9 +455,40 @@ def register_callbacks(app):
         colunas_tabela = [{"name": i, "id": i} for i in df_tabela.columns]
         
         log_debug(f"✅ FINALIZADO - {total} pagamentos | Banco: {banco} | Período: {label_periodo}")
-        
+
         badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
-        
+
+        # ================================================================
+        # BUSCA DADOS DE TMA DO OPERADOR (Acionamento por Operadores)
+        # ================================================================
+        mes_tma  = int(mes) if mes else datetime.datetime.now().month
+        ano_tma  = int(ano) if ano else datetime.datetime.now().year
+        tma_dados = buscar_tma_operador(login=login, banco=banco, anoatual=ano_tma, mesnum=mes_tma)
+
+        if tma_dados:
+            tma_valor         = str(tma_dados.get('tempoMedio', '—'))  # Ex: "00:01:46"
+            tempo_total_seg   = int(tma_dados.get('tempoTotalSegundos', 0))
+            tma_h             = tempo_total_seg // 3600
+            tma_m             = (tempo_total_seg % 3600) // 60
+            tma_subtexto      = f"Falado no mês: {tma_h}h {tma_m:02d}min"
+
+            qtde_acion        = int(tma_dados.get('qtdeAcionamentos', 0))
+            ritmo             = float(tma_dados.get('acionamentosPorHoraAtiva', 0))
+            tma_acionamentos  = str(qtde_acion)
+            tma_ritmo         = f"Ritmo: {ritmo:.1f} acion./hora ativa"
+
+            taxa              = float(tma_dados.get('taxaAcionamentoCliente', 0))
+            qtde_clientes     = int(tma_dados.get('qtdeClientes', 0))
+            tma_reacionamento = f"{taxa:.2f}x"
+            tma_clientes      = f"Clientes únicos: {qtde_clientes}"
+        else:
+            tma_valor         = '—'
+            tma_subtexto      = 'Sem dados de ligações'
+            tma_acionamentos  = '0'
+            tma_ritmo         = 'Ritmo: —'
+            tma_reacionamento = '—'
+            tma_clientes      = 'Clientes únicos: —'
+
         return (
             txt_faturamento,
             txt_ticket,
@@ -464,6 +503,12 @@ def register_callbacks(app):
             f"{percentual_meta:.1f}% da meta",
             txt_pgtos_anterior,
             badge_style,
+            tma_valor,
+            tma_subtexto,
+            tma_acionamentos,
+            tma_ritmo,
+            tma_reacionamento,
+            tma_clientes,
         )
 
     # ================================================================
