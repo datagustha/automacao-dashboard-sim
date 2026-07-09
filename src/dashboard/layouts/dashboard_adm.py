@@ -338,12 +338,6 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     },
                                     style_data_conditional=[
                                         {"if": {"row_index": "odd"}, "backgroundColor": "#F0F9FF"},
-                                        # Destaca quem tem TMA acima de 2 minutos (vermelho suave)
-                                        {
-                                            "if": {"filter_query": '{reacionamento} > 2'},
-                                            "backgroundColor": "#FEF2F2",
-                                            "color": "#991B1B",
-                                        },
                                     ],
                                 ),
                             ),
