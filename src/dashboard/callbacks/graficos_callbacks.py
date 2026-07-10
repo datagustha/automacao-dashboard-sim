@@ -118,7 +118,7 @@ def register_callbacks(app):
         ],
         [
             Input('url', 'pathname'),
-            Input('interval-component', 'n_intervals'),  # ← ADICIONADO! Atualização automática a cada 5 minutos
+            Input('intervalo-atualizacao', 'n_intervals'),  # ← ADICIONADO! Atualização automática a cada 5 minutos
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-texto-busca', 'value'),
@@ -133,7 +133,7 @@ def register_callbacks(app):
     def atualizar_dashboard(pathname, n_interval, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador):
         """
         CORRIGIDO: 
-        - Adicionado Input('interval-component', 'n_intervals') para atualização automática
+        - Adicionado Input('intervalo-atualizacao', 'n_intervals') para atualização automática
         - Filtro de mês aplicado CORRETAMENTE
         - Gráficos padronizados com mesmo estilo
         """
@@ -623,7 +623,7 @@ def register_callbacks(app):
             Output('info-dias-performance', 'children'),
         ],
         [
-            Input('interval-component', 'n_intervals'),  # ← ADICIONADO! Também atualiza a tabela automaticamente
+            Input('intervalo-atualizacao', 'n_intervals'),  # ← ADICIONADO! Também atualiza a tabela automaticamente
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-data-range', 'start_date'),
@@ -745,7 +745,7 @@ def register_callbacks(app):
             Output("tabela-mes-mes-dashboard", "columns"),
         ],
         [
-            Input('interval-component', 'n_intervals'),
+            Input('intervalo-atualizacao', 'n_intervals'),
             Input('filtro-ano', 'value'),
             Input('filtro-data-range', 'start_date'),
             Input('filtro-data-range', 'end_date')

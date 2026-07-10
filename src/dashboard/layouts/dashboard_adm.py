@@ -219,6 +219,57 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                 className="g-3"
             ),
 
+            # ── LINHA 2b: Operações Pagas e Ticket Médio SEPARADOS por banco ──
+            dbc.Row(
+                [
+                    dbc.Col(
+                        card_indicador(
+                            titulo="OPERAÇÕES PAGAS — SEMEAR",
+                            valor_default="0",
+                            id_valor="kpi-ops-semear",
+                            cor_icone="#7e3d97",
+                            icon_name="lucide:credit-card",
+                            id_sub_texto="kpi-ops-semear-anterior"
+                        ),
+                        width=12, md=3, className="mb-3"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="OPERAÇÕES PAGAS — AGORACRED",
+                            valor_default="0",
+                            id_valor="kpi-ops-agoracred",
+                            cor_icone="#10B981",
+                            icon_name="lucide:credit-card",
+                            id_sub_texto="kpi-ops-agoracred-anterior"
+                        ),
+                        width=12, md=3, className="mb-3"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="TICKET MÉDIO — SEMEAR",
+                            valor_default="R$ 0,00",
+                            id_valor="kpi-ticket-semear",
+                            cor_icone="#7e3d97",
+                            icon_name="lucide:ticket",
+                            id_sub_texto="kpi-ticket-semear-anterior"
+                        ),
+                        width=12, md=3, className="mb-3"
+                    ),
+                    dbc.Col(
+                        card_indicador(
+                            titulo="TICKET MÉDIO — AGORACRED",
+                            valor_default="R$ 0,00",
+                            id_valor="kpi-ticket-agoracred",
+                            cor_icone="#10B981",
+                            icon_name="lucide:ticket",
+                            id_sub_texto="kpi-ticket-agoracred-anterior"
+                        ),
+                        width=12, md=3, className="mb-3"
+                    ),
+                ],
+                className="g-3"
+            ),
+
             # ── GRÁFICOS DE EVOLUÇÃO DIÁRIA SEPARADOS ────────────
             html.Div(
                 [
@@ -358,7 +409,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     markdown_options={"html": True},
                                     page_size=30,
                                     sort_action="native",
-                                    fixed_columns={"headers": True, "data": 1},
+                                    fixed_columns={"headers": True, "data": 2},
                                     style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#7e3d97",

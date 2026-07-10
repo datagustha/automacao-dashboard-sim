@@ -19,7 +19,7 @@ import calendar
 from datetime import datetime, date
 import holidays
 
-from src.services.db_service import Buscar_pagamento_por_operador, buscar_metas_por_operador
+from src.services.db_service import Buscar_pagamento_por_operador, buscar_metas_por_operador, Buscar_login
 from src.services.analytics_service import (
     calcular_performance_operador,
     calcular_tempo_de_casa,

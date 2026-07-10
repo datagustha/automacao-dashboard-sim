@@ -86,6 +86,11 @@ def register_callbacks(app):
                 if atividade_escolhida == 'ativo' and operador_dict.get('atividade') != 'ativo':
                     continue
                 if pagamentos:
+                    login_operador = operador_dict.get('login', '')
+                    for p in pagamentos:
+                        # Garante que cada pagamento carregue o login do operador,
+                        # necessário para exibir/filtrar a coluna "Operador" na tabela do ADM
+                        p['operador'] = login_operador
                     pagamentos_brutos.extend(pagamentos)
         else:
             # OPERADOR: Busca apenas seus pagamentos
@@ -102,6 +107,8 @@ def register_callbacks(app):
         df = pd.DataFrame(pagamentos_brutos)
         
         # Converte data
+        usando_range = False
+        label_periodo = ""
         if 'dtPgto' in df.columns:
             df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
             df = df.dropna(subset=['dtPgto'])

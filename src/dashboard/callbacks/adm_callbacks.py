@@ -176,6 +176,15 @@ def register_callbacks(app):
             Output("kpi-total-ops-adm", "children"),
             Output("kpi-ops-adm-anterior", "children"),
             Output("kpi-ticket-adm", "children"),
+            # 🆕 Cards separados por banco: Operações Pagas (atual/anterior) e Ticket Médio (atual/anterior)
+            Output("kpi-ops-semear", "children"),
+            Output("kpi-ops-semear-anterior", "children"),
+            Output("kpi-ops-agoracred", "children"),
+            Output("kpi-ops-agoracred-anterior", "children"),
+            Output("kpi-ticket-semear", "children"),
+            Output("kpi-ticket-semear-anterior", "children"),
+            Output("kpi-ticket-agoracred", "children"),
+            Output("kpi-ticket-agoracred-anterior", "children"),
             Output("tabela-adm-semear", "data"),
             Output("tabela-adm-semear", "columns"),
             Output("tabela-adm-agoracred", "data"),
@@ -208,12 +217,15 @@ def register_callbacks(app):
                                 data_inicio, data_fim, filtro_contrato, filtro_faixa, dados_operador):
         """Consolida dados de todos os operadores de ambos os bancos."""
         
-        if pathname != "/dashboard" or not dados_operador:
-            return [dash.no_update] * 19
+        # 🔧 CORRIGIDO: o layout do dashboard ADM também é renderizado na rota "/"
+        # (tela inicial após login). Sem aceitar "/" aqui, o ranking e os cards
+        # ficavam vazios até o usuário clicar manualmente em "Dashboard".
+        if pathname not in ("/dashboard", "/") or not dados_operador:
+            return [dash.no_update] * 27
 
         perfil = dados_operador.get("perfil", "operador")
         if perfil != "adm":
-            return [dash.no_update] * 19
+            return [dash.no_update] * 27
 
         mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
             int(mes) if mes else pd.Timestamp.now().month,
@@ -472,6 +484,16 @@ def register_callbacks(app):
         tickets_total = tickets_s + tickets_a
         ticket_medio  = tickets_total / ops_total if ops_total > 0 else 0.0
 
+        # 🆕 Ticket médio e operações separados por banco (mês atual e anterior)
+        # Observação: "tickets_s"/"tickets_a" somam o faturamento do mês ATUAL de cada banco
+        # (não temos, no código original, a soma de faturamento do mês anterior por banco
+        # separadamente — só o total fat_s_ant/fat_a_ant). Ticket médio do mês anterior é
+        # aproximado como faturamento_anterior / operações_anteriores do próprio banco.
+        ticket_medio_semear     = (tickets_s / ops_s) if ops_s > 0 else 0.0
+        ticket_medio_agoracred  = (tickets_a / ops_a) if ops_a > 0 else 0.0
+        ticket_medio_semear_ant = (fat_s_ant / ops_s_ant) if ops_s_ant > 0 else 0.0
+        ticket_medio_agoracred_ant = (fat_a_ant / ops_a_ant) if ops_a_ant > 0 else 0.0
+
         badge_style = {"display": "inline-flex"} if (data_inicio and data_fim) else {"display": "none"}
 
         percentual_semear    = (fat_s / meta_s * 100) if meta_s > 0 else 0.0
@@ -610,6 +632,16 @@ def register_callbacks(app):
             _num(ops_total),
             f"Mês anterior: {_num(ops_ant_total)}",
             _brl(ticket_medio),
+            # 🆕 Operações Pagas separadas por banco
+            _num(ops_s),
+            f"Mês anterior: {_num(ops_s_ant)}",
+            _num(ops_a),
+            f"Mês anterior: {_num(ops_a_ant)}",
+            # 🆕 Ticket Médio separado por banco
+            _brl(ticket_medio_semear),
+            f"Mês anterior: {_brl(ticket_medio_semear_ant)}",
+            _brl(ticket_medio_agoracred),
+            f"Mês anterior: {_brl(ticket_medio_agoracred_ant)}",
             dados_s, colunas,
             dados_a, colunas,
             badge_style,
