@@ -6,7 +6,7 @@ Exibe os dados do operador logado:
 - AGORACRED: considera todos os pagamentos, sem gráfico por fase
 """
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import dcc, html, dash_table
 from datetime import date, datetime
 from dash_iconify import DashIconify
 
@@ -191,12 +191,18 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             # === GRÁFICOS ===
             dbc.Row([
                 dbc.Col(
-                    grafico_evolucao_diaria("grafico-faturamento", "Evolução Diária - Faturamento no Período"), 
+                    dcc.Loading(
+                        type="circle",
+                        children=grafico_evolucao_diaria("grafico-faturamento", "Evolução Diária - Faturamento no Período")
+                    ), 
                     width=12, md=6
                 ),
                 # Gráfico de fase: para AGORACRED fica oculto
                 dbc.Col(
-                    grafico_barras_fase("grafico-fase", "Pagamentos por Fase", cor="roxo"),
+                    dcc.Loading(
+                        type="circle",
+                        children=grafico_barras_fase("grafico-fase", "Pagamentos por Fase", cor="roxo")
+                    ),
                     width=12, md=6,
                     style={"display": "block"} if banco == "SEMEAR" else {"display": "none"}
                 )
@@ -210,13 +216,77 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             ),
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-performance", titulo="📊 Performance do Operador"),
+                    dcc.Loading(
+                        type="circle",
+                        children=container_tabela_cheia("tabela-performance", titulo="📊 Performance do Operador")
+                    ),
+                    width=12
+                )
+            ], className="mb-4"),
+
+            # === TABELA MÊS A MÊS ===
+            dbc.Row([
+                dbc.Col(
+                    html.Div(
+                        [
+                            html.H5(
+                                "📈 Resultado Mês a Mês",
+                                className="m-0 font-weight-bold mb-3",
+                                style={"color": "var(--text-main)"}
+                            ),
+                            dcc.Loading(
+                                id="loading-tabela-mes-mes-dashboard",
+                                type="circle",
+                                children=[
+                                    dash_table.DataTable(
+                                        id="tabela-mes-mes-dashboard",
+                                        page_size=12,
+                                        sort_action="native",
+                                        style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                        style_header={
+                                            "backgroundColor": "var(--purple-main)",
+                                            "color": "white",
+                                            "fontWeight": "600",
+                                            "textAlign": "center",
+                                            "padding": "10px",
+                                        },
+                                        style_cell={
+                                            "textAlign": "center",
+                                            "padding": "10px",
+                                            "borderBottom": "1px solid #E5E7EB",
+                                            "color": "var(--text-main)",
+                                            "fontSize": "13px",
+                                        },
+                                        style_data_conditional=[
+                                            {
+                                                "if": {"filter_query": '{nome_mes} = "TOTAL"'},
+                                                "backgroundColor": "#e9d8fd",
+                                                "color": "#4a1d8c",
+                                                "fontWeight": "bold",
+                                                "fontSize": "14px",
+                                            },
+                                            {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+                                        ],
+                                    )
+                                ],
+                            ),
+                        ],
+                        className="dashboard-panel"
+                    ),
                     width=12
                 )
             ], className="mb-4"),
 
             # === TABELA DE PAGAMENTOS ===
-            dbc.Row([dbc.Col(container_tabela("tabela-pagamentos"), width=12)]),
+            dbc.Row([
+                dbc.Col(
+                    dcc.Loading(
+                        type="circle",
+                        children=container_tabela("tabela-pagamentos")
+                    ),
+                    width=12
+                )
+            ]),
 
             dcc.Interval(id='intervalo-atualizacao', interval=300*1000, n_intervals=0)
         ],

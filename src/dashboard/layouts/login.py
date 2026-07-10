@@ -223,21 +223,29 @@ def get_login_layout():
                                     ),
                                     
                                     # ========================================
-                                    # BOTÃO PRINCIPAL (com cor roxa e ícone)
+                                    # BOTÃO PRINCIPAL (com Loading spinner)
                                     # ========================================
-                                    dbc.Button(
-                                        [
-                                            html.I(className="fas fa-sign-in-alt me-2"),
-                                            "Entrar"
-                                        ],
-                                        id='login-button',
-                                        style={
-                                            "backgroundColor": "#7e3d97",
-                                            "borderColor": "#7e3d97",
-                                            "borderRadius": "8px",
-                                            "transition": "all 0.3s ease"
-                                        },
-                                        className="w-100 fw-bold mb-2"
+                                    dcc.Loading(
+                                        id="loading-login-button",
+                                        type="circle",
+                                        color="#7e3d97",
+                                        style={"width": "100%", "display": "block"},
+                                        children=[
+                                            dbc.Button(
+                                                [
+                                                    html.I(className="fas fa-sign-in-alt me-2"),
+                                                    "Entrar"
+                                                ],
+                                                id='login-button',
+                                                style={
+                                                    "backgroundColor": "#7e3d97",
+                                                    "borderColor": "#7e3d97",
+                                                    "borderRadius": "8px",
+                                                    "transition": "all 0.3s ease"
+                                                },
+                                                className="w-100 fw-bold mb-2"
+                                            ),
+                                        ]
                                     ),
                                     
                                     # ========================================

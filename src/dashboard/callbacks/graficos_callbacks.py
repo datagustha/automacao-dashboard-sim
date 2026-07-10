@@ -14,7 +14,7 @@ import os
 import re
 import dash
 from dash.dependencies import Input, Output, State
-from dash import no_update
+from dash import no_update, html
 
 from src.services.db_service import (
     Buscar_login,
@@ -137,6 +137,15 @@ def register_callbacks(app):
         - Filtro de mês aplicado CORRETAMENTE
         - Gráficos padronizados com mesmo estilo
         """
+        try:
+            return _atualizar_dashboard_interno(pathname, n_interval, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador)
+        except Exception as e:
+            import traceback
+            log_debug(f"[ERRO CRÍTICO] Callback atualizar_dashboard falhou: {e}\n{traceback.format_exc()}")
+            return retorno_vazio
+
+    def _atualizar_dashboard_interno(pathname, n_interval, mes, ano, texto_busca, fase, data_inicio, data_fim, dados_operador):
+        """Lógica interna do dashboard, separada para facilitar captura de erros."""
         
         # VERIFICA SE ESTÁ NO DASHBOARD
         if pathname != '/dashboard':
@@ -305,24 +314,8 @@ def register_callbacks(app):
         txt_ticket = f"R$ {ticket:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         txt_total = f"{total:,}".replace(",", ".")
 
-        # ── Recalcula variação com o faturamento real ────────────────────
-        fat_ant_brl_fmt = f"R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        if fat_anterior > 0:
-            variacao_pct = ((faturamento - fat_anterior) / fat_anterior) * 100
-            seta = "↑" if variacao_pct >= 0 else "↓"
-            cor_var = "#16a34a" if variacao_pct >= 0 else "#dc2626"
-            variacao_txt = f"{seta} {abs(variacao_pct):.1f}%"
-            txt_fat_anterior = html.Span([
-                html.Span(f"Mês anterior: {fat_ant_brl_fmt}  ",
-                          style={"color": "var(--text-muted)", "fontSize": "12px"}),
-                html.Span(variacao_txt,
-                          style={"color": cor_var, "fontWeight": "700", "fontSize": "12px"}),
-            ])
-        else:
-            txt_fat_anterior = f"Mês anterior: {fat_ant_brl_fmt}"
-
         # ================================================================
-        # BUSCA A META DO MÊS
+        # BUSCA A META DO MÊS (trazida para cima para usar na variação/storytelling)
         # ================================================================
         metas = buscar_metas_por_operador(operador)
         meta_valor = 0.0
@@ -336,16 +329,86 @@ def register_callbacks(app):
                         meta_valor = meta.get('meta100', 0)
                         break
 
+        # ── Recalcula variação com o faturamento real e constrói o storytelling do card ──
+        fat_ant_brl_fmt = f"R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        if fat_anterior > 0:
+            variacao_pct = ((faturamento - fat_anterior) / fat_anterior) * 100
+            seta = "↑" if variacao_pct >= 0 else "↓"
+            cor_var = "#16a34a" if variacao_pct >= 0 else "#dc2626"
+            bg_var = "#dcfce7" if variacao_pct >= 0 else "#fee2e2"
+            var_badge = html.Span(
+                f"{seta} {abs(variacao_pct):.1f}%",
+                style={
+                    "color": cor_var, "backgroundColor": bg_var,
+                    "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                    "marginLeft": "6px", "display": "inline-block"
+                }
+            )
+        else:
+            var_badge = html.Span("—", style={"marginLeft": "6px"})
+
+        # Cálculo da diferença da meta
+        falta_meta = max(0.0, meta_valor - faturamento)
+        falta_meta_pct = ((meta_valor - faturamento) / meta_valor * 100) if meta_valor > 0 else 0.0
+        
+        if falta_meta > 0:
+            falta_comp = html.Div([
+                html.Span(f"Falta: R$ {falta_meta:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                html.Span(
+                    f"{falta_meta_pct:.1f}% abaixo",
+                    style={
+                        "color": "#d97706", "backgroundColor": "#fef3c7",
+                        "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                        "marginLeft": "6px", "display": "inline-block"
+                    }
+                )
+            ])
+        else:
+            falta_comp = html.Div(
+                "Meta Atingida! 🎉",
+                style={"fontWeight": "700", "color": "#16a34a", "fontSize": "12px"}
+            )
+
+        # Container do subtexto do faturamento (storytelling em 2 colunas)
+        txt_fat_anterior = html.Div(
+            style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "marginTop": "2px"},
+            children=[
+                html.Div([
+                    html.Span("Mês Anterior", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px"}),
+                    html.Div([
+                        html.Span(fat_ant_brl_fmt, style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                        var_badge
+                    ], style={"display": "flex", "alignItems": "center"})
+                ]),
+                html.Div([
+                    html.Span("Diferença da Meta", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px", "textAlign": "right"}),
+                    falta_comp
+                ], style={"textAlign": "right"})
+            ]
+        )
+
         percentual_meta = (faturamento / meta_valor) * 100 if meta_valor > 0 else 0
         txt_meta_objetivo = f"R$ {meta_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-        # BARRA DE PROGRESSO
+        # BARRA DE PROGRESSO E TEXTO INFORMATIVO
         if percentual_meta >= 100:
             cor_barra = "#10B981"
-        elif percentual_meta >= 70:
-            cor_barra = "#f59e0b"
+            txt_percentual_meta = html.Span(f"{percentual_meta:.1f}% da meta", style={"color": cor_barra, "fontWeight": "600"})
         else:
-            cor_barra = "#ef4444"
+            if percentual_meta >= 70:
+                cor_barra = "#f59e0b"
+            else:
+                cor_barra = "#ef4444"
+            
+            falta_valor = meta_valor - faturamento
+            if falta_valor > 0:
+                falta_brl = f"R$ {falta_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                txt_percentual_meta = html.Span([
+                    html.Span(f"{percentual_meta:.1f}% da meta", style={"color": cor_barra, "fontWeight": "600"}),
+                    html.Span(f" (Falta {falta_brl})", style={"color": "var(--text-muted)", "fontSize": "11px", "marginLeft": "4px"})
+                ])
+            else:
+                txt_percentual_meta = html.Span(f"{percentual_meta:.1f}% da meta", style={"color": cor_barra, "fontWeight": "600"})
 
         estilo_barra = {
             "width": f"{min(percentual_meta, 100)}%",
@@ -550,7 +613,7 @@ def register_callbacks(app):
             figura_fase,
             txt_meta_objetivo,
             estilo_barra,
-            f"{percentual_meta:.1f}% da meta",
+            txt_percentual_meta,
             txt_pgtos_anterior,
             badge_style,
             tma_valor,
@@ -683,3 +746,125 @@ def register_callbacks(app):
         ]
         
         return dados_tabela, colunas, txt_dias
+
+    # ================================================================
+    # TABELA MÊS A MÊS - DASHBOARD
+    # ================================================================
+    @app.callback(
+        [
+            Output("tabela-mes-mes-dashboard", "data"),
+            Output("tabela-mes-mes-dashboard", "columns"),
+        ],
+        [
+            Input('interval-component', 'n_intervals'),
+            Input('filtro-ano', 'value'),
+            Input('filtro-data-range', 'start_date'),
+            Input('filtro-data-range', 'end_date')
+        ],
+        [State('login-success-store', 'data')]
+    )
+    def atualizar_tabela_mes_mes_dashboard(n, ano, data_inicio, data_fim, dados_operador):
+        """Atualiza a tabela Mês a Mês do dashboard do operador."""
+        if not dados_operador:
+            return [], []
+
+        login = dados_operador.get('login')
+        if not login:
+            return [], []
+
+        operador = Buscar_login(login)
+        if not operador:
+            return [], []
+
+        banco = operador.get('banco', 'SEMEAR')
+        pagamentos = Buscar_pagamento_por_operador(operador)
+        if not pagamentos:
+            return [], []
+
+        metas = buscar_metas_por_operador(operador)
+        metas_dict = {}
+        for meta in (metas or []):
+            md = meta.get("data")
+            if md:
+                if hasattr(md, "year"):
+                    metas_dict[(md.year, md.month)] = float(meta.get("meta100") or 0)
+                elif isinstance(md, str):
+                    mdt = pd.to_datetime(md, errors="coerce")
+                    if not pd.isna(mdt):
+                        metas_dict[(mdt.year, mdt.month)] = float(meta.get("meta100") or 0)
+
+        df = pd.DataFrame(pagamentos)
+        df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+        df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+        df = df.dropna(subset=["dtPgto"])
+
+        _, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            None,
+            int(ano) if ano else datetime.datetime.today().year,
+        )
+
+        df_ano = df[df["dtPgto"].dt.year == ano_int]
+
+        meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                       "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        resultado = []
+
+        for mes in range(1, 13):
+            meta = metas_dict.get((ano_int, mes), 0.0)
+            if meta <= 0:
+                continue
+
+            df_mes = df_ano[df_ano["dtPgto"].dt.month == mes].copy()
+            if banco == 'SEMEAR' and 'faseAtraso' in df_mes.columns:
+                df_mes = df_mes[df_mes['faseAtraso'] != 'Fora da fase']
+
+            faturamento = float(df_mes["valorTotal"].sum()) if not df_mes.empty else 0.0
+            quantidade  = len(df_mes)
+            percentual  = (faturamento / meta) * 100 if meta > 0 else 0.0
+            bateu       = faturamento >= meta
+
+            def _brl(v):
+                return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+            resultado.append({
+                "mes":         mes,
+                "nome_mes":    meses_nomes[mes - 1],
+                "quantidade":  quantidade,
+                "faturamento": _brl(faturamento),
+                "meta":        _brl(meta),
+                "percentual":  f"{percentual:.1f}%",
+                "bateu":       "✅ Sim" if bateu else "❌ Não",
+            })
+
+        if not resultado:
+            return [], []
+
+        total_qtd = sum(r["quantidade"] for r in resultado)
+        total_fat_raw = sum(
+            float(r["faturamento"].replace("R$ ", "").replace(".", "").replace(",", "."))
+            for r in resultado
+        )
+
+        def _brl(v):
+            return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        resultado.append({
+            "mes":         9999,
+            "nome_mes":    "TOTAL",
+            "quantidade":  total_qtd,
+            "faturamento": _brl(total_fat_raw),
+            "meta":        "-",
+            "percentual":  "-",
+            "bateu":       "-",
+        })
+
+        colunas = [
+            {"name": "Mês",        "id": "nome_mes"},
+            {"name": "Quantidade", "id": "quantidade"},
+            {"name": "Faturamento","id": "faturamento"},
+            {"name": "Meta",       "id": "meta"},
+            {"name": "% Meta",     "id": "percentual"},
+            {"name": "Bateu?",     "id": "bateu"},
+        ]
+
+        return resultado, colunas

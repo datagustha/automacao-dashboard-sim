@@ -236,7 +236,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                 dbc.Col(
                     html.Div([
                         html.H5("🟣 SEMEAR", style={"color": "#7e3d97", "fontWeight": "600", "marginBottom": "10px"}),
-                        dcc.Graph(id="grafico-evolucao-semear-adm", config={'displayModeBar': True}),
+                        dcc.Loading(type="circle", children=dcc.Graph(id="grafico-evolucao-semear-adm", config={'displayModeBar': True})),
                     ]),
                     width=12, md=6
                 ),
@@ -244,7 +244,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                 dbc.Col(
                     html.Div([
                         html.H5("🟢 AGORACRED", style={"color": "#10B981", "fontWeight": "600", "marginBottom": "10px"}),
-                        dcc.Graph(id="grafico-evolucao-agoracred-adm", config={'displayModeBar': True}),
+                        dcc.Loading(type="circle", children=dcc.Graph(id="grafico-evolucao-agoracred-adm", config={'displayModeBar': True})),
                     ]),
                     width=12, md=6
                 ),
