@@ -12,7 +12,7 @@ def card_indicador(titulo: str, valor_default: str, id_valor: str, cor_icone: st
         html.Div(
             [
                 html.Div(DashIconify(icon=icon_name, width=24, color=cor_icone), style={"flexShrink": "0"}),
-                html.H6(titulo, className="kpi-title", style={
+                html.H6(titulo, id=f"title-{id_valor}" if id_valor else None, className="kpi-title", style={
                     "fontSize": "11px", "fontWeight": "700", "margin": "0",
                     "letterSpacing": "0.5px", "color": "var(--text-muted)"
                 }),

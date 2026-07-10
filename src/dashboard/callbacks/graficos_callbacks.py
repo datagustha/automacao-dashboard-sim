@@ -352,38 +352,27 @@ def register_callbacks(app):
         falta_meta_pct = ((meta_valor - faturamento) / meta_valor * 100) if meta_valor > 0 else 0.0
         
         if falta_meta > 0:
-            falta_comp = html.Div([
-                html.Span(f"Falta: R$ {falta_meta:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
-                html.Span(
-                    f"{falta_meta_pct:.1f}% abaixo",
-                    style={
-                        "color": "#d97706", "backgroundColor": "#fef3c7",
-                        "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
-                        "marginLeft": "6px", "display": "inline-block"
-                    }
-                )
+            falta_brl = f"R$ {falta_meta:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            falta_comp = html.Span([
+                html.Span(f"Falta {falta_brl}", style={"fontWeight": "700", "color": "#d97706", "fontSize": "11px"}),
+                html.Span(f" ({falta_meta_pct:.1f}% abaixo)", style={"fontSize": "10px", "color": "var(--text-muted)", "fontWeight": "600", "marginLeft": "4px"})
             ])
         else:
-            falta_comp = html.Div(
-                "Meta Atingida! 🎉",
-                style={"fontWeight": "700", "color": "#16a34a", "fontSize": "12px"}
-            )
+            falta_comp = html.Span("Meta Atingida! 🎉", style={"fontWeight": "700", "color": "#16a34a", "fontSize": "11px"})
 
-        # Container do subtexto do faturamento (storytelling em 2 colunas)
+        # Container do subtexto do faturamento (storytelling empilhado verticalmente para não amassar)
         txt_fat_anterior = html.Div(
-            style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "marginTop": "2px"},
+            style={"marginTop": "8px", "paddingTop": "8px", "borderTop": "1px solid #f0f0f0", "textAlign": "left"},
             children=[
                 html.Div([
-                    html.Span("Mês Anterior", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px"}),
-                    html.Div([
-                        html.Span(fat_ant_brl_fmt, style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
-                        var_badge
-                    ], style={"display": "flex", "alignItems": "center"})
-                ]),
+                    html.Span("Mês Anterior: ", style={"fontSize": "11px", "color": "var(--text-muted)"}),
+                    html.Span(fat_ant_brl_fmt, style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "11px"}),
+                    var_badge
+                ], style={"marginBottom": "4px", "display": "flex", "alignItems": "center"}),
                 html.Div([
-                    html.Span("Diferença da Meta", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px", "textAlign": "right"}),
+                    html.Span("Diferença da Meta: ", style={"fontSize": "11px", "color": "var(--text-muted)"}),
                     falta_comp
-                ], style={"textAlign": "right"})
+                ], style={"display": "flex", "alignItems": "center", "flexWrap": "wrap"})
             ]
         )
 
@@ -868,3 +857,196 @@ def register_callbacks(app):
         ]
 
         return resultado, colunas
+
+    # ================================================================
+    # TABELA DE VARIAÇÃO DO OPERADOR vs MÊS ANTERIOR
+    # ================================================================
+    @app.callback(
+        [
+            Output("tabela-evolucao-operador", "data"),
+            Output("tabela-evolucao-operador", "columns"),
+            Output("resumo-evolucao-operador", "children"),
+        ],
+        [
+            Input('interval-component', 'n_intervals'),
+            Input('filtro-mes', 'value'),
+            Input('filtro-ano', 'value'),
+            Input('filtro-data-range', 'start_date'),
+            Input('filtro-data-range', 'end_date')
+        ],
+        [State('login-success-store', 'data')]
+    )
+    def atualizar_evolucao_operador(n, mes, ano, data_inicio, data_fim, dados_operador):
+        """Variação do operador vs mês anterior — igual à tabela do ADM."""
+        if not dados_operador:
+            return [], [], ""
+
+        login = dados_operador.get('login')
+        if not login:
+            return [], [], ""
+
+        operador = Buscar_login(login)
+        if not operador:
+            return [], [], ""
+
+        banco = operador.get('banco', 'SEMEAR')
+        pagamentos = Buscar_pagamento_por_operador(operador)
+        if not pagamentos:
+            return [], [], ""
+
+        metas = buscar_metas_por_operador(operador)
+
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else datetime.datetime.now().month,
+            int(ano) if ano else datetime.datetime.now().year,
+        )
+
+        if mes_int == 1:
+            mes_ant, ano_ant = 12, ano_int - 1
+        else:
+            mes_ant, ano_ant = mes_int - 1, ano_int
+
+        def _brl(v):
+            return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        try:
+            df = pd.DataFrame(pagamentos)
+            df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+            df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+            df = df.dropna(subset=["dtPgto"])
+
+            if banco == "SEMEAR" and "faseAtraso" in df.columns:
+                df = df[df["faseAtraso"] != "Fora da fase"]
+
+            # Período atual
+            df_atual, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+
+            # Período anterior
+            if data_inicio and data_fim:
+                try:
+                    dt_ini_ant = pd.to_datetime(data_inicio) - pd.DateOffset(months=1)
+                    dt_fim_ant = pd.to_datetime(data_fim) - pd.DateOffset(months=1)
+                    df_ant = df[
+                        (df["dtPgto"] >= dt_ini_ant) &
+                        (df["dtPgto"] <= dt_fim_ant + pd.Timedelta(hours=23, minutes=59, seconds=59))
+                    ].copy()
+                except Exception:
+                    df_ant = df[(df["dtPgto"].dt.month == mes_ant) & (df["dtPgto"].dt.year == ano_ant)].copy()
+            else:
+                df_ant = df[(df["dtPgto"].dt.month == mes_ant) & (df["dtPgto"].dt.year == ano_ant)].copy()
+
+            fat_atual = float(df_atual["valorTotal"].sum()) if not df_atual.empty else 0.0
+            fat_ant   = float(df_ant["valorTotal"].sum())   if not df_ant.empty   else 0.0
+            qtd_atual = len(df_atual)
+            qtd_ant   = len(df_ant)
+
+            # Variação %
+            if fat_ant > 0:
+                var_pct = ((fat_atual - fat_ant) / fat_ant) * 100
+                seta = "↑" if var_pct >= 0 else "↓"
+                cor_v = "#16a34a" if var_pct >= 0 else "#dc2626"
+                var_str = f'<span style="color:{cor_v};font-weight:700;">{seta} {abs(var_pct):.1f}%</span>'
+            else:
+                var_pct = None
+                var_str = "—"
+
+            # Variação absoluta
+            var_abs = fat_atual - fat_ant
+            var_abs_brl = _brl(abs(var_abs))
+            if var_abs > 0:
+                var_abs_str = f'<span style="color:#16a34a;font-weight:700;">+{var_abs_brl}</span>'
+            elif var_abs < 0:
+                var_abs_str = f'<span style="color:#dc2626;font-weight:700;">-{var_abs_brl}</span>'
+            else:
+                var_abs_str = var_abs_brl
+
+            # % da meta
+            meta_atual = 0.0
+            meta_ant = 0.0
+            if metas:
+                for meta in metas:
+                    md = meta.get("data")
+                    if md and hasattr(md, "year"):
+                        if md.year == ano_int and md.month == mes_int:
+                            meta_atual = float(meta.get("meta100") or 0)
+                        elif md.year == ano_ant and md.month == mes_ant:
+                            meta_ant = float(meta.get("meta100") or 0)
+
+            perc_atual = (fat_atual / meta_atual * 100) if meta_atual > 0 else 0.0
+            perc_ant   = (fat_ant / meta_ant * 100) if meta_ant > 0 else 0.0
+
+            def _perc_html(v):
+                bar = min(v, 100)
+                c = "#10B981" if v >= 100 else ("#7e3d97" if v >= 70 else "#ef4444")
+                return (
+                    f'<div style="display:flex;align-items:center;gap:5px;">'
+                    f'<div style="flex:1;background:#e5e7eb;border-radius:3px;height:6px;">'
+                    f'<div style="width:{bar:.0f}%;background:{c};height:6px;border-radius:3px;"></div></div>'
+                    f'<span style="white-space:nowrap;font-weight:700;color:{c};font-size:11px;">{v:.1f}%</span></div>'
+                )
+
+            # Variação da %meta
+            if fat_ant > 0 and meta_ant > 0:
+                var_meta_pct = perc_atual - perc_ant
+                cor_vm = "#16a34a" if var_meta_pct >= 0 else "#dc2626"
+                s_vm = "↑" if var_meta_pct >= 0 else "↓"
+                var_meta_str = f'<span style="color:{cor_vm};font-weight:700;">{s_vm} {abs(var_meta_pct):.1f}pp</span>'
+            else:
+                var_meta_str = "—"
+
+            meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                           "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+            nome_mes_atual = meses_nomes[mes_int - 1] if 1 <= mes_int <= 12 else str(mes_int)
+            nome_mes_ant   = meses_nomes[mes_ant - 1] if 1 <= mes_ant <= 12 else str(mes_ant)
+
+            dados = [
+                {
+                    "periodo":     f"{nome_mes_ant}/{ano_ant}",
+                    "faturamento": _brl(fat_ant),
+                    "quantidade":  str(qtd_ant),
+                    "meta":        _brl(meta_ant) if meta_ant > 0 else "—",
+                    "perc_meta":   _perc_html(perc_ant),
+                    "variacao_brl":"—",
+                    "variacao_pct":"—",
+                    "var_meta_pct":"—",
+                },
+                {
+                    "periodo":     f"{nome_mes_atual}/{ano_int}",
+                    "faturamento": _brl(fat_atual),
+                    "quantidade":  str(qtd_atual),
+                    "meta":        _brl(meta_atual) if meta_atual > 0 else "—",
+                    "perc_meta":   _perc_html(perc_atual),
+                    "variacao_brl":var_abs_str,
+                    "variacao_pct":var_str,
+                    "var_meta_pct":var_meta_str,
+                },
+            ]
+
+            colunas = [
+                {"name": "Período",        "id": "periodo"},
+                {"name": "Faturamento",    "id": "faturamento"},
+                {"name": "Contratos",      "id": "quantidade"},
+                {"name": "Meta",           "id": "meta"},
+                {"name": "% Meta",         "id": "perc_meta",    "presentation": "markdown"},
+                {"name": "Var. R$",        "id": "variacao_brl", "presentation": "markdown"},
+                {"name": "Var. %",         "id": "variacao_pct", "presentation": "markdown"},
+                {"name": "Var. % Meta",    "id": "var_meta_pct", "presentation": "markdown"},
+            ]
+
+            # Resumo textual
+            if var_pct is not None:
+                cor_resumo = "#16a34a" if var_pct >= 0 else "#dc2626"
+                emoji = "📈" if var_pct >= 0 else "📉"
+                resumo = html.Div([
+                    html.Span(f"{emoji} Variação de ", style={"fontSize": "13px", "color": "var(--text-muted)"}),
+                    html.Span(f"{abs(var_pct):.1f}%", style={"fontSize": "13px", "fontWeight": "700", "color": cor_resumo}),
+                    html.Span(f" em relação a {nome_mes_ant}/{ano_ant}", style={"fontSize": "13px", "color": "var(--text-muted)"}),
+                ])
+            else:
+                resumo = html.Span("Sem dados do mês anterior para comparação.", style={"fontSize": "12px", "color": "#aaa"})
+
+            return dados, colunas, resumo
+
+        except Exception as e:
+            log_debug(f"[EVOLUCAO-OPERADOR] Erro: {e}")
+            return [], [], ""

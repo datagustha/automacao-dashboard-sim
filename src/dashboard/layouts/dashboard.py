@@ -37,6 +37,9 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
     # Filtro de fase: visível só para SEMEAR
     fase_style = {"display": "block"} if banco == "SEMEAR" else {"display": "none"}
 
+    # Largura do gráfico de evolução conforme o banco (AGORACRED não tem barras de fase, fica tela cheia)
+    col_evolucao_width = 12 if banco == "AGORACRED" else 6
+
     # Bloco principal de conteúdo da página
     conteudo = html.Div(
         [
@@ -52,10 +55,10 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             html.Label("Busca", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
                             dbc.InputGroup([
                                 dbc.InputGroupText(DashIconify(icon="lucide:search", width=18, color="var(--text-muted)"), style={"backgroundColor": "white", "borderRight": "none"}),
-                                dbc.Input(id='filtro-texto-busca', type='text', placeholder="Procurar contrato / cliente...", style={"borderLeft": "none"})
+                                dbc.Input(id='filtro-texto-busca', type='text', placeholder="Procurar contrato / cliente...", style={"borderLeft": "none"}, debounce=True)
                             ], className="shadow-sm", style={"borderRadius": "8px"})
                         ],
-                        width=12, md=3, className="mb-4"
+                        width=12, md=3, className="mb-3"
                     ),
                     # FILTRO DE FASE - MULTIPLA SELEÇÃO (visível só para SEMEAR)
                     dbc.Col(
@@ -74,7 +77,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                         ],
                         width=12, md=2,
                         style=fase_style,
-                        className="mb-4"
+                        className="mb-3"
                     ),
                     # FILTRO DE MÊS/ANO
                     dbc.Col(
@@ -86,16 +89,16 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             ])
                         ],
                         width=12, md=3,
-                        className="mb-4"
+                        className="mb-3"
                     ),
                     # FILTRO DE DATA RANGE
                     dbc.Col(
                         criar_filtro_data_range(""),
                         width=12, md=4,
-                        className="mb-4"
+                        className="mb-3"
                     )
                 ],
-                className="align-items-start"
+                className="align-items-end g-3 mb-4 mt-2"
             ),
             
             # === KPIs ===
@@ -148,39 +151,68 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             ),
 
             # === KPIs DE LIGAÇÕES (TMA / ACIONAMENTO) ===
+            html.Div([
+                html.Hr(style={"borderColor": "#e5e7eb", "margin": "0 0 12px 0"}),
+                html.Div([
+                    DashIconify(icon="lucide:phone-call", width=16, color="var(--purple-main)", style={"marginRight": "6px"}),
+                    html.Span("Métricas de Ligação (TMA)", style={"fontSize": "12px", "fontWeight": "700", "color": "var(--text-muted)", "letterSpacing": "0.5px", "textTransform": "uppercase"}),
+                    html.Span(" — passe o mouse nos cards para entender cada indicador", style={"fontSize": "11px", "color": "#aaa", "marginLeft": "8px"})
+                ], style={"display": "flex", "alignItems": "center", "marginBottom": "10px"})
+            ], style={"marginTop": "4px"}),
             dbc.Row(
                 [
                     dbc.Col(
-                        card_indicador(
-                            titulo="TEMPO MÉDIO DE ATENDIMENTO (TMA)",
-                            valor_default="—",
-                            id_valor="kpi-tma-valor",
-                            cor_icone="var(--purple-main)",
-                            icon_name="lucide:phone-call",
-                            id_sub_texto="kpi-tma-subtexto"
-                        ),
+                        [
+                            card_indicador(
+                                titulo="TEMPO MÉDIO DE ATENDIMENTO (TMA)",
+                                valor_default="—",
+                                id_valor="kpi-tma-valor",
+                                cor_icone="var(--purple-main)",
+                                icon_name="lucide:phone-call",
+                                id_sub_texto="kpi-tma-subtexto"
+                            ),
+                            dbc.Tooltip(
+                                "TMA (Tempo Médio de Atendimento): tempo médio que o operador ficou em ligação por acionamento. Subtext mostra o total de tempo falado no mês.",
+                                target="title-kpi-tma-valor",
+                                placement="top",
+                            ),
+                        ],
                         width=12, md=4, className="mb-4"
                     ),
                     dbc.Col(
-                        card_indicador(
-                            titulo="QUANTIDADE DE ACIONAMENTOS",
-                            valor_default="0",
-                            id_valor="kpi-tma-acionamentos",
-                            cor_icone="var(--purple-main)",
-                            icon_name="lucide:list-todo",
-                            id_sub_texto="kpi-tma-ult-acionamento"
-                        ),
+                        [
+                            card_indicador(
+                                titulo="QUANTIDADE DE ACIONAMENTOS",
+                                valor_default="0",
+                                id_valor="kpi-tma-acionamentos",
+                                cor_icone="var(--purple-main)",
+                                icon_name="lucide:list-todo",
+                                id_sub_texto="kpi-tma-ult-acionamento"
+                            ),
+                            dbc.Tooltip(
+                                "Total de ligações realizadas no período. O subtext mostra a data/hora do último acionamento registrado.",
+                                target="title-kpi-tma-acionamentos",
+                                placement="top",
+                            ),
+                        ],
                         width=12, md=4, className="mb-4"
                     ),
                     dbc.Col(
-                        card_indicador(
-                            titulo="TAXA DE REACIONAMENTO",
-                            valor_default="0,0",
-                            id_valor="kpi-tma-reacionamento",
-                            cor_icone="var(--purple-main)",
-                            icon_name="lucide:refresh-cw",
-                            id_sub_texto="kpi-tma-clientes"
-                        ),
+                        [
+                            card_indicador(
+                                titulo="TAXA DE REACIONAMENTO",
+                                valor_default="0,0",
+                                id_valor="kpi-tma-reacionamento",
+                                cor_icone="var(--purple-main)",
+                                icon_name="lucide:refresh-cw",
+                                id_sub_texto="kpi-tma-clientes"
+                            ),
+                            dbc.Tooltip(
+                                "Taxa de acionamentos por cliente único. Ex: 1,86x = em média cada cliente recebeu 1,86 ligações. Abaixo: total de clientes únicos acionados.",
+                                target="title-kpi-tma-reacionamento",
+                                placement="top",
+                            ),
+                        ],
                         width=12, md=4, className="mb-4"
                     ),
                 ],
@@ -195,7 +227,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                         type="circle",
                         children=grafico_evolucao_diaria("grafico-faturamento", "Evolução Diária - Faturamento no Período")
                     ), 
-                    width=12, md=6
+                    width=12, md=col_evolucao_width
                 ),
                 # Gráfico de fase: para AGORACRED fica oculto
                 dbc.Col(
@@ -287,6 +319,50 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                     width=12
                 )
             ]),
+
+            # === TABELA DE VARIAÇÃO (Atual vs Mês Anterior) ===
+            html.Div([
+                html.Hr(style={"borderColor": "#f59e0b", "borderWidth": "2px", "marginTop": "24px"}),
+                html.Div([
+                    DashIconify(icon="lucide:trending-up", width=20, color="#d97706", style={"marginRight": "8px"}),
+                    html.Span("Variação vs Mês Anterior", style={"fontSize": "14px", "fontWeight": "700", "color": "#d97706"}),
+                ], style={"display": "flex", "alignItems": "center", "marginBottom": "6px"}),
+                html.P(
+                    "Comparação do faturamento atual com o mês anterior — mostra variação em R$ e %, e quanto da meta foi atingido em cada período.",
+                    style={"fontSize": "12px", "color": "var(--text-muted)", "marginBottom": "12px"}
+                ),
+                dcc.Loading(
+                    type="circle",
+                    children=[
+                        html.Div(id="resumo-evolucao-operador", className="mb-2"),
+                        dash_table.DataTable(
+                            id="tabela-evolucao-operador",
+                            columns=[],
+                            data=[],
+                            markdown_options={"html": True},
+                            page_size=15,
+                            sort_action="native",
+                            style_table={"overflowX": "auto", "borderRadius": "8px"},
+                            style_header={
+                                "backgroundColor": "#d97706",
+                                "color": "white",
+                                "fontWeight": "600",
+                                "textAlign": "center",
+                                "padding": "10px",
+                            },
+                            style_cell={
+                                "textAlign": "center",
+                                "padding": "8px 12px",
+                                "borderBottom": "1px solid #E5E7EB",
+                                "fontSize": "13px",
+                            },
+                            style_data_conditional=[
+                                {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+                            ],
+                        )
+                    ],
+                ),
+            ], className="dashboard-panel mb-4"),
 
             dcc.Interval(id='intervalo-atualizacao', interval=300*1000, n_intervals=0)
         ],
