@@ -856,27 +856,45 @@ def register_callbacks(app):
     def navegar_para_operador(banco, login_operador, current_pathname):
         """
         Navega para a URL do operador selecionado.
-        🔧 CORREÇÃO: Verifica se a URL já está correta antes de navegar.
+        🔧 CORREÇÃO REFORÇADA: Só navega se:
+        1. A URL atual já é /operadores (State no momento do trigger)
+        2. Banco e operador têm valores válidos
+        3. A nova URL é diferente da atual
+        4. O trigger foi explicitamente de adm-banco-select ou adm-operador-select
         """
-        # Se não tem banco, não faz nada
+        import dash
+
+        # Guard 1: URL atual deve ser /operadores
+        if not current_pathname or not current_pathname.startswith("/operadores"):
+            raise PreventUpdate
+
+        # Guard 2: contexto — o trigger deve ser um dos selects
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            raise PreventUpdate
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        if trigger_id not in ("adm-banco-select", "adm-operador-select"):
+            raise PreventUpdate
+
+        # Guard 3: valores válidos
         if not banco:
             raise PreventUpdate
-        
-        # Se não tem operador selecionado, não faz nada
         if not login_operador:
             raise PreventUpdate
-        
+
         # Constrói a URL de destino
         if login_operador == "TODOS":
             nova_url = f"/operadores/{banco}/TODOS"
         else:
             nova_url = f"/operadores/{banco}/{login_operador}"
-        
-        # 🔥 SÓ NAVEGA SE A URL FOR DIFERENTE
+
+        # Guard 4: só navega se URL for diferente
         if current_pathname == nova_url:
             raise PreventUpdate
-        
+
         return nova_url
+
+
 
     # =========================================================================
     # CALLBACK 8 — Tabela de Ranking de TMA (Acionamento por Operadores)
@@ -1009,6 +1027,7 @@ def register_callbacks(app):
 
                 linhas.append({
                     "foto":          foto_html_tma,
+                    "banco":         banco.upper(),
                     "operador":      op_login,
                     "tma":           str(row.get("tempoMedio", "—")),
                     "acionamentos":  int(row.get("qtdeAcionamentos", 0) or 0),
@@ -1027,6 +1046,7 @@ def register_callbacks(app):
 
         colunas = [
             {"name": "Foto",          "id": "foto",         "presentation": "markdown"},
+            {"name": "Banco",         "id": "banco"},
             {"name": "Operador",      "id": "operador"},
             {"name": "TMA",           "id": "tma"},
             {"name": "Acionamentos",  "id": "acionamentos"},
@@ -1389,17 +1409,23 @@ def register_callbacks(app):
         linhas.sort(key=lambda x: x.get("_var_pct_num", -9999), reverse=True)
 
         colunas = [
-            {"name": "Foto",           "id": "foto",       "presentation": "markdown"},
-            {"name": "Banco",          "id": "banco"},
-            {"name": "Operador",       "id": "operador"},
-            {"name": "Fat. Atual",     "id": "fat_atual"},
-            {"name": "Fat. Anterior",  "id": "fat_ant"},
-            {"name": "Var. (R$)",      "id": "var_abs",    "presentation": "markdown"},
-            {"name": "Var. (%)",       "id": "var_pct",    "presentation": "markdown"},
-            {"name": "% Meta Atual",   "id": "perc_atual", "presentation": "markdown"},
-            {"name": "% Meta Ant.",    "id": "perc_ant",   "presentation": "markdown"},
-            {"name": "Var. Meta (pp)", "id": "var_meta",   "presentation": "markdown"},
+            {"name": "Foto",            "id": "foto",       "presentation": "markdown"},
+            {"name": "Banco",           "id": "banco"},
+            {"name": "Operador",        "id": "operador"},
+            {"name": "Fat. Atual",      "id": "fat_atual"},
+            {"name": "Fat. Anterior",   "id": "fat_ant"},
+            # Dif. Fat.(R$) = diferença absoluta em reais (atual - anterior)
+            {"name": "Dif. Fat.(R$)",   "id": "var_abs",    "presentation": "markdown"},
+            # Var. Fat.(%) = variação percentual do faturamento vs mês anterior
+            {"name": "Var. Fat.(%)",    "id": "var_pct",    "presentation": "markdown"},
+            # % Meta Atual = % da meta atingido no mês selecionado
+            {"name": "% Meta Atual",    "id": "perc_atual", "presentation": "markdown"},
+            # % Meta Ant. = % da meta atingido no mês anterior
+            {"name": "% Meta Ant.",     "id": "perc_ant",   "presentation": "markdown"},
+            # Dif. Meta(pp) = diferença em pontos percentuais entre % meta atual e anterior
+            {"name": "Dif. Meta(pp)",   "id": "var_meta",   "presentation": "markdown"},
         ]
+
 
         # Resumo
         acima = sum(1 for x in linhas if x.get("_var_pct_num", -9999) != -9999 and x.get("_var_pct_num", 0) >= 0)

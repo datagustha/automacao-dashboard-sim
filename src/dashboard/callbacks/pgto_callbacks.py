@@ -188,5 +188,5 @@ def register_callbacks(app):
         colunas_tabela = [{"name": i, "id": i} for i in df_tabela.columns]
         badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
 
-        print(f"[PAGAMENTOS] ✅ Finalizado - {len(dados_tabela)} pagamentos exibidos")
+        print(f"[PAGAMENTOS] OK Finalizado - {len(dados_tabela)} pagamentos exibidos")
         return dados_tabela, colunas_tabela, badge_style

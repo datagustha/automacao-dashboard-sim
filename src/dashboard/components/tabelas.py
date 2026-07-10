@@ -90,6 +90,10 @@ def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de O
                                 'width': '65px', 'minWidth': '65px', 'maxWidth': '65px',
                             },
                             {
+                                'if': {'column_id': 'banco'},
+                                'width': '110px', 'minWidth': '100px', 'maxWidth': '130px',
+                            },
+                            {
                                 'if': {'column_id': 'operador'},
                                 'width': '140px', 'minWidth': '120px', 'maxWidth': '180px',
                             },

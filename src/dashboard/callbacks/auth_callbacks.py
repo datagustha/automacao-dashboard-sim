@@ -56,17 +56,41 @@ def register_callbacks(app):
     )
     def render_page(pathname, login_dados):
         """ROTEADOR PRINCIPAL"""
+        ctx = dash.callback_context
+
         # 1. DEFINIÇÃO DE ROTAS PROTEGIDAS
         rotas_protegidas = ['/dashboard', '/pagamentos', '/operadores']
         is_protegida = any(pathname.startswith(r) for r in rotas_protegidas if pathname)
 
         # 2. SE NÃO ESTIVER LOGADO...
         if not login_dados or 'nome' not in login_dados:
+            # Se é a carga inicial e a URL é protegida, pode ser que o localStorage
+            # ainda não terminou de carregar — mostramos uma tela de loading
+            # para evitar o flash da tela de login antes do store ser lido.
+            triggered_ids = [t['prop_id'] for t in ctx.triggered] if ctx.triggered else []
+            only_store_fired = triggered_ids == ['login-success-store.data']
+            if not triggered_ids or only_store_fired:
+                if is_protegida:
+                    # Tela de espera minimalista — dura apenas um ciclo de render
+                    return html.Div(
+                        html.Div(
+                            [
+                                html.Div(className="spinner-border text-primary", role="status",
+                                         style={"width": "3rem", "height": "3rem"}),
+                                html.P("Carregando...", className="mt-3 text-muted fw-semibold")
+                            ],
+                            className="d-flex flex-column align-items-center justify-content-center",
+                            style={"minHeight": "100vh"}
+                        )
+                    )
             # Se tentar acessar algo protegido, força Login
             if is_protegida:
                 return get_login_layout()
-            # Se estiver na raiz ou qualquer outro lugar, mostra Login (sem resetar se já estiver lá)
+            # Se estiver na raiz ou qualquer outro lugar, mostra Login
             return get_login_layout()
+
+
+
 
         # 3. USUÁRIO LOGADO...
         # Obtém o perfil do usuário logado (ex: 'adm' ou 'operador')

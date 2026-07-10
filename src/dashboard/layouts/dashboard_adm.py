@@ -324,7 +324,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ),
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-adm-semear", "📊 Ranking de Operadores — SEMEAR", fixed_cols=1),
+                    container_tabela_cheia("tabela-adm-semear", "📊 Ranking de Operadores — SEMEAR", fixed_cols=2),
                     width=12
                 )
             ], className="mb-4"),
@@ -376,6 +376,8 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
                                     style_cell_conditional=[
+                                        {"if": {"column_id": "foto"}, "width": "65px", "minWidth": "65px", "maxWidth": "65px"},
+                                        {"if": {"column_id": "banco"}, "width": "110px", "minWidth": "100px", "maxWidth": "120px"},
                                         {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
                                     ],
                                     style_data_conditional=[
@@ -409,7 +411,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ),
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-adm-agoracred", "📊 Ranking de Operadores — AGORACRED", fixed_cols=1),
+                    container_tabela_cheia("tabela-adm-agoracred", "📊 Ranking de Operadores — AGORACRED", fixed_cols=2),
                     width=12
                 )
             ], className="mb-4"),
@@ -445,9 +447,9 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     columns=[],
                                     data=[],
                                     markdown_options={"html": True},
-                                    page_size=40,
+                                    page_size=10,
                                     sort_action="native",
-                                    fixed_columns={"headers": True, "data": 1},
+                                    fixed_columns={"headers": True, "data": 3},
                                     style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#d97706",
@@ -465,6 +467,8 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
                                     style_cell_conditional=[
+                                        {"if": {"column_id": "foto"}, "width": "65px", "minWidth": "65px", "maxWidth": "65px"},
+                                        {"if": {"column_id": "banco"}, "width": "110px", "minWidth": "100px", "maxWidth": "120px"},
                                         {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
                                     ],
                                     style_data_conditional=[
@@ -505,6 +509,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     id="tabela-tma-adm",
                                     columns=[
                                         {"name": "Foto",          "id": "foto",         "presentation": "markdown"},
+                                        {"name": "Banco",         "id": "banco"},
                                         {"name": "Operador",       "id": "operador"},
                                         {"name": "TMA",            "id": "tma"},
                                         {"name": "Acionamentos",   "id": "acionamentos"},
@@ -516,9 +521,10 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     ],
                                     data=[],
                                     markdown_options={"html": True},
-                                    page_size=30,
+                                    page_size=10,
                                     sort_action="native",
-                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    fixed_columns={"headers": True, "data": 3},
+                                    style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#0ea5e9",
                                         "color": "white",
@@ -535,6 +541,8 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
                                     style_cell_conditional=[
+                                        {"if": {"column_id": "foto"}, "width": "65px", "minWidth": "65px", "maxWidth": "65px"},
+                                        {"if": {"column_id": "banco"}, "width": "110px", "minWidth": "100px", "maxWidth": "120px"},
                                         {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
                                     ],
                                     style_data_conditional=[
