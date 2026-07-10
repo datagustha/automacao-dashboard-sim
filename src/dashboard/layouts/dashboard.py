@@ -47,7 +47,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
             get_header(nome_usuario, imagem_url, "Painel Global Analítico", admissao=admissao, perfil="operador"),
 
 
-            # === FILTROS ===
+            # === FILTROS — LINHA 1: busca + fase ===
             dbc.Row(
                 [
                     dbc.Col(
@@ -55,12 +55,31 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             html.Label("Busca", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
                             dbc.InputGroup([
                                 dbc.InputGroupText(DashIconify(icon="lucide:search", width=18, color="var(--text-muted)"), style={"backgroundColor": "white", "borderRight": "none"}),
-                                dbc.Input(id='filtro-texto-busca', type='text', placeholder="Procurar contrato / cliente...", style={"borderLeft": "none"}, debounce=True)
-                            ], className="shadow-sm", style={"borderRadius": "8px"})
+                                dbc.Input(
+                                    id='filtro-texto-busca',
+                                    type='text',
+                                    placeholder="Procurar contrato / cliente...",
+                                    style={"borderLeft": "none"},
+                                    debounce=True
+                                )
+                            ], className="shadow-sm", style={"borderRadius": "8px"}),
+                            # overlay indicando busca em andamento
+                            html.Div(
+                                id="busca-loading-hint",
+                                children=[
+                                    DashIconify(icon="lucide:loader", width=14, style={"marginRight": "4px"}),
+                                    html.Span("Pesquisando...", style={"fontSize": "11px"})
+                                ],
+                                style={
+                                    "display": "none",  # mostrado via callback
+                                    "color": "#7e3d97", "fontWeight": "600",
+                                    "marginTop": "4px", "fontSize": "11px"
+                                }
+                            ),
                         ],
-                        width=12, md=3, className="mb-3"
+                        width=12, md=5, className="mb-2"
                     ),
-                    # FILTRO DE FASE - MULTIPLA SELEÇÃO (visível só para SEMEAR)
+                    # FILTRO DE FASE — MULTIPLA SELEÇÃO (visível só para SEMEAR)
                     dbc.Col(
                         [
                             html.Label("Fase", className="fw-bold mb-1", style={"color": "var(--text-muted)", "fontSize": "13px"}),
@@ -75,10 +94,17 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                                 style={"borderRadius": "8px", **fase_style}
                             )
                         ],
-                        width=12, md=2,
+                        width=12, md=4,
                         style=fase_style,
-                        className="mb-3"
+                        className="mb-2"
                     ),
+                ],
+                className="align-items-end g-3 mt-2"
+            ),
+
+            # === FILTROS — LINHA 2: mês/ano + data range ===
+            dbc.Row(
+                [
                     # FILTRO DE MÊS/ANO
                     dbc.Col(
                         [
@@ -94,13 +120,13 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                     # FILTRO DE DATA RANGE
                     dbc.Col(
                         criar_filtro_data_range(""),
-                        width=12, md=4,
+                        width=12, md=5,
                         className="mb-3"
                     )
                 ],
-                className="align-items-end g-3 mb-4 mt-2"
+                className="align-items-end g-3 mb-4"
             ),
-            
+
             # === KPIs ===
             dbc.Row(
                 [

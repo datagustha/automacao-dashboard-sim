@@ -859,7 +859,7 @@ def register_callbacks(app):
         return resultado, colunas
 
     # ================================================================
-    # TABELA DE VARIAÇÃO DO OPERADOR vs MÊS ANTERIOR
+    # TABELA DE VARIAÇÃO DO OPERADOR vs MÊS ANTERIOR (formato ADM)
     # ================================================================
     @app.callback(
         [
@@ -868,16 +868,17 @@ def register_callbacks(app):
             Output("resumo-evolucao-operador", "children"),
         ],
         [
-            Input('interval-component', 'n_intervals'),
+            Input('intervalo-atualizacao', 'n_intervals'),
             Input('filtro-mes', 'value'),
             Input('filtro-ano', 'value'),
             Input('filtro-data-range', 'start_date'),
-            Input('filtro-data-range', 'end_date')
+            Input('filtro-data-range', 'end_date'),
+            Input('filtro-texto-busca', 'value'),
         ],
         [State('login-success-store', 'data')]
     )
-    def atualizar_evolucao_operador(n, mes, ano, data_inicio, data_fim, dados_operador):
-        """Variação do operador vs mês anterior — igual à tabela do ADM."""
+    def atualizar_evolucao_operador(n, mes, ano, data_inicio, data_fim, filtro_busca, dados_operador):
+        """Variação do operador vs mês anterior — formato idêntico ao ADM."""
         if not dados_operador:
             return [], [], ""
 
@@ -911,12 +912,20 @@ def register_callbacks(app):
 
         try:
             df = pd.DataFrame(pagamentos)
-            df["dtPgto"] = pd.to_datetime(df["dtPgto"], errors="coerce")
+            df["dtPgto"]     = pd.to_datetime(df["dtPgto"], errors="coerce")
             df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
             df = df.dropna(subset=["dtPgto"])
 
             if banco == "SEMEAR" and "faseAtraso" in df.columns:
                 df = df[df["faseAtraso"] != "Fora da fase"]
+
+            # Aplica filtro de busca (contrato/cliente)
+            if filtro_busca and str(filtro_busca).strip():
+                texto = str(filtro_busca).strip().lower()
+                mask = df["contrato"].fillna("").astype(str).str.lower().str.contains(texto)
+                if "cliente" in df.columns:
+                    mask |= df["cliente"].fillna("").astype(str).str.lower().str.contains(texto)
+                df = df[mask]
 
             # Período atual
             df_atual, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
@@ -937,20 +946,17 @@ def register_callbacks(app):
 
             fat_atual = float(df_atual["valorTotal"].sum()) if not df_atual.empty else 0.0
             fat_ant   = float(df_ant["valorTotal"].sum())   if not df_ant.empty   else 0.0
-            qtd_atual = len(df_atual)
-            qtd_ant   = len(df_ant)
 
-            # Variação %
+            # Variação % e absoluta
             if fat_ant > 0:
                 var_pct = ((fat_atual - fat_ant) / fat_ant) * 100
-                seta = "↑" if var_pct >= 0 else "↓"
-                cor_v = "#16a34a" if var_pct >= 0 else "#dc2626"
-                var_str = f'<span style="color:{cor_v};font-weight:700;">{seta} {abs(var_pct):.1f}%</span>'
+                seta    = "↑" if var_pct >= 0 else "↓"
+                cor_v   = "#16a34a" if var_pct >= 0 else "#dc2626"
+                var_pct_str = f'<span style="color:{cor_v};font-weight:700;">{seta} {abs(var_pct):.1f}%</span>'
             else:
-                var_pct = None
-                var_str = "—"
+                var_pct     = None
+                var_pct_str = "—"
 
-            # Variação absoluta
             var_abs = fat_atual - fat_ant
             var_abs_brl = _brl(abs(var_abs))
             if var_abs > 0:
@@ -960,24 +966,32 @@ def register_callbacks(app):
             else:
                 var_abs_str = var_abs_brl
 
-            # % da meta
-            meta_atual = 0.0
-            meta_ant = 0.0
+            # % Meta
+            meta_op = 0.0
+            meta_ant_op = 0.0
             if metas:
                 for meta in metas:
                     md = meta.get("data")
-                    if md and hasattr(md, "year"):
-                        if md.year == ano_int and md.month == mes_int:
-                            meta_atual = float(meta.get("meta100") or 0)
-                        elif md.year == ano_ant and md.month == mes_ant:
-                            meta_ant = float(meta.get("meta100") or 0)
+                    if md:
+                        if hasattr(md, "year"):
+                            if md.year == ano_int and md.month == mes_int:
+                                meta_op = float(meta.get("meta100") or 0)
+                            elif md.year == ano_ant and md.month == mes_ant:
+                                meta_ant_op = float(meta.get("meta100") or 0)
+                        elif isinstance(md, str):
+                            mdt = pd.to_datetime(md, errors="coerce")
+                            if not pd.isna(mdt):
+                                if mdt.year == ano_int and mdt.month == mes_int:
+                                    meta_op = float(meta.get("meta100") or 0)
+                                elif mdt.year == ano_ant and mdt.month == mes_ant:
+                                    meta_ant_op = float(meta.get("meta100") or 0)
 
-            perc_atual = (fat_atual / meta_atual * 100) if meta_atual > 0 else 0.0
-            perc_ant   = (fat_ant / meta_ant * 100) if meta_ant > 0 else 0.0
+            perc_atual = (fat_atual / meta_op * 100)     if meta_op > 0     else 0.0
+            perc_ant   = (fat_ant   / meta_ant_op * 100) if meta_ant_op > 0 else 0.0
 
-            def _perc_html(v):
+            def _perc_html(v, cor):
                 bar = min(v, 100)
-                c = "#10B981" if v >= 100 else ("#7e3d97" if v >= 70 else "#ef4444")
+                c   = "#10B981" if v >= 100 else cor
                 return (
                     f'<div style="display:flex;align-items:center;gap:5px;">'
                     f'<div style="flex:1;background:#e5e7eb;border-radius:3px;height:6px;">'
@@ -985,68 +999,103 @@ def register_callbacks(app):
                     f'<span style="white-space:nowrap;font-weight:700;color:{c};font-size:11px;">{v:.1f}%</span></div>'
                 )
 
-            # Variação da %meta
-            if fat_ant > 0 and meta_ant > 0:
+            cor_banco_hex = "#7e3d97" if banco == "SEMEAR" else "#10B981"
+
+            if fat_ant > 0 and meta_ant_op > 0:
                 var_meta_pct = perc_atual - perc_ant
                 cor_vm = "#16a34a" if var_meta_pct >= 0 else "#dc2626"
-                s_vm = "↑" if var_meta_pct >= 0 else "↓"
+                s_vm   = "↑" if var_meta_pct >= 0 else "↓"
                 var_meta_str = f'<span style="color:{cor_vm};font-weight:700;">{s_vm} {abs(var_meta_pct):.1f}pp</span>'
             else:
                 var_meta_str = "—"
 
-            meses_nomes = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-                           "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-            nome_mes_atual = meses_nomes[mes_int - 1] if 1 <= mes_int <= 12 else str(mes_int)
-            nome_mes_ant   = meses_nomes[mes_ant - 1] if 1 <= mes_ant <= 12 else str(mes_ant)
+            # Foto do operador
+            imagem_url_op = operador.get("imagem", "") or ""
+            foto_html = (
+                f'<img src="{imagem_url_op}" style="width:36px;height:36px;border-radius:50%;'
+                f'object-fit:cover;border:2px solid {cor_banco_hex};" />'
+                if imagem_url_op else "👤"
+            )
+            cor_banco_emoji = "🟣" if banco == "SEMEAR" else "🟢"
 
-            dados = [
-                {
-                    "periodo":     f"{nome_mes_ant}/{ano_ant}",
-                    "faturamento": _brl(fat_ant),
-                    "quantidade":  str(qtd_ant),
-                    "meta":        _brl(meta_ant) if meta_ant > 0 else "—",
-                    "perc_meta":   _perc_html(perc_ant),
-                    "variacao_brl":"—",
-                    "variacao_pct":"—",
-                    "var_meta_pct":"—",
-                },
-                {
-                    "periodo":     f"{nome_mes_atual}/{ano_int}",
-                    "faturamento": _brl(fat_atual),
-                    "quantidade":  str(qtd_atual),
-                    "meta":        _brl(meta_atual) if meta_atual > 0 else "—",
-                    "perc_meta":   _perc_html(perc_atual),
-                    "variacao_brl":var_abs_str,
-                    "variacao_pct":var_str,
-                    "var_meta_pct":var_meta_str,
-                },
-            ]
+            linhas = [{
+                "foto":        foto_html,
+                "banco":       f"{cor_banco_emoji} {banco}",
+                "operador":    operador.get("login", ""),
+                "fat_atual":   _brl(fat_atual),
+                "fat_ant":     _brl(fat_ant),
+                "var_abs":     var_abs_str,
+                "var_pct":     var_pct_str,
+                "perc_atual":  _perc_html(perc_atual, cor_banco_hex),
+                "perc_ant":    _perc_html(perc_ant,   cor_banco_hex),
+                "var_meta":    var_meta_str,
+            }]
 
             colunas = [
-                {"name": "Período",        "id": "periodo"},
-                {"name": "Faturamento",    "id": "faturamento"},
-                {"name": "Contratos",      "id": "quantidade"},
-                {"name": "Meta",           "id": "meta"},
-                {"name": "% Meta",         "id": "perc_meta",    "presentation": "markdown"},
-                {"name": "Var. R$",        "id": "variacao_brl", "presentation": "markdown"},
-                {"name": "Var. %",         "id": "variacao_pct", "presentation": "markdown"},
-                {"name": "Var. % Meta",    "id": "var_meta_pct", "presentation": "markdown"},
+                {"name": "Foto",           "id": "foto",       "presentation": "markdown"},
+                {"name": "Banco",          "id": "banco"},
+                {"name": "Operador",       "id": "operador"},
+                {"name": "Fat. Atual",     "id": "fat_atual"},
+                {"name": "Fat. Anterior",  "id": "fat_ant"},
+                {"name": "Var. (R$)",      "id": "var_abs",    "presentation": "markdown"},
+                {"name": "Var. (%)",       "id": "var_pct",    "presentation": "markdown"},
+                {"name": "% Meta Atual",   "id": "perc_atual", "presentation": "markdown"},
+                {"name": "% Meta Ant.",    "id": "perc_ant",   "presentation": "markdown"},
+                {"name": "Var. Meta (pp)", "id": "var_meta",   "presentation": "markdown"},
             ]
 
-            # Resumo textual
+            # Resumo
             if var_pct is not None:
-                cor_resumo = "#16a34a" if var_pct >= 0 else "#dc2626"
+                cor_r = "#16a34a" if var_pct >= 0 else "#dc2626"
                 emoji = "📈" if var_pct >= 0 else "📉"
-                resumo = html.Div([
-                    html.Span(f"{emoji} Variação de ", style={"fontSize": "13px", "color": "var(--text-muted)"}),
-                    html.Span(f"{abs(var_pct):.1f}%", style={"fontSize": "13px", "fontWeight": "700", "color": cor_resumo}),
-                    html.Span(f" em relação a {nome_mes_ant}/{ano_ant}", style={"fontSize": "13px", "color": "var(--text-muted)"}),
-                ])
+                meses_nomes = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+                n_ant = meses_nomes[mes_ant - 1] if 1 <= mes_ant <= 12 else str(mes_ant)
+                resumo = html.Div(
+                    f"{emoji} Variação de {abs(var_pct):.1f}% em relação a {n_ant}/{ano_ant}",
+                    style={
+                        "backgroundColor": "#fffbeb", "color": cor_r, "padding": "10px 14px",
+                        "borderRadius": "6px", "fontWeight": "600", "fontSize": "13.5px",
+                        "border": "1px solid #fde68a"
+                    }
+                )
             else:
-                resumo = html.Span("Sem dados do mês anterior para comparação.", style={"fontSize": "12px", "color": "#aaa"})
+                resumo = html.Span(
+                    "Sem dados do mês anterior para comparação.",
+                    style={"fontSize": "12px", "color": "#aaa"}
+                )
 
-            return dados, colunas, resumo
+            return linhas, colunas, resumo
 
         except Exception as e:
             log_debug(f"[EVOLUCAO-OPERADOR] Erro: {e}")
             return [], [], ""
+
+    # ================================================================
+    # INDICATOR DE LOADING NA BUSCA
+    # ================================================================
+    @app.callback(
+        Output("busca-loading-hint", "style"),
+        [
+            Input("filtro-texto-busca", "value"),
+            Input("tabela-pagamentos", "data"),
+        ],
+        prevent_initial_call=True
+    )
+    def toggle_busca_hint(valor_busca, dados_tabela):
+        """Mostra 'Pesquisando...' enquanto busca e esconde quando tabela atualiza."""
+        from dash import callback_context
+        ctx = callback_context
+        if not ctx.triggered:
+            return {"display": "none"}
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        # Quando a tabela atualizar (dados carregados) → esconde
+        if trigger_id == "tabela-pagamentos":
+            return {"display": "none"}
+        # Quando o input de busca mudou → mostra
+        if valor_busca and str(valor_busca).strip():
+            return {
+                "display": "flex", "alignItems": "center",
+                "color": "#7e3d97", "fontWeight": "600",
+                "marginTop": "4px", "fontSize": "11px"
+            }
+        return {"display": "none"}

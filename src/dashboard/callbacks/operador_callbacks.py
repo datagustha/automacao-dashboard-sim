@@ -817,3 +817,222 @@ def register_callbacks(app):
         ]
 
         return linhas, colunas
+
+    # ================================================================
+    # TABELA DE VARIAÇÃO MÊS A MÊS — Página de Operadores
+    # Sem filtro de operador: todos do banco. Com filtro: só o selecionado.
+    # ================================================================
+    @app.callback(
+        [
+            Output("tabela-evolucao-detalhe", "data"),
+            Output("tabela-evolucao-detalhe", "columns"),
+            Output("resumo-evolucao-detalhe", "children"),
+        ],
+        [
+            Input("intervalo-operador", "n_intervals"),
+            Input("filtro-mes-operador", "value"),
+            Input("filtro-ano-operador", "value"),
+            Input("filtro-data-range-operador", "start_date"),
+            Input("filtro-data-range-operador", "end_date"),
+            Input("adm-banco-select", "value"),
+            Input("adm-filtro-atividade", "value"),
+            Input("adm-operador-select", "value"),
+        ],
+        [State("login-success-store", "data")]
+    )
+    def atualizar_evolucao_detalhe(n, mes, ano, data_inicio, data_fim,
+                                   banco_sel, filtro_atividade, operador_filtro,
+                                   dados_sessao):
+        """Variação atual vs mês anterior — todos operadores ou um específico."""
+        from src.services.db_service import (
+            buscar_pagamentos_todos_operadores_por_banco,
+            Buscar_pagamento_por_operador, Buscar_login,
+            buscar_metas_por_operador
+        )
+        from src.dashboard.components.filtros import aplicar_filtro_data, obter_mes_ano_do_range
+        import pandas as pd
+
+        if not dados_sessao:
+            return [], [], ""
+
+        perfil = dados_sessao.get("perfil", "operador")
+        banco = banco_sel or "SEMEAR"
+
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else datetime.now().month,
+            int(ano) if ano else datetime.now().year,
+        )
+        mes_ant = 12 if mes_int == 1 else mes_int - 1
+        ano_ant = ano_int - 1 if mes_int == 1 else ano_int
+
+        def _brl(v):
+            return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        def _perc_html(v, cor):
+            bar = min(v, 100)
+            c = "#10B981" if v >= 100 else cor
+            return (
+                f'<div style="display:flex;align-items:center;gap:5px;">'
+                f'<div style="flex:1;background:#e5e7eb;border-radius:3px;height:6px;">'
+                f'<div style="width:{bar:.0f}%;background:{c};height:6px;border-radius:3px;"></div></div>'
+                f'<span style="white-space:nowrap;font-weight:700;color:{c};font-size:11px;">{v:.1f}%</span></div>'
+            )
+
+        cor_banco_hex = "#7e3d97" if banco == "SEMEAR" else "#10B981"
+        cor_emoji     = "🟣"      if banco == "SEMEAR" else "🟢"
+
+        # Fonte de dados: todos os operadores do banco
+        try:
+            todos = buscar_pagamentos_todos_operadores_por_banco(banco)
+        except Exception:
+            return [], [], ""
+
+        if not todos:
+            return [], [], ""
+
+        linhas = []
+
+        for operador, pagamentos, metas in todos:
+            # Filtra por operador selecionado (se aplicável)
+            if operador_filtro and operador_filtro != "TODOS":
+                if operador.get("login") != operador_filtro:
+                    continue
+
+            # Filtra por atividade
+            ativo = operador.get("ativo", True)
+            if filtro_atividade == "ativo" and not ativo:
+                continue
+
+            if not pagamentos:
+                continue
+
+            try:
+                df = pd.DataFrame(pagamentos)
+                df["dtPgto"]     = pd.to_datetime(df["dtPgto"], errors="coerce")
+                df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+                df = df.dropna(subset=["dtPgto"])
+                if df.empty:
+                    continue
+
+                if banco == "SEMEAR" and "faseAtraso" in df.columns:
+                    df = df[df["faseAtraso"] != "Fora da fase"]
+
+                df_atual, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+
+                if data_inicio and data_fim:
+                    try:
+                        dt_ini_ant = pd.to_datetime(data_inicio) - pd.DateOffset(months=1)
+                        dt_fim_ant = pd.to_datetime(data_fim) - pd.DateOffset(months=1)
+                        df_ant = df[
+                            (df["dtPgto"] >= dt_ini_ant) &
+                            (df["dtPgto"] <= dt_fim_ant + pd.Timedelta(hours=23, minutes=59, seconds=59))
+                        ].copy()
+                    except Exception:
+                        df_ant = df[(df["dtPgto"].dt.month == mes_ant) & (df["dtPgto"].dt.year == ano_ant)].copy()
+                else:
+                    df_ant = df[(df["dtPgto"].dt.month == mes_ant) & (df["dtPgto"].dt.year == ano_ant)].copy()
+
+                fat_atual = float(df_atual["valorTotal"].sum()) if not df_atual.empty else 0.0
+                fat_ant   = float(df_ant["valorTotal"].sum())   if not df_ant.empty   else 0.0
+
+                if fat_ant > 0:
+                    var_pct = ((fat_atual - fat_ant) / fat_ant) * 100
+                    seta = "↑" if var_pct >= 0 else "↓"
+                    cor_v = "#16a34a" if var_pct >= 0 else "#dc2626"
+                    var_pct_str = f'<span style="color:{cor_v};font-weight:700;">{seta} {abs(var_pct):.1f}%</span>'
+                else:
+                    var_pct = None
+                    var_pct_str = "—"
+
+                var_abs = fat_atual - fat_ant
+                if var_abs > 0:
+                    var_abs_str = f'<span style="color:#16a34a;font-weight:700;">+{_brl(abs(var_abs))}</span>'
+                elif var_abs < 0:
+                    var_abs_str = f'<span style="color:#dc2626;font-weight:700;">-{_brl(abs(var_abs))}</span>'
+                else:
+                    var_abs_str = _brl(0)
+
+                meta_op = meta_ant_op = 0.0
+                if metas:
+                    for meta in metas:
+                        md = meta.get("data")
+                        if md:
+                            if hasattr(md, "year"):
+                                if md.year == ano_int and md.month == mes_int:
+                                    meta_op = float(meta.get("meta100") or 0)
+                                elif md.year == ano_ant and md.month == mes_ant:
+                                    meta_ant_op = float(meta.get("meta100") or 0)
+                            elif isinstance(md, str):
+                                mdt = pd.to_datetime(md, errors="coerce")
+                                if not pd.isna(mdt):
+                                    if mdt.year == ano_int and mdt.month == mes_int:
+                                        meta_op = float(meta.get("meta100") or 0)
+                                    elif mdt.year == ano_ant and mdt.month == mes_ant:
+                                        meta_ant_op = float(meta.get("meta100") or 0)
+
+                perc_atual = (fat_atual / meta_op * 100)     if meta_op > 0     else 0.0
+                perc_ant   = (fat_ant   / meta_ant_op * 100) if meta_ant_op > 0 else 0.0
+
+                if fat_ant > 0 and meta_ant_op > 0:
+                    vm = perc_atual - perc_ant
+                    cvm = "#16a34a" if vm >= 0 else "#dc2626"
+                    svm = "↑" if vm >= 0 else "↓"
+                    var_meta_str = f'<span style="color:{cvm};font-weight:700;">{svm} {abs(vm):.1f}pp</span>'
+                else:
+                    var_meta_str = "—"
+
+                imagem_url_op = operador.get("imagem", "") or ""
+                foto_html = (
+                    f'<img src="{imagem_url_op}" style="width:32px;height:32px;border-radius:50%;'
+                    f'object-fit:cover;border:2px solid {cor_banco_hex};" />'
+                    if imagem_url_op else "👤"
+                )
+
+                linhas.append({
+                    "foto":       foto_html,
+                    "banco":      f"{cor_emoji} {banco}",
+                    "operador":   operador.get("login", ""),
+                    "fat_atual":  _brl(fat_atual),
+                    "fat_ant":    _brl(fat_ant),
+                    "var_abs":    var_abs_str,
+                    "var_pct":    var_pct_str,
+                    "perc_atual": _perc_html(perc_atual, cor_banco_hex),
+                    "perc_ant":   _perc_html(perc_ant, cor_banco_hex),
+                    "var_meta":   var_meta_str,
+                    "_var_num":   var_pct if var_pct is not None else -9999,
+                })
+
+            except Exception:
+                continue
+
+        if not linhas:
+            return [], [], ""
+
+        linhas.sort(key=lambda x: x.get("_var_num", -9999), reverse=True)
+
+        colunas = [
+            {"name": "Foto",           "id": "foto",       "presentation": "markdown"},
+            {"name": "Banco",          "id": "banco"},
+            {"name": "Operador",       "id": "operador"},
+            {"name": "Fat. Atual",     "id": "fat_atual"},
+            {"name": "Fat. Anterior",  "id": "fat_ant"},
+            {"name": "Var. (R$)",      "id": "var_abs",    "presentation": "markdown"},
+            {"name": "Var. (%)",       "id": "var_pct",    "presentation": "markdown"},
+            {"name": "% Meta Atual",   "id": "perc_atual", "presentation": "markdown"},
+            {"name": "% Meta Ant.",    "id": "perc_ant",   "presentation": "markdown"},
+            {"name": "Var. Meta (pp)", "id": "var_meta",   "presentation": "markdown"},
+        ]
+
+        acima  = sum(1 for x in linhas if x["_var_num"] != -9999 and x["_var_num"] >= 0)
+        abaixo = sum(1 for x in linhas if x["_var_num"] != -9999 and x["_var_num"] < 0)
+        resumo = html.Div(
+            f"📈 {acima} operador(es) acima do mês anterior | 📉 {abaixo} abaixo",
+            style={
+                "backgroundColor": "#fffbeb", "color": "#b45309",
+                "padding": "10px 14px", "borderRadius": "6px",
+                "fontWeight": "600", "fontSize": "13.5px",
+                "border": "1px solid #fde68a"
+            }
+        )
+
+        return linhas, colunas, resumo

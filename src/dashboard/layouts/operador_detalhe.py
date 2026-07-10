@@ -352,6 +352,56 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                 )
             ], className="mb-4"),
 
+            # ── TABELA DE VARIAÇÃO (Atual vs Mês Anterior) ────────────
+            dbc.Row([
+                dbc.Col(
+                    html.Div([
+                        html.Hr(style={"borderColor": "#d97706", "borderWidth": "2px", "marginBottom": "12px"}),
+                        html.Div([
+                            html.Span("📊 Variação vs Mês Anterior", style={
+                                "fontSize": "14px", "fontWeight": "700", "color": "#d97706"
+                            }),
+                            html.Span(
+                                " — comparação do período selecionado com o mês anterior",
+                                style={"fontSize": "12px", "color": "var(--text-muted)", "marginLeft": "8px"
+                            }),
+                        ], style={"marginBottom": "8px"}),
+                        html.Div(id="resumo-evolucao-detalhe", className="mb-3"),
+                        dcc.Loading(
+                            type="circle",
+                            children=[
+                                dash_table.DataTable(
+                                    id="tabela-evolucao-detalhe",
+                                    columns=[],
+                                    data=[],
+                                    markdown_options={"html": True},
+                                    page_size=20,
+                                    sort_action="native",
+                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    style_header={
+                                        "backgroundColor": "#d97706",
+                                        "color": "white",
+                                        "fontWeight": "600",
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                    },
+                                    style_cell={
+                                        "textAlign": "center",
+                                        "padding": "8px 12px",
+                                        "borderBottom": "1px solid #E5E7EB",
+                                        "fontSize": "13px",
+                                    },
+                                    style_data_conditional=[
+                                        {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+                                    ],
+                                )
+                            ],
+                        ),
+                    ], className="dashboard-panel"),
+                    width=12
+                )
+            ], className="mb-4"),
+
             # ── TABELA DE PERFORMANCE ─────────────────────────────────
             dbc.Row([
                 dbc.Col(
