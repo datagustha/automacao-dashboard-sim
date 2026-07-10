@@ -492,11 +492,43 @@ def register_callbacks(app):
             "transition": "width 0.5s",
         }
 
+        # ── Cálculos de variação e falta de meta para Semear ─────────────────
+        if fat_s_ant > 0:
+            var_s_pct = ((fat_s - fat_s_ant) / fat_s_ant) * 100
+            seta_s = "↑" if var_s_pct >= 0 else "↓"
+            var_s_str = f"({seta_s} {abs(var_s_pct):.1f}%)"
+        else:
+            var_s_str = ""
+
+        falta_s = max(0.0, meta_s - fat_s)
+        falta_s_pct = ((meta_s - fat_s) / meta_s * 100) if meta_s > 0 else 0.0
+        if falta_s > 0:
+            falta_s_str = f" | Falta: {_brl(falta_s)} ({falta_s_pct:.1f}% abaixo)"
+        else:
+            falta_s_str = " | Meta Atingida! 🎉"
+        subtexto_semear = f"Mês anterior: {_brl(fat_s_ant)} {var_s_str}{falta_s_str}"
+
+        # ── Cálculos de variação e falta de meta para Agoracred ──────────────
+        if fat_a_ant > 0:
+            var_a_pct = ((fat_a - fat_a_ant) / fat_a_ant) * 100
+            seta_a = "↑" if var_a_pct >= 0 else "↓"
+            var_a_str = f"({seta_a} {abs(var_a_pct):.1f}%)"
+        else:
+            var_a_str = ""
+
+        falta_a = max(0.0, meta_a - fat_a)
+        falta_a_pct = ((meta_a - fat_a) / meta_a * 100) if meta_a > 0 else 0.0
+        if falta_a > 0:
+            falta_a_str = f" | Falta: {_brl(falta_a)} ({falta_a_pct:.1f}% abaixo)"
+        else:
+            falta_a_str = " | Meta Atingida! 🎉"
+        subtexto_agoracred = f"Mês anterior: {_brl(fat_a_ant)} {var_a_str}{falta_a_str}"
+
         return (
             _brl(fat_s),
-            f"Mês anterior: {_brl(fat_s_ant)}",
+            subtexto_semear,
             _brl(fat_a),
-            f"Mês anterior: {_brl(fat_a_ant)}",
+            subtexto_agoracred,
             _num(ops_total),
             f"Mês anterior: {_num(ops_ant_total)}",
             _brl(ticket_medio),
