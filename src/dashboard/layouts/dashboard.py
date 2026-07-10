@@ -276,7 +276,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                 dbc.Col(
                     dcc.Loading(
                         type="circle",
-                        children=container_tabela_cheia("tabela-performance", titulo="📊 Performance do Operador")
+                        children=container_tabela_cheia("tabela-performance", titulo="📊 Performance do Operador", fixed_cols=1)
                     ),
                     width=12
                 )
@@ -368,7 +368,8 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             markdown_options={"html": True},
                             page_size=15,
                             sort_action="native",
-                            style_table={"overflowX": "auto", "borderRadius": "8px"},
+                            fixed_columns={"headers": True, "data": 1},
+                            style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                             style_header={
                                 "backgroundColor": "#d97706",
                                 "color": "white",
@@ -381,7 +382,11 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                                 "padding": "8px 12px",
                                 "borderBottom": "1px solid #E5E7EB",
                                 "fontSize": "13px",
+                                "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                             },
+                            style_cell_conditional=[
+                                {"if": {"column_id": "foto"}, "width": "65px", "minWidth": "65px", "maxWidth": "65px"},
+                            ],
                             style_data_conditional=[
                                 {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
                             ],

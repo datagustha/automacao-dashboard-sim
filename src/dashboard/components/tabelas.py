@@ -46,14 +46,17 @@ def container_tabela(id_tabela: str):
     )
 
 
-def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de Operações"):
+def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de Operações", fixed_cols: int = 0):
     """
-    Tabela Massiva Paginada com título personalizado.
+    Tabela Massiva Paginada com título personalizado e suporte a congelamento de colunas.
     
     Args:
         id_tabela: ID único para o callback
         titulo: Título da tabela (padrão: "💸 Detalhamento de Operações")
+        fixed_cols: Quantidade de colunas a congelar à esquerda (padrão: 0)
     """
+    fixed_config = {'headers': True, 'data': fixed_cols} if fixed_cols > 0 else None
+    
     return html.Div(
         [
             html.H5(titulo, className="m-0 font-weight-bold mb-3", style={"color": "var(--text-main)"}),
@@ -67,7 +70,8 @@ def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de O
                         sort_action="native",
                         filter_action="native",
                         markdown_options={"html": True},
-                        style_table={'overflowX': 'auto', 'borderRadius': '12px'}, 
+                        fixed_columns=fixed_config,
+                        style_table={'overflowX': 'auto', 'borderRadius': '12px', 'minWidth': '100%'}, 
                         style_header={
                             'backgroundColor': 'var(--purple-main)', 
                             'color': 'white', 
@@ -77,8 +81,23 @@ def container_tabela_cheia(id_tabela: str, titulo: str = "💸 Detalhamento de O
                         },
                         style_cell={
                             'textAlign': 'center', 'padding': '12px', 
-                            'borderBottom': '1px solid #E5E7EB', 'color': 'var(--text-main)', 'fontSize': '14px'
+                            'borderBottom': '1px solid #E5E7EB', 'color': 'var(--text-main)', 'fontSize': '14px',
+                            'minWidth': '120px', 'width': '150px', 'maxWidth': '220px',
                         },
+                        style_cell_conditional=[
+                            {
+                                'if': {'column_id': 'foto'},
+                                'width': '65px', 'minWidth': '65px', 'maxWidth': '65px',
+                            },
+                            {
+                                'if': {'column_id': 'operador'},
+                                'width': '140px', 'minWidth': '120px', 'maxWidth': '180px',
+                            },
+                            {
+                                'if': {'column_id': 'login'},
+                                'width': '140px', 'minWidth': '120px', 'maxWidth': '180px',
+                            }
+                        ],
                         style_data_conditional=[{'if': {'row_index': 'odd'}, 'backgroundColor': '#F9FAFB'}]
                     )
                 ]

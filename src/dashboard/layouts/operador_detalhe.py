@@ -377,7 +377,8 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                                     markdown_options={"html": True},
                                     page_size=20,
                                     sort_action="native",
-                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    fixed_columns={"headers": True, "data": 1},
+                                    style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#d97706",
                                         "color": "white",
@@ -390,7 +391,11 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                                         "padding": "8px 12px",
                                         "borderBottom": "1px solid #E5E7EB",
                                         "fontSize": "13px",
+                                        "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
+                                    style_cell_conditional=[
+                                        {"if": {"column_id": "periodo"}, "width": "110px", "minWidth": "100px", "maxWidth": "130px"},
+                                    ],
                                     style_data_conditional=[
                                         {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
                                     ],
@@ -411,7 +416,7 @@ def get_operador_detalhe_layout(nome_usuario: str, imagem_url: str = None, opera
                             className="text-muted mb-2 px-1",
                             style={"fontSize": "13px", "fontWeight": "500"}
                         ),
-                        container_tabela_cheia("tabela-performance-operador", "🎯 Performance do Operador"),
+                        container_tabela_cheia("tabela-performance-operador", "🎯 Performance do Operador", fixed_cols=1),
                     ]),
                     width=12
                 )

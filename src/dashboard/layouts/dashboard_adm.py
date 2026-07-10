@@ -324,7 +324,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ),
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-adm-semear", "📊 Ranking de Operadores — SEMEAR"),
+                    container_tabela_cheia("tabela-adm-semear", "📊 Ranking de Operadores — SEMEAR", fixed_cols=1),
                     width=12
                 )
             ], className="mb-4"),
@@ -358,7 +358,8 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     markdown_options={"html": True},
                                     page_size=30,
                                     sort_action="native",
-                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    fixed_columns={"headers": True, "data": 1},
+                                    style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#7e3d97",
                                         "color": "white",
@@ -372,7 +373,11 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "borderBottom": "1px solid #E5E7EB",
                                         "color": "var(--text-main)",
                                         "fontSize": "13px",
+                                        "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
+                                    style_cell_conditional=[
+                                        {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
+                                    ],
                                     style_data_conditional=[
                                         {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
                                         {
@@ -404,7 +409,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ),
             dbc.Row([
                 dbc.Col(
-                    container_tabela_cheia("tabela-adm-agoracred", "📊 Ranking de Operadores — AGORACRED"),
+                    container_tabela_cheia("tabela-adm-agoracred", "📊 Ranking de Operadores — AGORACRED", fixed_cols=1),
                     width=12
                 )
             ], className="mb-4"),
@@ -442,7 +447,8 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                     markdown_options={"html": True},
                                     page_size=40,
                                     sort_action="native",
-                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    fixed_columns={"headers": True, "data": 1},
+                                    style_table={"overflowX": "auto", "borderRadius": "8px", "minWidth": "100%"},
                                     style_header={
                                         "backgroundColor": "#d97706",
                                         "color": "white",
@@ -456,7 +462,11 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "borderBottom": "1px solid #E5E7EB",
                                         "color": "var(--text-main)",
                                         "fontSize": "13px",
+                                        "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
+                                    style_cell_conditional=[
+                                        {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
+                                    ],
                                     style_data_conditional=[
                                         {"if": {"row_index": "odd"}, "backgroundColor": "#FFF8F0"},
                                     ],
@@ -522,7 +532,11 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                         "borderBottom": "1px solid #E5E7EB",
                                         "color": "var(--text-main)",
                                         "fontSize": "13px",
+                                        "minWidth": "110px", "width": "140px", "maxWidth": "200px",
                                     },
+                                    style_cell_conditional=[
+                                        {"if": {"column_id": "operador"}, "width": "140px", "minWidth": "120px", "maxWidth": "180px"},
+                                    ],
                                     style_data_conditional=[
                                         {"if": {"row_index": "odd"}, "backgroundColor": "#F0F9FF"},
                                     ],
