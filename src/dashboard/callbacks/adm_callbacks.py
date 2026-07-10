@@ -492,37 +492,115 @@ def register_callbacks(app):
             "transition": "width 0.5s",
         }
 
+        from dash import html
+
         # ── Cálculos de variação e falta de meta para Semear ─────────────────
         if fat_s_ant > 0:
             var_s_pct = ((fat_s - fat_s_ant) / fat_s_ant) * 100
             seta_s = "↑" if var_s_pct >= 0 else "↓"
-            var_s_str = f"({seta_s} {abs(var_s_pct):.1f}%)"
+            cor_var_s = "#16a34a" if var_s_pct >= 0 else "#dc2626"
+            bg_var_s = "#dcfce7" if var_s_pct >= 0 else "#fee2e2"
+            var_s_badge = html.Span(
+                f"{seta_s} {abs(var_s_pct):.1f}%",
+                style={
+                    "color": cor_var_s, "backgroundColor": bg_var_s,
+                    "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                    "marginLeft": "6px", "display": "inline-block"
+                }
+            )
         else:
-            var_s_str = ""
+            var_s_badge = html.Span("—", style={"marginLeft": "6px"})
 
         falta_s = max(0.0, meta_s - fat_s)
         falta_s_pct = ((meta_s - fat_s) / meta_s * 100) if meta_s > 0 else 0.0
         if falta_s > 0:
-            falta_s_str = f" | Falta: {_brl(falta_s)} ({falta_s_pct:.1f}% abaixo)"
+            falta_s_comp = html.Div([
+                html.Span(f"Falta: {_brl(falta_s)}", style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                html.Span(
+                    f"{falta_s_pct:.1f}% abaixo",
+                    style={
+                        "color": "#d97706", "backgroundColor": "#fef3c7",
+                        "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                        "marginLeft": "6px", "display": "inline-block"
+                    }
+                )
+            ])
         else:
-            falta_s_str = " | Meta Atingida! 🎉"
-        subtexto_semear = f"Mês anterior: {_brl(fat_s_ant)} {var_s_str}{falta_s_str}"
+            falta_s_comp = html.Div(
+                "Meta Atingida! 🎉",
+                style={"fontWeight": "700", "color": "#16a34a", "fontSize": "12px"}
+            )
+
+        subtexto_semear = html.Div(
+            style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "marginTop": "2px"},
+            children=[
+                html.Div([
+                    html.Span("Mês Anterior", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px"}),
+                    html.Div([
+                        html.Span(_brl(fat_s_ant), style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                        var_s_badge
+                    ], style={"display": "flex", "alignItems": "center"})
+                ]),
+                html.Div([
+                    html.Span("Diferença da Meta", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px", "textAlign": "right"}),
+                    falta_s_comp
+                ], style={"textAlign": "right"})
+            ]
+        )
 
         # ── Cálculos de variação e falta de meta para Agoracred ──────────────
         if fat_a_ant > 0:
             var_a_pct = ((fat_a - fat_a_ant) / fat_a_ant) * 100
             seta_a = "↑" if var_a_pct >= 0 else "↓"
-            var_a_str = f"({seta_a} {abs(var_a_pct):.1f}%)"
+            cor_var_a = "#16a34a" if var_a_pct >= 0 else "#dc2626"
+            bg_var_a = "#dcfce7" if var_a_pct >= 0 else "#fee2e2"
+            var_a_badge = html.Span(
+                f"{seta_a} {abs(var_a_pct):.1f}%",
+                style={
+                    "color": cor_var_a, "backgroundColor": bg_var_a,
+                    "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                    "marginLeft": "6px", "display": "inline-block"
+                }
+            )
         else:
-            var_a_str = ""
+            var_a_badge = html.Span("—", style={"marginLeft": "6px"})
 
         falta_a = max(0.0, meta_a - fat_a)
         falta_a_pct = ((meta_a - fat_a) / meta_a * 100) if meta_a > 0 else 0.0
         if falta_a > 0:
-            falta_a_str = f" | Falta: {_brl(falta_a)} ({falta_a_pct:.1f}% abaixo)"
+            falta_a_comp = html.Div([
+                html.Span(f"Falta: {_brl(falta_a)}", style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                html.Span(
+                    f"{falta_a_pct:.1f}% abaixo",
+                    style={
+                        "color": "#d97706", "backgroundColor": "#fef3c7",
+                        "padding": "2px 6px", "borderRadius": "4px", "fontWeight": "700", "fontSize": "11px",
+                        "marginLeft": "6px", "display": "inline-block"
+                    }
+                )
+            ])
         else:
-            falta_a_str = " | Meta Atingida! 🎉"
-        subtexto_agoracred = f"Mês anterior: {_brl(fat_a_ant)} {var_a_str}{falta_a_str}"
+            falta_a_comp = html.Div(
+                "Meta Atingida! 🎉",
+                style={"fontWeight": "700", "color": "#16a34a", "fontSize": "12px"}
+            )
+
+        subtexto_agoracred = html.Div(
+            style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "width": "100%", "marginTop": "2px"},
+            children=[
+                html.Div([
+                    html.Span("Mês Anterior", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px"}),
+                    html.Div([
+                        html.Span(_brl(fat_a_ant), style={"fontWeight": "700", "color": "var(--text-main)", "fontSize": "12px"}),
+                        var_a_badge
+                    ], style={"display": "flex", "alignItems": "center"})
+                ]),
+                html.Div([
+                    html.Span("Diferença da Meta", style={"fontSize": "11px", "color": "var(--text-muted)", "display": "block", "marginBottom": "2px", "textAlign": "right"}),
+                    falta_a_comp
+                ], style={"textAlign": "right"})
+            ]
+        )
 
         return (
             _brl(fat_s),
