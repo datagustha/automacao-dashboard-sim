@@ -168,7 +168,7 @@ def get_dashboard_layout(nome_usuario: str, imagem_url: str = None, banco: str =
                             id_valor="kpi-tma-acionamentos",
                             cor_icone="var(--purple-main)",
                             icon_name="lucide:list-todo",
-                            id_sub_texto="kpi-tma-ritmo"
+                            id_sub_texto="kpi-tma-ult-acionamento"
                         ),
                         width=12, md=4, className="mb-4"
                     ),

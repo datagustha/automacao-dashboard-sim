@@ -188,6 +188,7 @@ def register_callbacks(app):
             Output("kpi-meta-agoracred", "children"),
             Output("kpi-percentual-agoracred", "children"),
             Output("barra-progresso-agoracred", "style"),
+            Output("badge-filtros-ativos-adm", "style"),
         ],
         [
             Input("intervalo-atualizacao-adm", "n_intervals"),
@@ -198,19 +199,21 @@ def register_callbacks(app):
             Input("filtro-operador-adm", "value"),
             Input("filtro-data-range-adm", "start_date"),
             Input("filtro-data-range-adm", "end_date"),
+            Input("filtro-contrato-adm", "value"),
+            Input("filtro-faixa-adm", "value"),
         ],
         [State("login-success-store", "data")],
     )
     def atualizar_dashboard_adm(n, pathname, mes, ano, filtro_atividade, operador_filtro,
-                                data_inicio, data_fim, dados_operador):
+                                data_inicio, data_fim, filtro_contrato, filtro_faixa, dados_operador):
         """Consolida dados de todos os operadores de ambos os bancos."""
-
+        
         if pathname != "/dashboard" or not dados_operador:
-            return [dash.no_update] * 18
+            return [dash.no_update] * 19
 
         perfil = dados_operador.get("perfil", "operador")
         if perfil != "adm":
-            return [dash.no_update] * 18
+            return [dash.no_update] * 19
 
         mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
             int(mes) if mes else pd.Timestamp.now().month,
@@ -329,6 +332,21 @@ def register_callbacks(app):
                 if banco == "SEMEAR" and "faseAtraso" in df.columns:
                     df = df[df["faseAtraso"] != "Fora da fase"]
 
+                # ─ Filtro de Contrato / Cliente ────────────────────────────
+                if filtro_contrato and str(filtro_contrato).strip():
+                    texto = str(filtro_contrato).strip().lower()
+                    mask_contrato = df["contrato"].fillna("").astype(str).str.lower().str.contains(texto)
+                    if "cliente" in df.columns:
+                        mask_cliente = df["cliente"].fillna("").astype(str).str.lower().str.contains(texto)
+                        df = df[mask_contrato | mask_cliente]
+                    else:
+                        df = df[mask_contrato]
+
+                # ─ Filtro de Faixa de Atraso (apenas SEMEAR) ────────────────
+                if banco == "SEMEAR" and filtro_faixa and filtro_faixa != "todas":
+                    if "faseAtraso" in df.columns:
+                        df = df[df["faseAtraso"].fillna("").astype(str).str.strip() == str(filtro_faixa).strip()]
+
                 # Calcula meta do operador para o mês atual
                 meta_operador = 0.0
                 if metas:
@@ -364,14 +382,26 @@ def register_callbacks(app):
                 soma_tickets += fat
 
                 try:
+                    # Usa df_atual (já filtrado por date range ou mês) em vez dos pagamentos brutos
+                    # Isso garante que feito/dia, %meta, falta 70/80/90 e projeção respeitem o filtro
+                    pags_para_perf = df_atual.to_dict('records') if not df_atual.empty else []
                     perf = calcular_performance_operador(
-                        pagamentos=pagamentos,
+                        pagamentos=pags_para_perf,
                         metas=metas or [],
                         ano=ano_int,
                         mes=mes_int,
                         login=operador.get("login"),
                         banco=banco,
                     )
+                    # Garante que o faturamento da perf bate com o fat calculado do df_atual
+                    # (pode haver pequena divergência se calcular_performance_operador fizer filtro adicional)
+                    if pags_para_perf:
+                        perf["faturamento"] = fat
+                        if perf.get("meta", 0) > 0:
+                            perf["atingido_meta"] = (fat / perf["meta"]) * 100
+                            perf["falta_70"] = max(0, perf["meta"] * 0.7 - fat)
+                            perf["falta_80"] = max(0, perf["meta"] * 0.8 - fat)
+                            perf["falta_90"] = max(0, perf["meta"] * 0.9 - fat)
                 except Exception as e:
                     print(f"[ERRO] Performance {operador.get('login')}: {e}")
                     perf = {
@@ -479,6 +509,8 @@ def register_callbacks(app):
             _brl(meta_a),
             f"{percentual_agoracred:.1f}%",
             barra_agoracred,
+            # badge filtros ativos
+            {"display": "inline-block"} if (filtro_contrato and str(filtro_contrato).strip()) or (filtro_faixa and filtro_faixa != "todas") else {"display": "none"},
         )
 
     # =========================================================================
@@ -776,6 +808,8 @@ def register_callbacks(app):
 
         # Busca operadores ativos se o filtro estiver setado para ATIVO
         ativos_por_banco = {}
+        # Mapa de login → imagem para a tabela TMA
+        imagem_por_login = {}
         if filtro_atividade and filtro_atividade.upper() == "ATIVO":
             for b in ("SEMEAR", "AGORACRED"):
                 try:
@@ -785,8 +819,23 @@ def register_callbacks(app):
                             str(op.get("login")).strip().upper() for op in ops
                             if str(op.get("atividade", "")).strip().lower() == "ativo" and op.get("login")
                         }
+                        for op in ops:
+                            lg = str(op.get("login", "")).strip().upper()
+                            if lg and op.get("imagem"):
+                                imagem_por_login[lg] = op["imagem"]
                 except Exception as e:
                     print(f"[TMA-ADM] Erro ao buscar ativos para {b}: {e}")
+        else:
+            for b in ("SEMEAR", "AGORACRED"):
+                try:
+                    ops = buscar_todos_operadores_por_banco(b)
+                    if ops:
+                        for op in ops:
+                            lg = str(op.get("login", "")).strip().upper()
+                            if lg and op.get("imagem"):
+                                imagem_por_login[lg] = op["imagem"]
+                except Exception:
+                    pass
 
         linhas = []
 
@@ -828,8 +877,15 @@ def register_callbacks(app):
                 m   = (tts % 3600) // 60
                 tempo_falado = f"{h}h {m:02d}min"
 
-                ritmo = float(row.get("acionamentosPorHoraAtiva", 0) or 0)
                 taxa  = float(row.get("taxaAcionamentoCliente", 0) or 0)
+
+                # Foto do operador (via mapa de imagens)
+                imagem_tma = imagem_por_login.get(op_login.upper(), "")
+                foto_html_tma = (
+                    f'<img src="{imagem_tma}" style="width:34px;height:34px;border-radius:50%;'
+                    f'object-fit:cover;border:2px solid #e5e7eb;" />'
+                    if imagem_tma else "👤"
+                )
 
                 # Formata data para o padrão BR: DD/MM/YYYY HH:MM:SS
                 def _fmt_data(val):
@@ -842,11 +898,11 @@ def register_callbacks(app):
                         return str(val)
 
                 linhas.append({
+                    "foto":          foto_html_tma,
                     "operador":      op_login,
                     "tma":           str(row.get("tempoMedio", "—")),
                     "acionamentos":  int(row.get("qtdeAcionamentos", 0) or 0),
                     "clientes":      int(row.get("qtdeClientes", 0) or 0),
-                    "ritmo":         f"{ritmo:.1f}",
                     "reacionamento": round(taxa, 2),
                     "tempo_falado":  tempo_falado,
                     "primeiro":      _fmt_data(row.get("primeiroAcionamento")),
@@ -860,11 +916,11 @@ def register_callbacks(app):
         linhas.sort(key=lambda x: x.get("acionamentos", 0), reverse=True)
 
         colunas = [
+            {"name": "Foto",          "id": "foto",         "presentation": "markdown"},
             {"name": "Operador",      "id": "operador"},
             {"name": "TMA",           "id": "tma"},
             {"name": "Acionamentos",  "id": "acionamentos"},
             {"name": "Clientes",      "id": "clientes"},
-            {"name": "Ritmo/Hora",    "id": "ritmo"},
             {"name": "Reacionamento", "id": "reacionamento"},
             {"name": "Tempo Falado",  "id": "tempo_falado"},
             {"name": "1º Acion.",     "id": "primeiro"},
@@ -872,3 +928,386 @@ def register_callbacks(app):
         ]
 
         return linhas, colunas
+
+    # =========================================================================
+    # CALLBACK 9 — Tabela de Recebimento por Operador × Faixa de Atraso (SEMEAR)
+    # =========================================================================
+    @app.callback(
+        [
+            Output("tabela-faixas-semear", "data"),
+            Output("tabela-faixas-semear", "columns"),
+        ],
+        [
+            Input("filtro-mes-adm", "value"),
+            Input("filtro-ano-adm", "value"),
+            Input("filtro-atividade-adm", "value"),
+            Input("filtro-operador-adm", "value"),
+            Input("filtro-data-range-adm", "start_date"),
+            Input("filtro-data-range-adm", "end_date"),
+            Input("filtro-contrato-adm", "value"),
+            Input("intervalo-atualizacao-adm", "n_intervals"),
+        ],
+        [State("login-success-store", "data")],
+    )
+    def atualizar_tabela_faixas_semear(mes, ano, filtro_atividade, operador_filtro,
+                                       data_inicio, data_fim, filtro_contrato, n, dados_operador):
+        """Crosstab: Operador × Faixa de Atraso — soma valorTotal SEMEAR."""
+        if not dados_operador or dados_operador.get("perfil") != "adm":
+            return [], []
+
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else pd.Timestamp.now().month,
+            int(ano) if ano else pd.Timestamp.now().year,
+        )
+
+        dados = buscar_pagamentos_todos_operadores_por_banco("SEMEAR")
+        if not dados:
+            return [], []
+
+        todos_pagamentos = []
+        for operador, pagamentos, _ in dados:
+            if operador_filtro and operador_filtro != "TODOS":
+                if operador.get("login") != operador_filtro:
+                    continue
+            if not _is_ativo(operador, filtro_atividade):
+                continue
+            if pagamentos:
+                for p in pagamentos:
+                    p["_operador"] = operador.get("login", "")
+                todos_pagamentos.extend(pagamentos)
+
+        if not todos_pagamentos:
+            return [], []
+
+        df = pd.DataFrame(todos_pagamentos)
+        df["dtPgto"]     = pd.to_datetime(df["dtPgto"], errors="coerce")
+        df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+        df = df.dropna(subset=["dtPgto"])
+
+        df, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+
+        # Remove "Fora da fase"
+        if "faseAtraso" in df.columns:
+            df = df[df["faseAtraso"] != "Fora da fase"]
+
+        # Filtro de contrato/cliente
+        if filtro_contrato and str(filtro_contrato).strip():
+            texto = str(filtro_contrato).strip().lower()
+            mask = df["contrato"].fillna("").astype(str).str.lower().str.contains(texto)
+            if "cliente" in df.columns:
+                mask |= df["cliente"].fillna("").astype(str).str.lower().str.contains(texto)
+            df = df[mask]
+
+        if df.empty or "faseAtraso" not in df.columns:
+            return [], []
+
+        # Crosstab operador × faseAtraso
+        df["operador_col"] = df["_operador"]
+        pivot = df.groupby(["operador_col", "faseAtraso"])["valorTotal"].sum().unstack(fill_value=0)
+        pivot = pivot.reset_index().rename(columns={"operador_col": "operador"})
+
+        # Busca foto dos operadores para adicionar na tabela
+        ativos_por_banco = {}
+        imagem_por_login = {}
+        try:
+            ops = buscar_todos_operadores_por_banco("SEMEAR")
+            if ops:
+                for op in ops:
+                    lg = str(op.get("login", "")).strip().upper()
+                    if lg and op.get("imagem"):
+                        imagem_por_login[lg] = op["imagem"]
+        except Exception:
+            pass
+
+        # Ordena colunas (fases) por valor numérico inicial
+        fases_cols = [c for c in pivot.columns if c != "operador"]
+        def _fase_sort_key(f):
+            import re
+            nums = re.findall(r'\d+', str(f))
+            return int(nums[0]) if nums else 99999
+        fases_cols.sort(key=_fase_sort_key)
+
+        # Linha TOTAL
+        totais = {"operador": "📊 TOTAL"}
+        for f in fases_cols:
+            totais[f] = pivot[f].sum()
+        pivot = pd.concat([pivot, pd.DataFrame([totais])], ignore_index=True)
+
+        def _fmt(v):
+            try:
+                return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except:
+                return str(v)
+
+        # Total por linha
+        dados_tabela = []
+        for _, row in pivot.iterrows():
+            op_nome = row["operador"]
+            
+            # Formata foto se não for a linha TOTAL
+            if op_nome != "📊 TOTAL":
+                imagem_op = imagem_por_login.get(str(op_nome).upper(), "")
+                foto_html = (
+                    f'<img src="{imagem_op}" style="width:34px;height:34px;border-radius:50%;'
+                    f'object-fit:cover;border:2px solid #e5e7eb;" />'
+                    if imagem_op else "👤"
+                )
+            else:
+                foto_html = ""
+
+            linha = {
+                "foto": foto_html,
+                "operador": op_nome
+            }
+            
+            total_linha = 0.0
+            for f in fases_cols:
+                v = float(row.get(f, 0))
+                linha[f] = _fmt(v)
+                total_linha += v
+            linha["__total"] = _fmt(total_linha)
+            dados_tabela.append(linha)
+
+        colunas = [
+            {"name": "Foto", "id": "foto", "presentation": "markdown"},
+            {"name": "Operador", "id": "operador"}
+        ]
+        colunas += [{"name": f, "id": f} for f in fases_cols]
+        colunas += [{"name": "⏫ Total", "id": "__total"}]
+
+        return dados_tabela, colunas
+
+    # =========================================================================
+    # CALLBACK 10 — Tabela de Evolução dos Operadores (Variação vs Mês Anterior)
+    # =========================================================================
+    @app.callback(
+        [
+            Output("tabela-evolucao-operadores-adm", "data"),
+            Output("tabela-evolucao-operadores-adm", "columns"),
+            Output("resumo-evolucao-adm", "children"),
+        ],
+        [
+            Input("filtro-mes-adm", "value"),
+            Input("filtro-ano-adm", "value"),
+            Input("filtro-atividade-adm", "value"),
+            Input("filtro-operador-adm", "value"),
+            Input("filtro-data-range-adm", "start_date"),
+            Input("filtro-data-range-adm", "end_date"),
+            Input("filtro-contrato-adm", "value"),
+            Input("filtro-faixa-adm", "value"),
+            Input("intervalo-atualizacao-adm", "n_intervals"),
+        ],
+        [State("login-success-store", "data")],
+    )
+    def atualizar_tabela_evolucao_operadores(mes, ano, filtro_atividade, operador_filtro,
+                                             data_inicio, data_fim, filtro_contrato, filtro_faixa,
+                                             n, dados_operador):
+        """Compara fat. atual vs mês anterior para cada operador, com variação % e % da meta."""
+        if not dados_operador or dados_operador.get("perfil") != "adm":
+            return [], [], ""
+
+        mes_int, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
+            int(mes) if mes else pd.Timestamp.now().month,
+            int(ano) if ano else pd.Timestamp.now().year,
+        )
+
+        # Período anterior
+        if mes_int == 1:
+            mes_ant, ano_ant = 12, ano_int - 1
+        else:
+            mes_ant, ano_ant = mes_int - 1, ano_int
+
+        linhas = []
+
+        for banco in ("SEMEAR", "AGORACRED"):
+            cor_banco = "🟣" if banco == "SEMEAR" else "🟢"
+            dados = buscar_pagamentos_todos_operadores_por_banco(banco)
+            if not dados:
+                continue
+
+            for operador, pagamentos, metas in dados:
+                if operador_filtro and operador_filtro != "TODOS":
+                    if operador.get("login") != operador_filtro:
+                        continue
+                if not _is_ativo(operador, filtro_atividade):
+                    continue
+                if not pagamentos:
+                    continue
+
+                try:
+                    df = pd.DataFrame(pagamentos)
+                except Exception:
+                    continue
+
+                df["dtPgto"]     = pd.to_datetime(df["dtPgto"], errors="coerce")
+                df["valorTotal"] = pd.to_numeric(df["valorTotal"], errors="coerce").fillna(0.0)
+                df = df.dropna(subset=["dtPgto"])
+                if df.empty:
+                    continue
+
+                # Remove "Fora da fase" para SEMEAR
+                if banco == "SEMEAR" and "faseAtraso" in df.columns:
+                    df = df[df["faseAtraso"] != "Fora da fase"]
+
+                # Filtro contrato/cliente
+                if filtro_contrato and str(filtro_contrato).strip():
+                    texto = str(filtro_contrato).strip().lower()
+                    mask = df["contrato"].fillna("").astype(str).str.lower().str.contains(texto)
+                    if "cliente" in df.columns:
+                        mask |= df["cliente"].fillna("").astype(str).str.lower().str.contains(texto)
+                    df = df[mask]
+
+                # Filtro de faixa (SEMEAR)
+                if banco == "SEMEAR" and filtro_faixa and filtro_faixa != "todas":
+                    if "faseAtraso" in df.columns:
+                        df = df[df["faseAtraso"].fillna("").astype(str).str.strip() == str(filtro_faixa).strip()]
+
+                # Período atual
+                df_atual, _, _ = aplicar_filtro_data(df, mes, ano, data_inicio, data_fim)
+
+                # Período anterior (mesmo intervalo de dias do mês anterior)
+                if data_inicio and data_fim:
+                    try:
+                        dt_inicio_ant = pd.to_datetime(data_inicio) - pd.DateOffset(months=1)
+                        dt_fim_ant    = pd.to_datetime(data_fim) - pd.DateOffset(months=1)
+                        df_ant = df[
+                            (df["dtPgto"] >= dt_inicio_ant) &
+                            (df["dtPgto"] <= dt_fim_ant + pd.Timedelta(hours=23, minutes=59, seconds=59))
+                        ].copy()
+                    except Exception:
+                        df_ant = df[
+                            (df["dtPgto"].dt.month == mes_ant) &
+                            (df["dtPgto"].dt.year  == ano_ant)
+                        ].copy()
+                else:
+                    df_ant = df[
+                        (df["dtPgto"].dt.month == mes_ant) &
+                        (df["dtPgto"].dt.year  == ano_ant)
+                    ].copy()
+
+                fat_atual = float(df_atual["valorTotal"].sum()) if not df_atual.empty else 0.0
+                fat_ant   = float(df_ant["valorTotal"].sum())   if not df_ant.empty   else 0.0
+
+                # Variação
+                if fat_ant > 0:
+                    var_pct = ((fat_atual - fat_ant) / fat_ant) * 100
+                    seta = "↑" if var_pct >= 0 else "↓"
+                    cor_v = "#16a34a" if var_pct >= 0 else "#dc2626"
+                    var_pct_str = (
+                        f'<span style="color:{cor_v};font-weight:700;">{seta} {abs(var_pct):.1f}%</span>'
+                    )
+                else:
+                    var_pct     = None
+                    var_pct_str = "—"
+
+                var_abs = fat_atual - fat_ant
+                var_abs_str = _brl(abs(var_abs))
+                if var_abs > 0:
+                    var_abs_str = f'<span style="color:#16a34a;font-weight:700;">+{var_abs_str}</span>'
+                elif var_abs < 0:
+                    var_abs_str = f'<span style="color:#dc2626;font-weight:700;">-{var_abs_str}</span>'
+
+                # % Meta atual e anterior
+                meta_op = 0.0
+                meta_ant_op = 0.0
+                if metas:
+                    for meta in metas:
+                        md = meta.get("data")
+                        if md:
+                            if hasattr(md, "year"):
+                                if md.year == ano_int and md.month == mes_int:
+                                    meta_op = float(meta.get("meta100") or 0)
+                                elif md.year == ano_ant and md.month == mes_ant:
+                                    meta_ant_op = float(meta.get("meta100") or 0)
+                            elif isinstance(md, str):
+                                mdt = pd.to_datetime(md, errors="coerce")
+                                if not pd.isna(mdt):
+                                    if mdt.year == ano_int and mdt.month == mes_int:
+                                        meta_op = float(meta.get("meta100") or 0)
+                                    elif mdt.year == ano_ant and mdt.month == mes_ant:
+                                        meta_ant_op = float(meta.get("meta100") or 0)
+
+                perc_atual = (fat_atual / meta_op * 100) if meta_op > 0 else 0.0
+                perc_ant   = (fat_ant   / meta_ant_op * 100) if meta_ant_op > 0 else 0.0
+
+                def _perc_html(v, cor):
+                    bar = min(v, 100)
+                    c   = "#10B981" if v >= 100 else cor
+                    return (
+                        f'<div style="display:flex;align-items:center;gap:5px;">'
+                        f'<div style="flex:1;background:#e5e7eb;border-radius:3px;height:6px;">'
+                        f'<div style="width:{bar:.0f}%;background:{c};height:6px;border-radius:3px;"></div></div>'
+                        f'<span style="white-space:nowrap;font-weight:700;color:{c};font-size:11px;">{v:.1f}%</span></div>'
+                    )
+
+                cor_banco_hex = "#7e3d97" if banco == "SEMEAR" else "#10B981"
+
+                # Foto do operador
+                imagem_url = operador.get("imagem", "") or ""
+                foto_html_ev = (
+                    f'<img src="{imagem_url}" style="width:32px;height:32px;border-radius:50%;'
+                    f'object-fit:cover;border:2px solid {cor_banco_hex};" />'
+                    if imagem_url else "👤"
+                )
+
+                if fat_ant > 0 and meta_ant_op > 0:
+                    var_meta_pct = perc_atual - perc_ant
+                    cor_vm = "#16a34a" if var_meta_pct >= 0 else "#dc2626"
+                    s_vm = "↑" if var_meta_pct >= 0 else "↓"
+                    var_meta_str = f'<span style="color:{cor_vm};font-weight:700;">{s_vm} {abs(var_meta_pct):.1f}pp</span>'
+                else:
+                    var_meta_str = "—"
+
+                linhas.append({
+                    "foto":        foto_html_ev,
+                    "banco":       f"{cor_banco} {banco}",
+                    "operador":    operador.get("login", ""),
+                    "fat_atual":   _brl(fat_atual),
+                    "fat_ant":     _brl(fat_ant),
+                    "var_abs":     var_abs_str,
+                    "var_pct":     var_pct_str,
+                    "perc_atual":  _perc_html(perc_atual, cor_banco_hex),
+                    "perc_ant":    _perc_html(perc_ant,   cor_banco_hex),
+                    "var_meta":    var_meta_str,
+                    "_var_pct_num": var_pct if var_pct is not None else -9999,
+                })
+
+        if not linhas:
+            return [], [], ""
+
+        # Ordena por variação % decrescente
+        linhas.sort(key=lambda x: x.get("_var_pct_num", -9999), reverse=True)
+
+        colunas = [
+            {"name": "Foto",           "id": "foto",       "presentation": "markdown"},
+            {"name": "Banco",          "id": "banco"},
+            {"name": "Operador",       "id": "operador"},
+            {"name": "Fat. Atual",     "id": "fat_atual"},
+            {"name": "Fat. Anterior",  "id": "fat_ant"},
+            {"name": "Var. (R$)",      "id": "var_abs",    "presentation": "markdown"},
+            {"name": "Var. (%)",       "id": "var_pct",    "presentation": "markdown"},
+            {"name": "% Meta Atual",   "id": "perc_atual", "presentation": "markdown"},
+            {"name": "% Meta Ant.",    "id": "perc_ant",   "presentation": "markdown"},
+            {"name": "Var. Meta (pp)", "id": "var_meta",   "presentation": "markdown"},
+        ]
+
+        # Resumo
+        acima = sum(1 for x in linhas if x.get("_var_pct_num", -9999) != -9999 and x.get("_var_pct_num", 0) >= 0)
+        abaixo = sum(1 for x in linhas if x.get("_var_pct_num", -9999) != -9999 and x.get("_var_pct_num", 0) < 0)
+        
+        resumo_html = (
+            f"📈 {acima} operadores com faturamento acima do período anterior | "
+            f"📉 {abaixo} operadores com faturamento abaixo do período anterior."
+        )
+
+        from dash import html
+        resumo_componente = html.Div(
+            resumo_html,
+            style={
+                "backgroundColor": "#fffbeb", "color": "#b45309", "padding": "10px 14px",
+                "borderRadius": "6px", "fontWeight": "600", "fontSize": "13.5px",
+                "border": "1px solid #fde68a"
+            }
+        )
+
+        return linhas, colunas, resumo_componente

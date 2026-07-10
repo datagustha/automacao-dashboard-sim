@@ -18,7 +18,7 @@ from src.dashboard.components.menus import get_sidebar, get_header
 from src.dashboard.components.cards import card_indicador, card_com_meta
 from src.dashboard.components.tabelas import container_tabela_cheia
 
-from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos
+from src.dashboard.components.filtros import criar_filtro_data_range, MESES, get_anos, OPCOES_FASES
 meses = MESES
 
 
@@ -82,6 +82,71 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                             ),
                         ],
                         width=3
+                    ),
+                ],
+                className="mb-4 align-items-start"
+            ),
+
+            # ── Linha 2 de Filtros: Contrato/Cliente + Faixa de Atraso ────────
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.Label("Contrato / Cliente", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dbc.InputGroup([
+                                dbc.InputGroupText(
+                                    DashIconify(icon="lucide:search", width=16, color="var(--text-muted)"),
+                                    style={"backgroundColor": "white", "borderRight": "none"}
+                                ),
+                                dbc.Input(
+                                    id="filtro-contrato-adm",
+                                    type="text",
+                                    placeholder="Buscar por contrato ou cliente...",
+                                    style={"borderLeft": "none"}
+                                )
+                            ], className="shadow-sm", style={"borderRadius": "8px"})
+                        ],
+                        width=12, md=5, className="mb-3"
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Faixa de Atraso (SEMEAR)", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            dcc.Dropdown(
+                                id="filtro-faixa-adm",
+                                options=[
+                                    {"label": "📊 Todas as faixas", "value": "todas"},
+                                ] + [
+                                    {"label": f["label"], "value": f["value"]}
+                                    for f in OPCOES_FASES if f["value"] != "todas"
+                                ],
+                                value="todas",
+                                clearable=False,
+                                placeholder="Selecione a faixa...",
+                                className="shadow-sm",
+                                style={"borderRadius": "8px"}
+                            ),
+                        ],
+                        width=12, md=4, className="mb-3"
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("\u00a0", className="fw-bold mb-1",
+                                       style={"color": "var(--text-muted)", "fontSize": "13px"}),
+                            html.Div(
+                                id="badge-filtros-ativos-adm",
+                                style={"display": "none"},
+                                children=html.Span(
+                                    [
+                                        DashIconify(icon="lucide:filter", width=12, className="me-1"),
+                                        "Filtros ativos"
+                                    ],
+                                    className="badge bg-warning text-dark"
+                                )
+                            )
+                        ],
+                        width=12, md=3, className="mb-3"
                     ),
                 ],
                 className="mb-4 align-items-start"
@@ -207,6 +272,7 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                             {"name": "🟢 AGORACRED (R$)", "id": "agoracred"},
                                             {"name": "⚫ TOTAL (R$)", "id": "total"}
                                         ],
+                                        markdown_options={"html": True},
                                         page_size=32,
                                         sort_action="native",
                                         style_table={"overflowX": "auto", "borderRadius": "8px"},
@@ -263,6 +329,68 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                 )
             ], className="mb-4"),
 
+            # ── Tabela de Recebimento por Operador × Faixa de Atraso (SEMEAR) ────────
+            html.Div(
+                [
+                    html.Hr(style={"borderColor": "#7e3d97", "borderWidth": "1px", "opacity": "0.4"}),
+                    html.H5(
+                        [DashIconify(icon="lucide:layers", width=20, className="me-2"),
+                         "Recebimento por Operador × Faixa de Atraso — SEMEAR"],
+                        style={"color": "#7e3d97", "fontWeight": "700", "marginBottom": "4px"}
+                    ),
+                    html.P(
+                        "Faturamento de cada operador por faixa de atraso no período selecionado.",
+                        style={"color": "var(--text-muted)", "fontSize": "13px"}
+                    ),
+                ],
+                className="mb-3 mt-1"
+            ),
+            dbc.Row([
+                dbc.Col(
+                    html.Div(
+                        [
+                            dcc.Loading(
+                                type="circle",
+                                children=dash_table.DataTable(
+                                    id="tabela-faixas-semear",
+                                    columns=[],
+                                    data=[],
+                                    markdown_options={"html": True},
+                                    page_size=30,
+                                    sort_action="native",
+                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    style_header={
+                                        "backgroundColor": "#7e3d97",
+                                        "color": "white",
+                                        "fontWeight": "600",
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                    },
+                                    style_cell={
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                        "borderBottom": "1px solid #E5E7EB",
+                                        "color": "var(--text-main)",
+                                        "fontSize": "13px",
+                                    },
+                                    style_data_conditional=[
+                                        {"if": {"row_index": "odd"}, "backgroundColor": "#F9FAFB"},
+                                        {
+                                            "if": {"filter_query": '{operador} = "📊 TOTAL"'},
+                                            "backgroundColor": "#e9d8fd",
+                                            "color": "#4a1d8c",
+                                            "fontWeight": "bold",
+                                        },
+                                    ],
+                                )
+                            ),
+                        ],
+                        className="dashboard-panel"
+                    ),
+                    width=12
+                )
+            ], className="mb-4"),
+
             # ── Seção AGORACRED ─────────────────────────────────────────
             html.Div(
                 [
@@ -282,6 +410,64 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
             ], className="mb-4"),
 
             dcc.Interval(id='intervalo-atualizacao-adm', interval=300 * 1000, n_intervals=0),
+
+            # ── Seção EVOLUÇÃO / VARIAÇÃO DOS OPERADORES ───────────────────────────
+            html.Div(
+                [
+                    html.Hr(style={"borderColor": "#f59e0b", "borderWidth": "2px"}),
+                    html.H4(
+                        [DashIconify(icon="lucide:trending-up", width=22, className="me-2"),
+                         "Evolução dos Operadores — Variação vs Mês Anterior"],
+                        style={"color": "#d97706", "fontWeight": "700"}
+                    ),
+                    html.P(
+                        "Comparação de faturamento e % da meta entre o período selecionado e o mesmo período do mês anterior. "
+                        "Quando há filtro de data, o período anterior é ajustado proporcionalmente.",
+                        style={"color": "var(--text-muted)", "fontSize": "13px", "marginTop": "4px"}
+                    ),
+                ],
+                className="mb-3 mt-2"
+            ),
+            dbc.Row([
+                dbc.Col(
+                    html.Div(
+                        [
+                            html.Div(id="resumo-evolucao-adm", className="mb-3"),
+                            dcc.Loading(
+                                type="circle",
+                                children=dash_table.DataTable(
+                                    id="tabela-evolucao-operadores-adm",
+                                    columns=[],
+                                    data=[],
+                                    markdown_options={"html": True},
+                                    page_size=40,
+                                    sort_action="native",
+                                    style_table={"overflowX": "auto", "borderRadius": "8px"},
+                                    style_header={
+                                        "backgroundColor": "#d97706",
+                                        "color": "white",
+                                        "fontWeight": "600",
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                    },
+                                    style_cell={
+                                        "textAlign": "center",
+                                        "padding": "10px",
+                                        "borderBottom": "1px solid #E5E7EB",
+                                        "color": "var(--text-main)",
+                                        "fontSize": "13px",
+                                    },
+                                    style_data_conditional=[
+                                        {"if": {"row_index": "odd"}, "backgroundColor": "#FFF8F0"},
+                                    ],
+                                )
+                            ),
+                        ],
+                        className="dashboard-panel"
+                    ),
+                    width=12
+                )
+            ], className="mb-4"),
 
             # ── Seção TMA ───────────────────────────────────────────────
             html.Div(
@@ -308,17 +494,18 @@ def get_dashboard_adm_layout(nome_usuario: str, imagem_url: str = None, admissao
                                 children=dash_table.DataTable(
                                     id="tabela-tma-adm",
                                     columns=[
+                                        {"name": "Foto",          "id": "foto",         "presentation": "markdown"},
                                         {"name": "Operador",       "id": "operador"},
                                         {"name": "TMA",            "id": "tma"},
                                         {"name": "Acionamentos",   "id": "acionamentos"},
                                         {"name": "Clientes",       "id": "clientes"},
-                                        {"name": "Ritmo/Hora",     "id": "ritmo"},
                                         {"name": "Reacionamento",  "id": "reacionamento"},
                                         {"name": "Tempo Falado",   "id": "tempo_falado"},
                                         {"name": "1º Acion.",      "id": "primeiro"},
                                         {"name": "Últ. Acion.",    "id": "ultimo"},
                                     ],
                                     data=[],
+                                    markdown_options={"html": True},
                                     page_size=30,
                                     sort_action="native",
                                     style_table={"overflowX": "auto", "borderRadius": "8px"},

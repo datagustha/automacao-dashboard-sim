@@ -112,7 +112,7 @@ def register_callbacks(app):
             Output('kpi-tma-valor', 'children'),
             Output('kpi-tma-subtexto', 'children'),
             Output('kpi-tma-acionamentos', 'children'),
-            Output('kpi-tma-ritmo', 'children'),
+            Output('kpi-tma-ult-acionamento', 'children'),
             Output('kpi-tma-reacionamento', 'children'),
             Output('kpi-tma-clientes', 'children'),
         ],
@@ -249,7 +249,31 @@ def register_callbacks(app):
             ]
         
         fat_anterior = df_mes_anterior_filtrado['valorTotal'].sum() if not df_mes_anterior_filtrado.empty else 0.0
-        txt_fat_anterior = f"Mês anterior: R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # ── Variação de faturamento (atual vs anterior) ──────────────────
+        # Se o filtro for um date-range com data_fim, compara até o mesmo dia do mês anterior
+        if data_inicio and data_fim:
+            try:
+                dt_fim_range = pd.to_datetime(data_fim)
+                # Compara até o mesmo dia do mês anterior
+                dt_inicio_ant = pd.to_datetime(data_inicio) - pd.DateOffset(months=1)
+                dt_fim_ant    = dt_fim_range - pd.DateOffset(months=1)
+                df_ant_range = df[
+                    (df['dtPgto'] >= dt_inicio_ant) &
+                    (df['dtPgto'] <= dt_fim_ant + pd.Timedelta(hours=23, minutes=59, seconds=59))
+                ].copy()
+                if banco == 'SEMEAR' and 'faseAtraso' in df_ant_range.columns:
+                    df_ant_range = df_ant_range[df_ant_range['faseAtraso'] != 'Fora da fase']
+                fat_anterior = float(df_ant_range['valorTotal'].sum()) if not df_ant_range.empty else 0.0
+            except Exception:
+                pass
+
+        fat_anterior_brl = f"R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        if fat_anterior > 0:
+            variacao_pct = ((0 - fat_anterior) / fat_anterior) * 100  # será substituído após calcular faturamento atual
+        else:
+            variacao_pct = None
+        txt_fat_anterior = f"Mês anterior: {fat_anterior_brl}"  # provisório
         
         pgtos_anterior_qtd = len(df_mes_anterior_filtrado)
         txt_pgtos_anterior = f"Mês anterior: {pgtos_anterior_qtd:,}".replace(",", ".")
@@ -261,7 +285,7 @@ def register_callbacks(app):
             log_debug("DataFrame vazio - retornando sem dados")
             badge_style = {"display": "inline-flex"} if usando_range else {"display": "none"}
             return (texto_zero, texto_zero, "0", fig_blank, [], [], txt_fat_anterior, fig_blank, texto_zero, {"width": "0%"}, "0%", txt_pgtos_anterior, badge_style,
-                    "—", "Sem ligações no período", "0", "Ritmo: —", "—", "Clientes únicos: —")
+                    "—", "Sem ligações no período", "0", "Últ. Acion.: —", "—", "Clientes únicos: —")
         
         # ================================================================
         # CONVERTE PARA LISTA
@@ -280,6 +304,22 @@ def register_callbacks(app):
         txt_faturamento = f"R$ {faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         txt_ticket = f"R$ {ticket:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         txt_total = f"{total:,}".replace(",", ".")
+
+        # ── Recalcula variação com o faturamento real ────────────────────
+        fat_ant_brl_fmt = f"R$ {fat_anterior:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        if fat_anterior > 0:
+            variacao_pct = ((faturamento - fat_anterior) / fat_anterior) * 100
+            seta = "↑" if variacao_pct >= 0 else "↓"
+            cor_var = "#16a34a" if variacao_pct >= 0 else "#dc2626"
+            variacao_txt = f"{seta} {abs(variacao_pct):.1f}%"
+            txt_fat_anterior = html.Span([
+                html.Span(f"Mês anterior: {fat_ant_brl_fmt}  ",
+                          style={"color": "var(--text-muted)", "fontSize": "12px"}),
+                html.Span(variacao_txt,
+                          style={"color": cor_var, "fontWeight": "700", "fontSize": "12px"}),
+            ])
+        else:
+            txt_fat_anterior = f"Mês anterior: {fat_ant_brl_fmt}"
 
         # ================================================================
         # BUSCA A META DO MÊS
@@ -473,21 +513,31 @@ def register_callbacks(app):
             tma_subtexto      = f"Falado no mês: {tma_h}h {tma_m:02d}min"
 
             qtde_acion        = int(tma_dados.get('qtdeAcionamentos', 0))
-            ritmo             = float(tma_dados.get('acionamentosPorHoraAtiva', 0))
             tma_acionamentos  = str(qtde_acion)
-            tma_ritmo         = f"Ritmo: {ritmo:.1f} acion./hora ativa"
+
+            # Último acionamento formatado
+            ult_acion_raw = tma_dados.get('ultimoAcionamento')
+            if ult_acion_raw and str(ult_acion_raw).strip() not in ('', '—', 'nan', 'None'):
+                try:
+                    import pandas as _pd
+                    dt_ult = _pd.to_datetime(ult_acion_raw)
+                    tma_ult_acionamento = f"Últ. Acion.: {dt_ult.strftime('%d/%m/%Y %H:%M')}"
+                except Exception:
+                    tma_ult_acionamento = f"Últ. Acion.: {ult_acion_raw}"
+            else:
+                tma_ult_acionamento = "Últ. Acion.: —"
 
             taxa              = float(tma_dados.get('taxaAcionamentoCliente', 0))
             qtde_clientes     = int(tma_dados.get('qtdeClientes', 0))
             tma_reacionamento = f"{taxa:.2f}x"
             tma_clientes      = f"Clientes únicos: {qtde_clientes}"
         else:
-            tma_valor         = '—'
-            tma_subtexto      = 'Sem dados de ligações'
-            tma_acionamentos  = '0'
-            tma_ritmo         = 'Ritmo: —'
-            tma_reacionamento = '—'
-            tma_clientes      = 'Clientes únicos: —'
+            tma_valor           = '—'
+            tma_subtexto        = 'Sem dados de ligações'
+            tma_acionamentos    = '0'
+            tma_ult_acionamento = 'Últ. Acion.: —'
+            tma_reacionamento   = '—'
+            tma_clientes        = 'Clientes únicos: —'
 
         return (
             txt_faturamento,
@@ -506,7 +556,7 @@ def register_callbacks(app):
             tma_valor,
             tma_subtexto,
             tma_acionamentos,
-            tma_ritmo,
+            tma_ult_acionamento,
             tma_reacionamento,
             tma_clientes,
         )
@@ -558,9 +608,24 @@ def register_callbacks(app):
             int(mes) if mes else datetime.datetime.now().month,
             int(ano) if ano else datetime.datetime.now().year
         )
-        
+
+        # ── Filtra pagamentos pelo date range antes de calcular performance ──
+        # Sem isso, calcular_performance_operador ignora o range e usa o mês inteiro
+        pagamentos_para_perf = pagamentos
+        if data_inicio and data_fim:
+            try:
+                df_tmp = pd.DataFrame(pagamentos)
+                df_tmp['dtPgto'] = pd.to_datetime(df_tmp['dtPgto'])
+                dt_ini = pd.to_datetime(data_inicio)
+                dt_fim_dt = pd.to_datetime(data_fim) + pd.Timedelta(hours=23, minutes=59, seconds=59)
+                df_tmp = df_tmp[(df_tmp['dtPgto'] >= dt_ini) & (df_tmp['dtPgto'] <= dt_fim_dt)]
+                pagamentos_para_perf = df_tmp.to_dict('records')
+                log_debug(f"[PERF] Date range ativo: {len(pagamentos_para_perf)} pagamentos de {data_inicio} até {data_fim}")
+            except Exception as e:
+                log_debug(f"[PERF] Erro ao filtrar por date range: {e}")
+
         perf = calcular_performance_operador(
-            pagamentos=pagamentos,
+            pagamentos=pagamentos_para_perf,
             metas=metas,
             ano=ano_calc,
             mes=mes_calc,
