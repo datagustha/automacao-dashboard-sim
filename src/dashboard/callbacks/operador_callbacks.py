@@ -856,7 +856,15 @@ def register_callbacks(app):
         if not dados_sessao:
             return [], [], ""
 
-        banco = banco_sel or "SEMEAR"
+        perfil = dados_sessao.get("perfil", "operador")
+        if perfil == "operador":
+            operador_filtro = dados_sessao.get("login")
+
+        banco = banco_sel
+        if not banco:
+            login = dados_sessao.get("login")
+            operador_obj = Buscar_login(login) if login else None
+            banco = operador_obj.get("banco") if operador_obj else "SEMEAR"
 
         _, ano_int = obter_mes_ano_do_range(data_inicio, data_fim) or (
             None,
