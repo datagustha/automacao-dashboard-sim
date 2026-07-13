@@ -6,7 +6,7 @@ ADMIN ROUTES - APIs do Dashboard ADM
 from flask import Blueprint, jsonify, request, session
 from datetime import datetime
 
-from src.dashboard_v2.services.admin_service import montar_dashboard_adm
+from src.dashboard_v2.services.admin_service import montar_dashboard_adm, buscar_tma_todos_operadores
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api')
 
@@ -43,6 +43,34 @@ def api_resumo_adm():
         return jsonify({
             'success': True,
             'data': resultado
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/tma-adm')
+def api_tma_adm():
+    """Retorna os dados de TMA de todos os operadores para o painel ADM."""
+    print(f"[API] GET /api/tma-adm")
+
+    if not session.get('operador'):
+        return jsonify({'success': False, 'message': 'Não autorizado'}), 401
+
+    try:
+        ano = request.args.get('ano', datetime.now().year, type=int)
+        mes = request.args.get('mes', datetime.now().month, type=int)
+        atividade = request.args.get('atividade', 'ATIVO')
+
+        lista = buscar_tma_todos_operadores(ano=ano, mes=mes, atividade=atividade)
+
+        return jsonify({
+            'success': True,
+            'data': lista
         })
     except Exception as e:
         import traceback

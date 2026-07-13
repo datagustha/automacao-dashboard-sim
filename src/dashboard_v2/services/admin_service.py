@@ -17,7 +17,8 @@ from src.services.db_service import (
     Buscar_pagamento_semear,
     Buscar_pagamento_agoracred,
     buscar_metas_semear,
-    buscar_metas_agoracred
+    buscar_metas_agoracred,
+    buscar_tma_operador
 )
 from src.services.analytics_service import (
     calcular_performance_operador,
@@ -457,3 +458,46 @@ def montar_dashboard_adm(
         'ticket_medio': ticket_medio_grupo,
         'evolucao_operadores': evolucao_operadores
     }
+
+
+# ==============================================================
+# TMA - TODOS OS OPERADORES (ADM)
+# ==============================================================
+
+def buscar_tma_todos_operadores(ano: int, mes: int, atividade: str = 'ATIVO') -> List[Dict[str, Any]]:
+    """
+    Busca os dados de TMA de todos os operadores (SEMEAR + AGORACRED)
+    e retorna uma lista unificada pronta para o painel ADM.
+    """
+    resultado = []
+
+    for banco in ['SEMEAR', 'AGORACRED']:
+        operadores = buscar_todos_operadores_por_banco(banco) or []
+        if atividade == 'ATIVO':
+            operadores = [op for op in operadores if op.get('atividade', '').upper() == 'ATIVO']
+
+        for op in operadores:
+            login = op.get('login', '')
+            if not login:
+                continue
+
+            tma_data = buscar_tma_operador(login, banco, ano, mes)
+            if not tma_data:
+                continue
+
+            resultado.append({
+                'login': login,
+                'banco': banco,
+                'imagem': op.get('imagem', ''),
+                'tma': str(tma_data.get('tma', '-')),
+                'acionamentos': int(tma_data.get('acionamentos', 0) or 0),
+                'clientes': int(tma_data.get('clientes', 0) or 0),
+                'reacionamento': str(tma_data.get('reacionamento', '-')),
+                'tempo_falado': str(tma_data.get('tempo_falado', '-')),
+                'primeiro_acionamento': str(tma_data.get('primeiro_acionamento', '-')),
+                'ultimo_acionamento': str(tma_data.get('ultimo_acionamento', '-')),
+            })
+
+    # Ordena por acionamentos (decrescente)
+    resultado.sort(key=lambda x: x.get('acionamentos', 0), reverse=True)
+    return resultado

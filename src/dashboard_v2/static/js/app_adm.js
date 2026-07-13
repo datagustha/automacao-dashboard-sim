@@ -483,3 +483,105 @@ window.toggleSidebar = toggleSidebar;
 window.carregarDadosAdm = carregarDadosAdm;
 window.filtrarAdm = filtrarAdm;
 window.logout = logoutAdm;
+
+// ================================================================
+// TMA ADM - Carregamento e Renderização
+// ================================================================
+
+async function carregarTmaAdm() {
+    const tbody = document.getElementById('tabela-tma-adm');
+    if (!tbody) return;
+
+    try {
+        const mes = document.getElementById('filtro-mes-adm')?.value || getMesAtual();
+        const ano = document.getElementById('filtro-ano-adm')?.value || getAnoAtual();
+        const atividade = document.getElementById('filtro-atividade-adm')?.value || 'ATIVO';
+
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Carregando TMA...</td></tr>';
+
+        const url = `/api/tma-adm?mes=${mes}&ano=${ano}&atividade=${atividade}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (data.success) {
+            renderizarTmaAdm(data.data || []);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#e74c3c;padding:20px;">Erro ao carregar TMA: ${data.message || 'desconhecido'}</td></tr>`;
+        }
+    } catch (err) {
+        const tbody2 = document.getElementById('tabela-tma-adm');
+        if (tbody2) tbody2.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#e74c3c;padding:20px;">Erro de conexão ao carregar TMA.</td></tr>';
+        console.error('[TMA ADM]', err);
+    }
+}
+
+function renderizarTmaAdm(lista) {
+    const tbody = document.getElementById('tabela-tma-adm');
+    if (!tbody) return;
+
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:30px;">Nenhum dado de TMA disponível para o período selecionado.<br><small>Verifique se o arquivo CSV de TMA foi importado.</small></td></tr>';
+        return;
+    }
+
+    let totalAcionamentos = 0;
+    let totalClientes = 0;
+
+    const linhas = lista.map((op, idx) => {
+        const bancoCor = op.banco === 'SEMEAR' ? '#7e3d97' : '#10B981';
+        const foto = op.imagem
+            ? `<img src="${op.imagem}" alt="${op.login}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid ${bancoCor};">`
+            : `<div style="width:34px;height:34px;border-radius:50%;background:${bancoCor};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin:0 auto;">${(op.login||'').replace(/[0-9]/g,'').substring(0,2).toUpperCase()}</div>`;
+
+        totalAcionamentos += Number(op.acionamentos || 0);
+        totalClientes += Number(op.clientes || 0);
+
+        // Badge de posição
+        let pos = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}°`;
+
+        return `
+            <tr>
+                <td class="sticky-col-1" style="text-align:center;padding:8px 10px;">${foto}</td>
+                <td class="sticky-col-3" style="text-align:center;padding:8px 10px;font-weight:600;">
+                    <span style="margin-right:6px;font-size:13px;">${pos}</span>${op.login || '-'}
+                    <br><span style="background:${bancoCor};color:white;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;">${op.banco}</span>
+                </td>
+                <td style="text-align:center;padding:8px 10px;font-weight:700;font-family:monospace;font-size:14px;">${op.tma || '-'}</td>
+                <td style="text-align:center;padding:8px 10px;font-weight:600;color:#0891b2;">${op.acionamentos || 0}</td>
+                <td style="text-align:center;padding:8px 10px;">${op.clientes || 0}</td>
+                <td style="text-align:center;padding:8px 10px;font-size:12px;">${op.reacionamento || '-'}</td>
+                <td style="text-align:center;padding:8px 10px;font-family:monospace;">${op.tempo_falado || '-'}</td>
+                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${op.primeiro_acionamento || '-'}</td>
+                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${op.ultimo_acionamento || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // Linha de totais
+    const totalRow = `
+        <tr style="background:#e0f2fe;font-weight:bold;">
+            <td class="sticky-col-1" style="text-align:center;padding:10px;"></td>
+            <td class="sticky-col-3" style="text-align:center;padding:10px;color:#0369a1;"><strong>📊 TOTAL</strong></td>
+            <td style="text-align:center;padding:10px;"></td>
+            <td style="text-align:center;padding:10px;color:#0369a1;font-size:15px;">${totalAcionamentos}</td>
+            <td style="text-align:center;padding:10px;color:#0369a1;">${totalClientes}</td>
+            <td style="text-align:center;padding:10px;"></td>
+            <td style="text-align:center;padding:10px;"></td>
+            <td style="text-align:center;padding:10px;"></td>
+            <td style="text-align:center;padding:10px;"></td>
+        </tr>
+    `;
+
+    tbody.innerHTML = linhas + totalRow;
+}
+
+// Override navegar para carregar TMA quando ir para Operadores
+(function() {
+    const _navegar = window.navegar;
+    window.navegar = function(pagina) {
+        _navegar(pagina);
+        if (pagina === 'operadores') {
+            carregarTmaAdm();
+        }
+    };
+})();
