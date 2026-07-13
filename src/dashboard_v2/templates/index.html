@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard V2 - Gestão de Pagamentos</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Font Awesome (ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ============================================ -->
+        <!-- SIDEBAR (MENU LATERAL)                      -->
+        <!-- ============================================ -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <span class="logo-icon">📊</span>
+                <h2>Gestão<span>Pag</span></h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active" data-page="dashboard">
+                        <a href="#" onclick="navegar('dashboard')">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li data-page="pagamentos">
+                        <a href="#" onclick="navegar('pagamentos')">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Pagamentos</span>
+                            <span class="badge-sidebar" id="badgePagamentos">0</span>
+                        </a>
+                    </li>
+                    <li data-page="clientes">
+                        <a href="#" onclick="navegar('clientes')">
+                            <i class="fas fa-users"></i>
+                            <span>Clientes</span>
+                        </a>
+                    </li>
+                    <li data-page="performance">
+                        <a href="#" onclick="navegar('performance')">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Performance</span>
+                        </a>
+                    </li>
+                    <li data-page="metas">
+                        <a href="#" onclick="navegar('metas')">
+                            <i class="fas fa-bullseye"></i>
+                            <span>Metas</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="avatar" id="userAvatar">U</div>
+                    <div>
+                        <div class="user-name" id="userName">Usuário</div>
+                        <div class="user-role" id="userRole">Operador</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <!-- ============================================ -->
+        <!-- CONTEÚDO PRINCIPAL                         -->
+        <!-- ============================================ -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <span class="date-display" id="currentDate"></span>
+                    <div class="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: DASHBOARD                        -->
+            <!-- ========================================== -->
+            <section id="page-dashboard" class="page active">
+                <!-- Cards de resumo -->
+                <div class="cards-grid" id="cardsResumo">
+                    <div class="card">
+                        <div class="card-icon blue"><i class="fas fa-file-contract"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Total Contratos</span>
+                            <span class="card-value" id="totalContratos">-</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon green"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Faturamento Total</span>
+                            <span class="card-value" id="faturamentoTotal">-</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon purple"><i class="fas fa-users"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Clientes</span>
+                            <span class="card-value" id="totalClientes">-</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon orange"><i class="fas fa-clock"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Ticket Médio</span>
+                            <span class="card-value" id="ticketMedio">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card-full">
+                            <h3><i class="fas fa-chart-bar"></i> Faturamento por Dia</h3>
+                            <div id="graficoFaturamento" class="chart-placeholder">
+                                📊 Carregando...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card-full">
+                            <h3><i class="fas fa-chart-pie"></i> Distribuição por Fase</h3>
+                            <div id="graficoFase" class="chart-placeholder">
+                                📊 Carregando...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Últimos pagamentos -->
+                <div class="card-full">
+                    <h3><i class="fas fa-list"></i> Últimos Pagamentos</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Contrato</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Data</th>
+                                    <th>Fase</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaUltimosPagamentos">
+                                <tr><td colspan="5" style="text-align: center; color: #95a5a6;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: PAGAMENTOS                       -->
+            <!-- ========================================== -->
+            <section id="page-pagamentos" class="page">
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="filtroBusca" placeholder="Buscar cliente ou contrato..." oninput="filtrarPagamentos()">
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-tag"></i>
+                        <select id="filtroFase" onchange="filtrarPagamentos()">
+                            <option value="">Todas as fases</option>
+                            <option value="0 a 90">0 a 90</option>
+                            <option value="91 a 180">91 a 180</option>
+                            <option value="181 a 360">181 a 360</option>
+                            <option value="361 a 720">361 a 720</option>
+                            <option value="721 a 1080">721 a 1080</option>
+                            <option value="1081 a 1440">1081 a 1440</option>
+                            <option value="1441 a 1800">1441 a 1800</option>
+                            <option value="> 1800">&gt; 1800</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" onclick="exportarCSV()">
+                        <i class="fas fa-file-export"></i> Exportar CSV
+                    </button>
+                </div>
+
+                <div class="card-full">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Contrato</th>
+                                    <th>Cliente</th>
+                                    <th>Produto</th>
+                                    <th>Valor</th>
+                                    <th>Data</th>
+                                    <th>Fase</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaPagamentos">
+                                <tr><td colspan="7" style="text-align: center; color: #95a5a6;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <span id="totalRegistros">0 registros</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: CLIENTES                         -->
+            <!-- ========================================== -->
+            <section id="page-clientes" class="page">
+                <div class="card-full">
+                    <h3><i class="fas fa-users"></i> Lista de Clientes</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Total Contratos</th>
+                                    <th>Valor Total</th>
+                                    <th>Último Pagamento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaClientes">
+                                <tr><td colspan="4" style="text-align: center; color: #95a5a6;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: PERFORMANCE                      -->
+            <!-- ========================================== -->
+            <section id="page-performance" class="page">
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-icon green"><i class="fas fa-percent"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Meta Atingida</span>
+                            <span class="card-value" id="perfMeta">-</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon blue"><i class="fas fa-rocket"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Projeção</span>
+                            <span class="card-value" id="perfProjecao">-</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon orange"><i class="fas fa-calendar-day"></i></div>
+                        <div class="card-content">
+                            <span class="card-title">Dias Úteis</span>
+                            <span class="card-value" id="perfDias">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-full">
+                    <h3><i class="fas fa-table"></i> Performance Diária</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Realizado</th>
+                                    <th>Meta Diária</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaPerformance">
+                                <tr><td colspan="4" style="text-align: center; color: #95a5a6;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: METAS                            -->
+            <!-- ========================================== -->
+            <section id="page-metas" class="page">
+                <div class="card-full">
+                    <h3><i class="fas fa-bullseye"></i> Metas Mensais</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mês</th>
+                                    <th>Meta 70%</th>
+                                    <th>Meta 80%</th>
+                                    <th>Meta 90%</th>
+                                    <th>Meta 100%</th>
+                                    <th>Atingido</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaMetas">
+                                <tr><td colspan="6" style="text-align: center; color: #95a5a6;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- JAVASCRIPT                                  -->
+    <!-- ============================================ -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

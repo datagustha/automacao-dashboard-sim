@@ -6,12 +6,14 @@ Gerencia todo o fluxo de autenticação:
   - Callback 2: Fluxo de login completo (login → senha → 2FA → dashboard)
   - Callback 3: Logout completo (limpa Stores + redireciona)
 
-🔧 CORREÇÃO APLICADA:
-  - Bug: step_store resetava para 'login' quando o login do store estava em
-    caixa diferente do login digitado, derrubando o fluxo 2FA mesmo com
-    código correto.
-  - Fix: comparação agora é case-insensitive (.upper().strip()) na linha
-    que verifica se o login mudou.
+🔧 CORREÇÕES APLICADAS:
+  1. Bug: step_store resetava para 'login' quando o login do store estava em
+     caixa diferente do login digitado, derrubando o fluxo 2FA.
+     Fix: comparação case-insensitive (.upper().strip()).
+  2. Bug: Roteador não tratava erros ao carregar layouts.
+     Fix: try/except com fallback para mensagem de erro.
+  3. Bug: Navegação para /pagamentos podia quebrar se dados estivessem incompletos.
+     Fix: Validação de dados antes de renderizar.
 """
 
 import dash
@@ -32,7 +34,6 @@ from src.services.db_service import Buscar_login
 from src.services.auth_service import (
     operador_tem_senha, obter_email_operador, gerar_token_numerico,
     salvar_token, validar_token, salvar_senha,
-    # 🔥 NOVOS IMPORTS PARA 2FA
     salvar_token_2fa, validar_token_2fa
 )
 from src.services.email_service import enviar_token_email, enviar_token_2fa_email
@@ -55,155 +56,193 @@ def register_callbacks(app):
         ]
     )
     def render_page(pathname, login_dados):
-        """ROTEADOR PRINCIPAL"""
-        ctx = dash.callback_context
-
-        # 1. DEFINIÇÃO DE ROTAS PROTEGIDAS
-        rotas_protegidas = ['/dashboard', '/pagamentos', '/operadores']
-        is_protegida = any(pathname.startswith(r) for r in rotas_protegidas if pathname)
-
-        # 2. SE NÃO ESTIVER LOGADO...
-        if not login_dados or 'nome' not in login_dados:
-            # Se é a carga inicial e a URL é protegida, pode ser que o localStorage
-            # ainda não terminou de carregar — mostramos uma tela de loading
-            # para evitar o flash da tela de login antes do store ser lido.
-            triggered_ids = [t['prop_id'] for t in ctx.triggered] if ctx.triggered else []
-            only_store_fired = triggered_ids == ['login-success-store.data']
-            if not triggered_ids or only_store_fired:
-                if is_protegida:
-                    # Tela de espera minimalista — dura apenas um ciclo de render
-                    return html.Div(
-                        html.Div(
-                            [
-                                html.Div(className="spinner-border text-primary", role="status",
-                                         style={"width": "3rem", "height": "3rem"}),
-                                html.P("Carregando...", className="mt-3 text-muted fw-semibold")
-                            ],
-                            className="d-flex flex-column align-items-center justify-content-center",
-                            style={"minHeight": "100vh"}
-                        )
-                    )
-            # Se tentar acessar algo protegido, força Login
-            if is_protegida:
-                return get_login_layout()
-            # Se estiver na raiz ou qualquer outro lugar, mostra Login
-            return get_login_layout()
-
-
-
-
-        # 3. USUÁRIO LOGADO...
-        # Obtém o perfil do usuário logado (ex: 'adm' ou 'operador')
-        perfil = login_dados.get('perfil', 'operador')
-        # Obtém o banco ativo do operador (ex: 'SEMEAR' ou 'AGORACRED')
-        banco  = login_dados.get('banco', 'SEMEAR')
-        # Obtém o nome completo do operador logado
-        nome   = login_dados.get('nome')
-        # Obtém a foto (imagem de perfil) do operador
-        imagem = login_dados.get('imagem')
-        # Obtém a data de admissão gravada na sessão
-        admissao = login_dados.get('admissao')
+        """
+        ROTEADOR PRINCIPAL - CORRIGIDO COM TRATAMENTO DE ERROS
         
-        # Se a data de admissão não estiver nos dados da sessão (ex: login antigo)
-        if not admissao:
-            # Busca os dados do operador no banco de dados como fallback
-            op_dados = Buscar_login(login_dados.get('login'))
-            # Se o operador for localizado no banco
-            if op_dados:
-                # Recupera a data de admissão cadastrada no banco
-                admissao = op_dados.get('admissao')
+        🔧 CORREÇÕES:
+        - Try/except para capturar erros de renderização
+        - Validação de dados antes de chamar layouts
+        - Fallback para tela de erro
+        """
+        try:
+            ctx = dash.callback_context
 
-        # --- ROTA: RAIZ (se logado, vai pro dashboard) ---
-        if pathname in ['/', None]:
-            # Se o perfil for administrador
-            if perfil == 'adm':
-                # Retorna o layout do dashboard de administrador passando admissao
-                return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
-            else:
-                # Retorna o layout do operador comum passando admissao e o banco
-                return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
+            # 1. DEFINIÇÃO DE ROTAS PROTEGIDAS
+            rotas_protegidas = ['/dashboard', '/pagamentos', '/operadores']
+            is_protegida = any(pathname.startswith(r) for r in rotas_protegidas if pathname)
 
-        # --- ROTA: DASHBOARD ---
-        elif pathname == '/dashboard':
-            # Se o perfil for administrador
-            if perfil == 'adm':
-                # Retorna o layout do dashboard de administrador passando admissao
-                return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
-            else:
-                # Retorna o layout do operador comum passando admissao e o banco
-                return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
+            # 2. SE NÃO ESTIVER LOGADO...
+            if not login_dados or 'nome' not in login_dados:
+                # Se é a carga inicial e a URL é protegida, mostra loading
+                triggered_ids = [t['prop_id'] for t in ctx.triggered] if ctx.triggered else []
+                only_store_fired = triggered_ids == ['login-success-store.data']
+                if not triggered_ids or only_store_fired:
+                    if is_protegida:
+                        return html.Div(
+                            html.Div(
+                                [
+                                    html.Div(className="spinner-border text-primary", role="status",
+                                             style={"width": "3rem", "height": "3rem"}),
+                                    html.P("Carregando...", className="mt-3 text-muted fw-semibold")
+                                ],
+                                className="d-flex flex-column align-items-center justify-content-center",
+                                style={"minHeight": "100vh"}
+                            )
+                        )
+                # Se tentar acessar algo protegido, força Login
+                if is_protegida:
+                    return get_login_layout()
+                return get_login_layout()
 
-        # --- ROTA: PAGAMENTOS ---
-        elif pathname == '/pagamentos':
-            # Retorna o layout de pagamentos passando admissao e o perfil correspondente
-            return get_pagamentos_layout(nome, imagem, perfil=perfil, admissao=admissao)
+            # 3. USUÁRIO LOGADO - EXTRAI DADOS
+            perfil = login_dados.get('perfil', 'operador')
+            banco = login_dados.get('banco', 'SEMEAR')
+            nome = login_dados.get('nome')
+            imagem = login_dados.get('imagem')
+            admissao = login_dados.get('admissao')
+            login_usuario = login_dados.get('login')
+            
+            # 4. VALIDA DADOS OBRIGATÓRIOS
+            if not nome or not login_usuario:
+                # Dados incompletos - faz logout
+                return get_login_layout()
+            
+            # Busca admissão se não tiver na sessão
+            if not admissao:
+                op_dados = Buscar_login(login_usuario)
+                if op_dados:
+                    admissao = op_dados.get('admissao')
 
-        # --- ROTA: OPERADORES ---
-        elif pathname.startswith('/operadores'):
-            # Se o usuário logado NÃO for administrador
-            if perfil != 'adm':
-                # Operador vê APENAS seu próprio detalhe de produção (passando seus dados de sessão)
-                op_data = {"login": login_dados.get('login'), "banco": banco, "nome": nome, "imagem": imagem, "admissao": admissao}
-                # Retorna o layout de detalhe do operador passando admissao
-                return get_operador_detalhe_layout(
-                    nome_usuario=nome,
-                    imagem_url=imagem,
-                    operador_selecionado=op_data,
-                    banco=banco,
-                    is_adm=False
-                )
-            else:
-                # ADM tem acesso à tela com filtros de banco, atividade e operador
-                partes = pathname.strip('/').split('/')
-                # Define o banco alvo a ser visualizado
-                banco_alvo = partes[1].upper() if len(partes) >= 2 else "SEMEAR"
-                # Define o login do operador alvo a ser visualizado
-                login_alvo = partes[2]         if len(partes) >= 3 else "TODOS"
-                
-                # Se for selecionado "TODOS" os operadores
-                if login_alvo == "TODOS":
-                    # Cria dados gerais do operador contendo TODOS e o banco correspondente
-                    op_data = {"login": "TODOS", "banco": banco_alvo}
+            # 5. ROTEAMENTO POR PATHNAME
+            # --- ROTA: RAIZ ---
+            if pathname in ['/', None]:
+                if perfil == 'adm':
+                    return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
                 else:
-                    # Busca os dados do operador no banco de dados pelo login
-                    op_banco = Buscar_login(login_alvo)
-                    # Se localizado, usa os dados do banco. Senha e demais campos nao sao afetados.
-                    op_data  = op_banco if op_banco else {"login": "TODOS", "banco": banco_alvo}
+                    return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
+
+            # --- ROTA: DASHBOARD ---
+            elif pathname == '/dashboard':
+                if perfil == 'adm':
+                    return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
+                else:
+                    return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
+
+            # --- ROTA: PAGAMENTOS --- 🔧 CORRIGIDO
+            elif pathname == '/pagamentos':
+                try:
+                    # 🔧 VALIDAÇÃO: Garante que perfil é válido
+                    perfil_valido = 'adm' if perfil == 'adm' else 'operador'
+                    return get_pagamentos_layout(
+                        nome_usuario=nome,
+                        imagem_url=imagem,
+                        perfil=perfil_valido,
+                        admissao=admissao
+                    )
+                except Exception as e:
+                    print(f"[ROTEADOR] ❌ Erro ao carregar pagamentos: {str(e)}")
+                    # Fallback: mostra mensagem de erro
+                    return dbc.Container(
+                        [
+                            dbc.Alert(
+                                [
+                                    html.H4("⚠️ Erro ao carregar página de pagamentos", className="alert-heading"),
+                                    html.P(f"Detalhes: {str(e)}"),
+                                    html.Hr(),
+                                    html.P(
+                                        "Clique no botão abaixo para voltar ao dashboard.",
+                                        className="mb-0"
+                                    ),
+                                    dbc.Button(
+                                        "Voltar ao Dashboard",
+                                        href="/dashboard",
+                                        color="primary",
+                                        className="mt-3"
+                                    )
+                                ],
+                                color="danger",
+                                className="mt-5"
+                            )
+                        ],
+                        className="mt-5",
+                        style={"maxWidth": "800px"}
+                    )
+
+            # --- ROTA: OPERADORES ---
+            elif pathname.startswith('/operadores'):
+                if perfil != 'adm':
+                    op_data = {
+                        "login": login_usuario,
+                        "banco": banco,
+                        "nome": nome,
+                        "imagem": imagem,
+                        "admissao": admissao
+                    }
+                    return get_operador_detalhe_layout(
+                        nome_usuario=nome,
+                        imagem_url=imagem,
+                        operador_selecionado=op_data,
+                        banco=banco,
+                        is_adm=False
+                    )
+                else:
+                    partes = pathname.strip('/').split('/')
+                    banco_alvo = partes[1].upper() if len(partes) >= 2 else "SEMEAR"
+                    login_alvo = partes[2] if len(partes) >= 3 else "TODOS"
                     
-                # Retorna o detalhe do operador indicando is_adm=True
-                return get_operador_detalhe_layout(
-                    nome_usuario=nome,
-                    imagem_url=imagem,
-                    operador_selecionado=op_data,
-                    banco=banco_alvo,
-                    is_adm=True
+                    if login_alvo == "TODOS":
+                        op_data = {"login": "TODOS", "banco": banco_alvo}
+                    else:
+                        op_banco = Buscar_login(login_alvo)
+                        op_data = op_banco if op_banco else {"login": "TODOS", "banco": banco_alvo}
+                        
+                    return get_operador_detalhe_layout(
+                        nome_usuario=nome,
+                        imagem_url=imagem,
+                        operador_selecionado=op_data,
+                        banco=banco_alvo,
+                        is_adm=True
+                    )
+
+            # --- ROTA: DETALHE DO OPERADOR ---
+            elif pathname.startswith('/operador/'):
+                operador_login = pathname.split('/')[-1]
+                operador = Buscar_login(operador_login)
+                if operador:
+                    return get_operador_detalhe_layout(
+                        nome,
+                        imagem,
+                        operador,
+                        operador.get('banco', 'SEMEAR')
+                    )
+                return dbc.Alert("Erro: Operador não encontrado.", color="danger")
+
+            # --- FALLBACK ---
+            if perfil == 'adm':
+                return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
+            return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
+
+        except Exception as e:
+            # ⚠️ ERRO GERAL NO ROTEADOR
+            print(f"[ROTEADOR] ❌ ERRO CRÍTICO: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Tenta voltar para login
+            try:
+                return get_login_layout()
+            except:
+                # Fallback extremo - HTML puro
+                return html.Div(
+                    [
+                        html.H1("Erro no sistema", style={"color": "red"}),
+                        html.P(f"Detalhes: {str(e)}"),
+                        html.A("Voltar ao Login", href="/")
+                    ],
+                    style={"padding": "50px", "textAlign": "center"}
                 )
 
-        # --- ROTA: DETALHE DO OPERADOR (Vista Individual) ---
-        elif pathname.startswith('/operador/'):
-            # Obtem o login do operador a partir da URL
-            operador_login = pathname.split('/')[-1]
-            # Busca os dados desse operador no banco de dados
-            operador = Buscar_login(operador_login)
-            # Se encontrar o operador
-            if operador:
-                # Retorna o layout de detalhe do operador com seus respectivos dados
-                return get_operador_detalhe_layout(nome, imagem, operador, operador.get('banco', 'SEMEAR'))
-            # Caso contrário, mostra alerta de não encontrado
-            return dbc.Alert("Erro: Operador nao encontrado.", color="danger")
 
-        # --- FALLBACK: Se a rota não existir mas está logado, volta pro Dashboard ---
-        # Se for administrador
-        if perfil == 'adm':
-            # Retorna o dashboard administrativo correspondente
-            return get_dashboard_adm_layout(nome, imagem, admissao=admissao)
-        # Se for operador comum, retorna o dashboard do operador correspondente
-        return get_dashboard_layout(nome, imagem, banco=banco, admissao=admissao)
-
-
-
-    
-    
     # ================================================================
     # CALLBACK 2: GERENCIAR FLUXO DE LOGIN (COM 2FA)
     # ================================================================
@@ -214,7 +253,7 @@ def register_callbacks(app):
             Output('login-info-mensagem', 'children'),
             Output('login-password-input', 'style'),
             Output('login-token-input', 'style'),
-            Output('login-2fa-input', 'style'),  # 🔥 NOVO: campo 2FA
+            Output('login-2fa-input', 'style'),
             Output('login-nova-senha-input', 'style'),
             Output('login-confirma-senha-input', 'style'),
             Output('login-button', 'children'),
@@ -226,7 +265,7 @@ def register_callbacks(app):
             Input('login-user-input', 'n_submit'),
             Input('login-password-input', 'n_submit'),
             Input('login-token-input', 'n_submit'),
-            Input('login-2fa-input', 'n_submit'),  # 🔥 NOVO: ENTER no 2FA
+            Input('login-2fa-input', 'n_submit'),
             Input('login-nova-senha-input', 'n_submit'),
             Input('login-confirma-senha-input', 'n_submit'),
             Input('btn-esqueci-senha', 'n_clicks')
@@ -235,7 +274,7 @@ def register_callbacks(app):
             State('login-user-input', 'value'),
             State('login-password-input', 'value'),
             State('login-token-input', 'value'),
-            State('login-2fa-input', 'value'),  # 🔥 NOVO: valor do 2FA
+            State('login-2fa-input', 'value'),
             State('login-nova-senha-input', 'value'),
             State('login-confirma-senha-input', 'value'),
             State('login-step-store', 'data')
@@ -248,10 +287,12 @@ def register_callbacks(app):
                                 login, senha, token, codigo_2fa, nova_senha, confirma_senha,
                                 step_store):
         """
-        FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO COM 2FA.
-        - Suporta ENTER em qualquer campo
-        - 🔥 Converte login para MAIÚSCULO
-        - 🔥 NOVO: 2FA após senha correta
+        FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO COM 2FA - CORRIGIDA
+        
+        🔧 CORREÇÕES:
+        - Comparação case-insensitive para login
+        - Tratamento de step_store None
+        - Validação de email antes de enviar token
         """
         
         ctx = dash.callback_context
@@ -311,8 +352,7 @@ def register_callbacks(app):
         
         # ============================================================
         # RESETAR STEP SE FOR UM NOVO LOGIN
-        # 🔧 CORREÇÃO: comparação case-insensitive para não resetar o
-        #    fluxo 2FA quando o login vier com capitalização diferente.
+        # 🔧 CORREÇÃO: comparação case-insensitive
         # ============================================================
         if step_store and step_store.get('login', '').upper().strip() != login:
             step_store = {'step': 'login'}
@@ -366,43 +406,46 @@ def register_callbacks(app):
             from src.config.database import engine
             from src.models.LoginModel import analistas
             
-            with Session(engine) as session:
-                user = session.query(analistas).filter(
-                    analistas.loguin == login
-                ).first()
-                
-                if not user or not user.senha_hash:
-                    return (dash.no_update, "Erro: senha não encontrada", "", 
-                            {"display": "block"}, {"display": "none"}, {"display": "none"},
-                            {"display": "none"}, {"display": "none"}, 
-                            "Entrar", step_store, dash.no_update)
-                
-                if verificar_senha(user.senha_hash, senha):
-                    # 🔥 SENHA CORRETA! Agora verifica 2FA
-                    # Gera token 2FA
-                    token_2fa = gerar_token_numerico(6)
+            try:
+                with Session(engine) as session:
+                    user = session.query(analistas).filter(
+                        analistas.loguin == login
+                    ).first()
                     
-                    # Salva no banco
-                    salvar_token_2fa(login, token_2fa)
+                    if not user or not user.senha_hash:
+                        return (dash.no_update, "Erro: senha não encontrada", "", 
+                                {"display": "block"}, {"display": "none"}, {"display": "none"},
+                                {"display": "none"}, {"display": "none"}, 
+                                "Entrar", step_store, dash.no_update)
                     
-                    # Envia por email
-                    email = obter_email_operador(login)
-                    if email:
-                        enviar_token_2fa_email(email, login, token_2fa)
-                    
-                    return (dash.no_update, "", f"📱 Código 2FA enviado para seu e-mail!",
-                            {"display": "none"}, {"display": "none"}, {"display": "block"},
-                            {"display": "none"}, {"display": "none"},
-                            "Validar 2FA", {'step': 'validar_2fa', 'login': login}, 
-                            dash.no_update)
-                else:
-                    return (dash.no_update, "Senha incorreta", "", 
-                            {"display": "block"}, {"display": "none"}, {"display": "none"},
-                            {"display": "none"}, {"display": "none"}, 
-                            "Entrar", step_store, dash.no_update)
+                    if verificar_senha(user.senha_hash, senha):
+                        # SENHA CORRETA! Gera token 2FA
+                        token_2fa = gerar_token_numerico(6)
+                        salvar_token_2fa(login, token_2fa)
+                        
+                        email = obter_email_operador(login)
+                        if email:
+                            enviar_token_2fa_email(email, login, token_2fa)
+                        
+                        return (dash.no_update, "", f"📱 Código 2FA enviado para seu e-mail!",
+                                {"display": "none"}, {"display": "none"}, {"display": "block"},
+                                {"display": "none"}, {"display": "none"},
+                                "Validar 2FA", {'step': 'validar_2fa', 'login': login}, 
+                                dash.no_update)
+                    else:
+                        return (dash.no_update, "Senha incorreta", "", 
+                                {"display": "block"}, {"display": "none"}, {"display": "none"},
+                                {"display": "none"}, {"display": "none"}, 
+                                "Entrar", step_store, dash.no_update)
+            except Exception as e:
+                print(f"[AUTH] ❌ Erro ao validar senha: {str(e)}")
+                return (dash.no_update, f"Erro interno: {str(e)}", "", 
+                        {"display": "block"}, {"display": "none"}, {"display": "none"},
+                        {"display": "none"}, {"display": "none"}, 
+                        "Entrar", step_store, dash.no_update)
         
         # ============================================================
-        # 🔥 NOVO: VALIDAR 2FA (SEGUNDO FATOR)
+        # VALIDAR 2FA (SEGUNDO FATOR)
         # ============================================================
         elif step == 'validar_2fa':
             if not codigo_2fa:
@@ -411,29 +454,33 @@ def register_callbacks(app):
                         {"display": "none"}, {"display": "none"}, 
                         "Validar 2FA", step_store, dash.no_update)
             
-            # Valida o token 2FA
-            resultado = validar_token_2fa(login, codigo_2fa)
-            
-            if resultado['valido']:
-                # 🔥 2FA OK! Login concluído com sucesso
-                banco_op = operador.get('banco', 'SEMEAR')
-                perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
-                # Cria o dicionario de dados do usuario que sera salvo na sessao do navegador
-                dados_usuario = {
-                    'nome': operador['nome'],
-                    'login': operador['login'],
-                    'imagem': operador.get('imagem'),
-                    'banco': banco_op,
-                    'perfil': perfil_op,
-                    'admissao': operador.get('admissao')
-                }
+            try:
+                resultado = validar_token_2fa(login, codigo_2fa)
                 
-                return (dados_usuario, "", "", 
-                        {"display": "none"}, {"display": "none"}, {"display": "none"},
-                        {"display": "none"}, {"display": "none"}, 
-                        "Entrar", step_store, "/dashboard")
-            else:
-                return (dash.no_update, resultado['mensagem'], "", 
+                if resultado['valido']:
+                    banco_op = operador.get('banco', 'SEMEAR')
+                    perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
+                    dados_usuario = {
+                        'nome': operador['nome'],
+                        'login': operador['login'],
+                        'imagem': operador.get('imagem'),
+                        'banco': banco_op,
+                        'perfil': perfil_op,
+                        'admissao': operador.get('admissao')
+                    }
+                    
+                    return (dados_usuario, "", "", 
+                            {"display": "none"}, {"display": "none"}, {"display": "none"},
+                            {"display": "none"}, {"display": "none"}, 
+                            "Entrar", step_store, "/dashboard")
+                else:
+                    return (dash.no_update, resultado['mensagem'], "", 
+                            {"display": "none"}, {"display": "none"}, {"display": "block"},
+                            {"display": "none"}, {"display": "none"}, 
+                            "Validar 2FA", step_store, dash.no_update)
+            except Exception as e:
+                print(f"[AUTH] ❌ Erro ao validar 2FA: {str(e)}")
+                return (dash.no_update, f"Erro interno: {str(e)}", "", 
                         {"display": "none"}, {"display": "none"}, {"display": "block"},
                         {"display": "none"}, {"display": "none"}, 
                         "Validar 2FA", step_store, dash.no_update)
@@ -488,7 +535,6 @@ def register_callbacks(app):
                 operador = Buscar_login(login)
                 banco_op = operador.get('banco', 'SEMEAR')
                 perfil_op = 'adm' if banco_op.upper() == 'ADM' else 'operador'
-                # Popula os dados do usuario que logou pela primeira vez apos criar senha
                 dados_usuario = {
                     'nome': operador['nome'],
                     'login': operador['login'],
@@ -519,10 +565,6 @@ def register_callbacks(app):
     # ================================================================
     # CALLBACK 3: LOGOUT
     # ================================================================
-    # Limpa os Stores de autenticação E redireciona para o login.
-    # Sem essa limpeza, os dados persistem no localStorage e o
-    # usuário continua "logado" mesmo após clicar em Sair.
-    # ================================================================
     @app.callback(
         [
             Output('login-success-store', 'data', allow_duplicate=True),
@@ -540,6 +582,5 @@ def register_callbacks(app):
         3. Redireciona para a tela de login (/)
         """
         if n_clicks:
-            # Retorna: store limpo, step resetado, redireciona para login
             return None, {'step': 'login'}, "/"
         raise PreventUpdate

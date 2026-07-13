@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GestãoPag</title>
+    <link rel="stylesheet" href="/static/css/login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <!-- LOGO ROXA - MAIOR -->
+                <img src="https://i.ibb.co/ZR5z1j0j/SIM-removebg-preview.png" alt="SiM" style="width:180px;margin-bottom:12px;">
+                <h1>Gestão<span>Pag</span></h1>
+                <p class="subtitle">Sistema de Gestão de Pagamentos</p>
+            </div>
+            
+            <!-- Formulário de Login (passo 1) -->
+            <form id="loginForm" onsubmit="enviarCodigo(event)">
+                <div class="form-group">
+                    <label for="loginInput">
+                        <i class="fas fa-user"></i> Login
+                    </label>
+                    <input 
+                        type="text" 
+                        id="loginInput" 
+                        placeholder="Digite seu login" 
+                        required
+                        autofocus
+                    >
+                </div>
+                
+                <button type="submit" class="btn-login" id="btnEnviarCodigo">
+                    <i class="fas fa-envelope"></i> Enviar Código
+                </button>
+                
+                <div id="loginErro" class="login-erro" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="mensagemErro">Erro ao enviar código</span>
+                </div>
+            </form>
+
+            <!-- Formulário de Código (passo 2) -->
+            <form id="codigoForm" style="display: none;" onsubmit="verificarCodigo(event)">
+                <div class="form-group">
+                    <label for="codigoInput">
+                        <i class="fas fa-key"></i> Código de Verificação
+                    </label>
+                    <div class="codigo-info">
+                        <small id="codigoInfoText">Digite o código enviado para seu email</small>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="codigoInput" 
+                        placeholder="Digite o código de 6 dígitos" 
+                        maxlength="6"
+                        required
+                        autofocus
+                    >
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-back" onclick="voltarLogin()">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                    <button type="submit" class="btn-login" id="btnVerificarCodigo">
+                        <i class="fas fa-check"></i> Verificar
+                    </button>
+                </div>
+                
+                <div class="resend-code">
+                    <small>Não recebeu o código?</small>
+                    <button type="button" class="btn-resend" onclick="reenviarCodigo()">
+                        Reenviar
+                    </button>
+                </div>
+                
+                <div id="codigoErro" class="login-erro" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="mensagemCodigoErro">Código inválido</span>
+                </div>
+            </form>
+            
+            <div class="login-footer">
+                <span>GestãoPag v2.0</span>
+                <span>|</span>
+                <span>© 2026</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let loginAtual = '';
+
+        // ============================================================
+        // PASSO 1: Enviar Código
+        // ============================================================
+        async function enviarCodigo(event) {
+            event.preventDefault();
+            
+            const login = document.getElementById('loginInput').value.trim();
+            const btn = document.getElementById('btnEnviarCodigo');
+            const erro = document.getElementById('loginErro');
+            const mensagemErro = document.getElementById('mensagemErro');
+            
+            if (!login) {
+                mostrarErro('Preencha o login');
+                return;
+            }
+            
+            loginAtual = login;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            erro.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/enviar-codigo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: login })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('codigoForm').style.display = 'block';
+                    document.getElementById('codigoInput').focus();
+                    
+                    const info = document.getElementById('codigoInfoText');
+                    if (info) {
+                        info.textContent = `✅ Código enviado para ${data.email || 'seu email'}`;
+                        info.style.color = '#27ae60';
+                    }
+                    
+                } else {
+                    mostrarErro(data.message || 'Erro ao enviar código');
+                }
+            } catch (error) {
+                mostrarErro('Erro de conexão com o servidor');
+                console.error(error);
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-envelope"></i> Enviar Código';
+        }
+
+        // ============================================================
+        // PASSO 2: Verificar Código
+        // ============================================================
+        async function verificarCodigo(event) {
+            event.preventDefault();
+            
+            const codigo = document.getElementById('codigoInput').value.trim();
+            const btn = document.getElementById('btnVerificarCodigo');
+            const erro = document.getElementById('codigoErro');
+            const mensagemErro = document.getElementById('mensagemCodigoErro');
+            
+            if (!codigo || codigo.length < 6) {
+                mostrarErroCodigo('Digite o código de 6 dígitos');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            erro.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/verificar-codigo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        login: loginAtual, 
+                        codigo: codigo 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.redirect || '/dashboard';
+                } else {
+                    mostrarErroCodigo(data.message || 'Código inválido');
+                }
+            } catch (error) {
+                mostrarErroCodigo('Erro de conexão com o servidor');
+                console.error(error);
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Verificar';
+        }
+
+        // ============================================================
+        // REENVIAR CÓDIGO
+        // ============================================================
+        async function reenviarCodigo() {
+            if (!loginAtual) return;
+            
+            const btn = document.querySelector('.btn-resend');
+            const erro = document.getElementById('codigoErro');
+            
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            erro.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/enviar-codigo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: loginAtual })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const info = document.getElementById('codigoInfoText');
+                    if (info) {
+                        info.textContent = `✅ Código reenviado para ${data.email || 'seu email'}`;
+                        info.style.color = '#27ae60';
+                    }
+                    btn.textContent = 'Reenviar';
+                    btn.disabled = false;
+                } else {
+                    mostrarErroCodigo(data.message || 'Erro ao reenviar código');
+                }
+            } catch (error) {
+                mostrarErroCodigo('Erro de conexão com o servidor');
+                console.error(error);
+            }
+            
+            btn.textContent = 'Reenviar';
+            btn.disabled = false;
+        }
+
+        // ============================================================
+        // UTILITÁRIOS
+        // ============================================================
+        function voltarLogin() {
+            document.getElementById('codigoForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginInput').focus();
+            document.getElementById('codigoErro').style.display = 'none';
+            
+            const info = document.getElementById('codigoInfoText');
+            if (info) {
+                info.textContent = 'Digite o código enviado para seu email';
+                info.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function mostrarErro(msg) {
+            const erro = document.getElementById('loginErro');
+            const mensagemErro = document.getElementById('mensagemErro');
+            mensagemErro.textContent = msg;
+            erro.style.display = 'flex';
+        }
+
+        function mostrarErroCodigo(msg) {
+            const erro = document.getElementById('codigoErro');
+            const mensagemErro = document.getElementById('mensagemCodigoErro');
+            mensagemErro.textContent = msg;
+            erro.style.display = 'flex';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const loginForm = document.getElementById('loginForm');
+                const codigoForm = document.getElementById('codigoForm');
+                
+                if (loginForm.style.display !== 'none' && loginForm.offsetParent !== null) {
+                    loginForm.dispatchEvent(new Event('submit'));
+                } else if (codigoForm.style.display !== 'none' && codigoForm.offsetParent !== null) {
+                    codigoForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
