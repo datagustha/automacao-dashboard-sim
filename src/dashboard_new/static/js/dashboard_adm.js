@@ -703,15 +703,26 @@ async function carregarPagamentosAdm() {
 
 function _preencherOperadoresPagAdm(operadores) {
     const sel = document.getElementById('filtro-pag-operador-adm');
+    const datalist = document.getElementById('datalist-operadores-pag');
     if (!sel) return;
     const cur = sel.value;
     sel.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
+    
+    if (datalist) datalist.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
+
     operadores.forEach(op => {
         const opt = document.createElement('option');
         opt.value = op;
         opt.textContent = op;
         if (op === cur) opt.selected = true;
         sel.appendChild(opt);
+
+        if (datalist) {
+            const dOpt = document.createElement('option');
+            dOpt.value = op;
+            dOpt.textContent = op;
+            datalist.appendChild(dOpt);
+        }
     });
 }
 

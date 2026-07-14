@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GestãoPag</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/zW8ksRBh/goldensim.png">
     <link rel="stylesheet" href="/static/css/login.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -55,6 +56,12 @@
                 <button type="submit" class="btn-login" id="btnEnviarCodigo">
                     <i class="fas fa-sign-in-alt"></i> Entrar
                 </button>
+
+                <div style="text-align:center;margin-top:12px;">
+                    <button type="button" onclick="mostrarEsqueciSenha()" style="background:none;border:none;color:var(--purple-main,#7e3d97);font-size:13px;cursor:pointer;text-decoration:underline;font-family:inherit;">
+                        <i class="fas fa-key"></i> Esqueci minha senha
+                    </button>
+                </div>
 
                 <div id="loginErro" class="login-erro" style="display: none;">
                     <i class="fas fa-exclamation-circle"></i>
@@ -109,6 +116,23 @@
                 <span>|</span>
                 <span>© 2026</span>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Esqueci Minha Senha -->
+    <div id="modalEsqueciSenha" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:fadeInUp 0.3s ease;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="width:60px;height:60px;background:linear-gradient(135deg,#7e3d97,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i class="fas fa-key" style="color:#fff;font-size:24px;"></i>
+                </div>
+                <h2 style="color:#1e0a3c;font-size:18px;margin:0 0 8px;">Recuperar Senha</h2>
+                <p style="color:#6b7280;font-size:14px;margin:0;">Para redefinir sua senha, entre em contato com o <strong>administrador do sistema</strong>.</p>
+            </div>
+            <div style="background:#f3e8ff;border-radius:10px;padding:14px;margin-bottom:20px;border-left:4px solid #7e3d97;">
+                <p style="color:#4a1d8c;font-size:13px;margin:0;"><i class="fas fa-info-circle"></i> O administrador irá redefinir seu acesso e enviará a nova senha por e-mail ou WhatsApp.</p>
+            </div>
+            <button onclick="fecharEsqueciSenha()" style="width:100%;padding:12px;background:linear-gradient(135deg,#7e3d97,#a855f7);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fas fa-check"></i> Entendi</button>
         </div>
     </div>
 
@@ -288,6 +312,16 @@
             const mensagemErro = document.getElementById('mensagemErro');
             mensagemErro.textContent = msg;
             erro.style.display = 'flex';
+        }
+
+        function mostrarEsqueciSenha() {
+            const m = document.getElementById('modalEsqueciSenha');
+            m.style.display = 'flex';
+        }
+
+        function fecharEsqueciSenha() {
+            const m = document.getElementById('modalEsqueciSenha');
+            m.style.display = 'none';
         }
 
         function mostrarErroCodigo(msg) {

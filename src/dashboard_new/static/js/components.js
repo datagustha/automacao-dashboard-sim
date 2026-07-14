@@ -202,7 +202,7 @@ function criarGraficoEvolucao(dados, cor = '#7e3d97') {
                 categories: datas,
                 labels: {
                     rotate: -45,
-                    style: { colors: '#6B7280', fontSize: '9px', fontWeight: 500 }
+                    style: { colors: '#374151', fontSize: '11px', fontWeight: 600 }
                 },
                 axisBorder: { show: false },
                 axisTicks: { show: false }
@@ -212,9 +212,10 @@ function criarGraficoEvolucao(dados, cor = '#7e3d97') {
                     formatter: function(val) {
                         return 'R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                     },
-                    style: { colors: '#6B7280', fontSize: '9px', fontWeight: 500 }
+                    style: { colors: '#374151', fontSize: '12px', fontWeight: 600 }
                 }
             },
+
             grid: {
                 borderColor: '#f1f5f9',
                 strokeDashArray: 4,
@@ -373,7 +374,7 @@ function criarGraficoBarras(dados, x, y, titulo, cor = '#7e3d97') {
             xaxis: {
                 categories: categorias,
                 labels: {
-                    style: { colors: '#6B7280', fontSize: '9px', fontWeight: 500 }
+                    style: { colors: '#374151', fontSize: '11px', fontWeight: 600 }
                 },
                 axisBorder: { show: false },
                 axisTicks: { show: false }
@@ -383,9 +384,10 @@ function criarGraficoBarras(dados, x, y, titulo, cor = '#7e3d97') {
                     formatter: function(val) {
                         return 'R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                     },
-                    style: { colors: '#6B7280', fontSize: '9px', fontWeight: 500 }
+                    style: { colors: '#374151', fontSize: '12px', fontWeight: 600 }
                 }
             },
+
             grid: {
                 borderColor: '#f1f5f9',
                 strokeDashArray: 4

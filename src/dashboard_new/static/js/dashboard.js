@@ -696,6 +696,26 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
 
     const perf = dadosPerformance.performance || {};
     const diarios = dadosPerformance.performance_diaria || [];
+    // Usa indicadores_anterior que vem junto com os dados (fix variação de mês)
+    const indAnt = dadosPerformance.indicadores_anterior || window.dadosCompletos?.indicadores_anterior || {};
+    // TMA que vem com os dados completos
+    const tmaData = dadosPerformance.tma || {};
+
+    // --- TMA (Métricas de Ligação) ---
+    if (Object.keys(tmaData).length > 0) {
+        const tmaEl = document.getElementById('kpi-tma-valor');
+        const tmafEl = document.getElementById('kpi-tma-falado');
+        const acionEl = document.getElementById('kpi-tma-acionamentos');
+        const ultEl = document.getElementById('kpi-tma-ultimo');
+        const reacEl = document.getElementById('kpi-tma-reacionamento');
+        const cliEl = document.getElementById('kpi-tma-clientes');
+        if (tmaEl) tmaEl.textContent = tmaData.tma || '00:00:00';
+        if (tmafEl) tmafEl.innerHTML = `Falado no mês: <strong>${tmaData.tempo_falado || '0h 00min'}</strong>`;
+        if (acionEl) acionEl.textContent = tmaData.acionamentos || 0;
+        if (ultEl) ultEl.innerHTML = `Últ. Acion.: <strong>${tmaData.ultimo_acionamento || '-'}</strong>`;
+        if (reacEl) reacEl.textContent = tmaData.reacionamento || '1.00';
+        if (cliEl) cliEl.innerHTML = `Clientes únicos: <strong>${tmaData.clientes || 0}</strong>`;
+    }
 
     // --- 1. RENDERIZAR PERFORMANCE NA ABA DE PERFORMANCE ---
     const tbodyPerf = document.getElementById('tabela-performance-operador-aba');
@@ -825,7 +845,8 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
     const divVar = document.getElementById('op-variacao-periodo-detalhe');
     if (divVar) {
         const fatMes = perf.faturamento || 0;
-        const fatAnt = (window.dadosCompletos && window.dadosCompletos.indicadores_anterior && window.dadosCompletos.indicadores_anterior.faturamento_total) || 0;
+        // Usa indicadores_anterior do próprio payload (não do estado global)
+        const fatAnt = indAnt.faturamento_total || 0;
         const variacao = fatAnt > 0 ? ((fatMes - fatAnt) / fatAnt) * 100 : 0;
         const dif = fatMes - fatAnt;
 
@@ -932,16 +953,17 @@ function renderizarGraficoBarrasMensalOp() {
         },
         xaxis: {
             categories: meses,
-            labels: { style: { fontSize: '10px' } }
+            labels: { style: { fontSize: '11px', colors: '#374151', fontWeight: 600 } }
         },
         yaxis: {
             labels: {
                 formatter: function (val) {
                     return val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val;
                 },
-                style: { fontSize: '9px' }
+                style: { fontSize: '12px', colors: '#374151', fontWeight: 600 }
             }
         },
+
         tooltip: {
             y: {
                 formatter: function (val) {

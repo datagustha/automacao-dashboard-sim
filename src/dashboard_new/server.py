@@ -94,8 +94,8 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     print("  DASHBOARD V2 - SERVIDOR INICIADO")
     print("="*60)
-    print(f"  Login: http://localhost:5001/login")
-    print(f"  Teste: http://localhost:5001/api/teste")
+    print(f"  Login: http://localhost:80/login")
+    print(f"  Teste: http://localhost:80/api/teste")
     print("  Pressione CTRL+C para parar")
     print("="*60 + "\n")
     

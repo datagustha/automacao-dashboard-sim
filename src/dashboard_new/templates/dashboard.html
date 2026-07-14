@@ -469,7 +469,37 @@
             <!-- ========================================== -->
             <section id="page-operadores" class="page">
 
+                <!-- Filtros de Mês e Ano (Minha Performance) -->
+                <div class="filters-bar" style="margin-bottom:16px;">
+                    <div class="filter-group">
+                        <i class="fas fa-calendar"></i>
+                        <select id="op-perf-mes" onchange="document.getElementById('filtro-mes').value=this.value; filtrarDados();">
+                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
+                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
+                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
+                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
+                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
+                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
+                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-year"></i>
+                        <select id="op-perf-ano" onchange="document.getElementById('filtro-ano').value=this.value; filtrarDados();">
+                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Resumo de Dias -->
+
                 <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;padding:16px;background:linear-gradient(135deg,#f3e8ff,#ede9fe);border-radius:12px;border-left:4px solid var(--purple-main);">
                     <span style="font-weight:700;font-size:13px;color:#4a1d8c;display:flex;align-items:center;gap:6px;">
                         <i class="fas fa-calendar-check"></i> Dias trabalhados: <span id="op-dias-trab" style="font-size:15px;">0</span>

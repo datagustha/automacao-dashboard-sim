@@ -763,20 +763,25 @@ def buscar_tma_operador(login: str, banco: str, anoatual: int = None, mesnum: in
         if not mesnum:
             mesnum = datetime.now().month
 
-        # Gera a abreviação do mês em inglês (Jan, Feb, …) para montar o nome do arquivo
-        mesabrev = datetime(anoatual, mesnum, 1).strftime("%b")
         banco_lower = banco.lower()
 
         # Caminho do CSV gerado por processar_arquivo_tma()
         BASE_DIR = pathlib.Path(__file__).resolve().parent.parent.parent
-        caminho_csv = (
-            BASE_DIR / "data" / "processed" / banco_lower / "tma" / str(anoatual)
-            / f"tma_{banco_lower}_{mesnum}_{mesabrev}_{anoatual}.csv"
-        )
-
-        if not caminho_csv.exists():
-            print(f"[TMA] CSV não encontrado: {caminho_csv}")
+        caminho_dir = BASE_DIR / "data" / "processed" / banco_lower / "tma" / str(anoatual)
+        
+        if not caminho_dir.exists():
+            print(f"[TMA] Diretório do TMA não existe: {caminho_dir}")
             return None
+
+        # Busca tolerante a locale/abreviação usando glob (ex: tma_semear_7_*_2026.csv)
+        padrao = f"tma_{banco_lower}_{mesnum}_*_{anoatual}.csv"
+        arquivos_encontrados = list(caminho_dir.glob(padrao))
+
+        if not arquivos_encontrados:
+            print(f"[TMA] CSV de TMA não encontrado no padrão {padrao} em {caminho_dir}")
+            return None
+
+        caminho_csv = arquivos_encontrados[0]
 
         df = pd.read_csv(caminho_csv)
 
@@ -791,7 +796,30 @@ def buscar_tma_operador(login: str, banco: str, anoatual: int = None, mesnum: in
             print(f"[TMA] Operador '{login}' não encontrado no CSV de TMA.")
             return None
 
-        return df_op.iloc[0].to_dict()
+        row = df_op.iloc[0].to_dict()
+
+        # Helper: converte segundos para "Xh YYmin"
+        def _seg_para_hmin(segundos):
+            try:
+                s = int(float(segundos))
+                h = s // 3600
+                m = (s % 3600) // 60
+                return f"{h}h {m:02d}min"
+            except Exception:
+                return "0h 00min"
+
+        # Mapeia campos do CSV para nomes canônicos esperados pelo frontend
+        return {
+            'tma':                str(row.get('tempoMedio', '00:00:00')),
+            'tempo_falado':       _seg_para_hmin(row.get('tempoTotalSegundos', 0)),
+            'acionamentos':       int(float(row.get('qtdeAcionamentos', 0))),
+            'ultimo_acionamento': str(row.get('ultimoAcionamento', '-')),
+            'reacionamento':      str(round(float(row.get('taxaAcionamentoCliente', 1.0)), 2)),
+            'clientes':           int(float(row.get('qtdeClientes', 0))),
+            # Campos extras para referência
+            'contratos':          int(float(row.get('qtdeContratos', 0))),
+            'amplitude_horas':    float(row.get('amplitudeAtividadeHoras', 0)),
+        }
 
     except Exception as e:
         print(f"[TMA] Erro ao buscar TMA do operador {login}: {e}")

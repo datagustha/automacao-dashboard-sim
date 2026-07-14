@@ -182,6 +182,41 @@ async function carregarDadosAdm() {
             renderizarDashboardAdm(data.data);
             carregarTmaAdm();
 
+            // Mostra / Esconde o banner de operador filtrado no Dashboard
+            const bannerDash = document.getElementById('banner-operador-selecionado-dashboard-adm');
+            if (bannerDash) {
+                if (operador !== 'TODOS') {
+                    // Tenta achar operador na lista global
+                    const opCadastrado = (todosOperadoresCadastrados || []).find(o => o.login === operador);
+                    const nomeExibicao = opCadastrado?.login || operador;
+                    const tempoCasaExib = opCadastrado?.tempo_casa || 'Tempo de casa não informado';
+                    const imgUrl = opCadastrado?.imagem || null;
+                    const bancoOp = opCadastrado?.banco || 'SEMEAR';
+
+                    document.getElementById('banner-op-nome-dash').textContent = nomeExibicao;
+                    document.getElementById('banner-op-info-dash').textContent = `${bancoOp} • ${tempoCasaExib}`;
+                    
+                    const avatarTxt = document.getElementById('banner-op-avatar-txt-dash');
+                    const avatarImg = document.getElementById('banner-op-avatar-img-dash');
+                    if (imgUrl) {
+                        if (avatarImg) {
+                            avatarImg.src = imgUrl;
+                            avatarImg.style.display = 'block';
+                        }
+                        if (avatarTxt) avatarTxt.style.display = 'none';
+                    } else {
+                        if (avatarTxt) {
+                            avatarTxt.textContent = nomeExibicao.replace(/[0-9]/g, '').substring(0, 2).toUpperCase() || 'OP';
+                            avatarTxt.style.display = 'flex';
+                        }
+                        if (avatarImg) avatarImg.style.display = 'none';
+                    }
+                    bannerDash.style.display = 'flex';
+                } else {
+                    bannerDash.style.display = 'none';
+                }
+            }
+
             // Preenche dropdown de operadores
             preencherOperadores(data.data);
 
@@ -313,19 +348,24 @@ function calcularTempoCasa(admissao) {
 
 function preencherOperadores(dados) {
     const select = document.getElementById('filtro-operador-adm');
+    const datalist = document.getElementById('datalist-operadores-global');
     if (!select) return;
+
+    // Obtém o banco selecionado no filtro do Dashboard
+    const bancoSelecionado = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
 
     // Salva valor selecionado atual
     const valorAtual = select.value;
 
     // Limpa opções (mantém a primeira)
     select.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
+    if (datalist) datalist.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
 
     const todosOperadores = [];
 
-    // Correto: lê de dados.semear.operadores e dados.agoracred.operadores
-    const opsSemear = dados.semear?.operadores || [];
-    const opsAgoracred = dados.agoracred?.operadores || [];
+    // Lê apenas os operadores do banco selecionado
+    const opsSemear = (bancoSelecionado === 'TODOS' || bancoSelecionado === 'SEMEAR') ? (dados.semear?.operadores || []) : [];
+    const opsAgoracred = (bancoSelecionado === 'TODOS' || bancoSelecionado === 'AGORACRED') ? (dados.agoracred?.operadores || []) : [];
 
     opsSemear.forEach(op => {
         if (op.login) {
@@ -353,13 +393,72 @@ function preencherOperadores(dados) {
     todosOperadores.forEach(op => {
         const option = document.createElement('option');
         option.value = op.login;
-        option.textContent = `${op.nome} (${op.banco})`;
+        option.textContent = `${op.nome}`; // Remove o sufixo redundante (BANCO) para evitar info duplicada
         if (op.login === valorAtual) option.selected = true;
         select.appendChild(option);
+
+        if (datalist) {
+            const dOpt = document.createElement('option');
+            dOpt.value = op.login;
+            dOpt.textContent = `${op.nome}`; // Mostra apenas o nome do operador no datalist
+            datalist.appendChild(dOpt);
+        }
     });
 
     console.log('[ADM] Dropdown de operadores preenchido com', todosOperadores.length, 'operadores');
 }
+
+
+// Funções globais de busca inteligente com autocomplete para os filtros de todas as páginas
+function onBuscaOperadorGlobal(valor) {
+    const sel = document.getElementById('filtro-operador-adm');
+    if (!sel) return;
+
+    if (!valor || valor.trim() === '' || valor.toUpperCase() === 'TODOS') {
+        sel.value = 'TODOS';
+        const event = new Event('change');
+        sel.dispatchEvent(event);
+        return;
+    }
+
+    const valorUpper = valor.trim().toUpperCase();
+    const optMatch = Array.from(sel.options).find(opt => 
+        opt.value.toUpperCase() === valorUpper || 
+        opt.textContent.toUpperCase().includes(valorUpper)
+    );
+
+    if (optMatch) {
+        sel.value = optMatch.value;
+        const event = new Event('change');
+        sel.dispatchEvent(event);
+    }
+}
+
+function onBuscaOperadorPag(valor) {
+    const sel = document.getElementById('filtro-pag-operador-adm');
+    if (!sel) return;
+
+    if (!valor || valor.trim() === '' || valor.toUpperCase() === 'TODOS') {
+        sel.value = 'TODOS';
+        carregarPagamentosAdm();
+        return;
+    }
+
+    const valorUpper = valor.trim().toUpperCase();
+    const optMatch = Array.from(sel.options).find(opt => 
+        opt.value.toUpperCase() === valorUpper || 
+        opt.textContent.toUpperCase().includes(valorUpper)
+    );
+
+    if (optMatch) {
+        sel.value = optMatch.value;
+        carregarPagamentosAdm();
+    }
+}
+
+// Expõe globalmente
+window.onBuscaOperadorGlobal = onBuscaOperadorGlobal;
+window.onBuscaOperadorPag = onBuscaOperadorPag;
 
 // ================================================================
 // RENDERIZAR PAGAMENTOS (ADM)
@@ -953,10 +1052,11 @@ function atualizarFiltrosOperadoresAdm() {
         operadoresFiltrados.forEach(op => {
             const opt = document.createElement('option');
             opt.value = op.login;
-            opt.textContent = `${op.login} (${op.banco})`;
+            opt.textContent = op.login; // Mostra apenas o login do operador sem sufixo redundante
             datalist.appendChild(opt);
         });
     }
+
 
     console.log(`[ADM FILTROS] Filtros de operadores atualizados. Banco: ${banco}, Atividade: ${atividade}, Total: ${operadoresFiltrados.length}`);
 }
@@ -1171,8 +1271,23 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
             }
             avatarImg.style.display = 'none';
             avatarIniciais.style.display = 'flex';
-        }
     }
+
+    // --- TMA (Métricas de Ligação) ---
+    const tmaData = dadosPerformance.tma || {};
+    const tmaEl = document.getElementById('adm-op-kpi-tma-valor');
+    const tmafEl = document.getElementById('adm-op-kpi-tma-falado');
+    const acionEl = document.getElementById('adm-op-kpi-tma-acionamentos');
+    const ultEl = document.getElementById('adm-op-kpi-tma-ultimo');
+    const reacEl = document.getElementById('adm-op-kpi-tma-reacionamento');
+    const cliEl = document.getElementById('adm-op-kpi-tma-clientes');
+
+    if (tmaEl) tmaEl.textContent = tmaData.tma || '00:00:00';
+    if (tmafEl) tmafEl.innerHTML = `Falado no mês: <strong>${tmaData.tempo_falado || '0h 00min'}</strong>`;
+    if (acionEl) acionEl.textContent = tmaData.acionamentos || 0;
+    if (ultEl) ultEl.innerHTML = `Últ. Acion.: <strong>${tmaData.ultimo_acionamento || '-'}</strong>`;
+    if (reacEl) reacEl.textContent = tmaData.reacionamento || '1.00';
+    if (cliEl) cliEl.innerHTML = `Clientes únicos: <strong>${tmaData.clientes || 0}</strong>`;
 
     // --- 1. RENDERIZAR PERFORMANCE NA ABA DE PERFORMANCE ---
     const tbodyPerf = document.getElementById('tabela-performance-operador-adm-aba');
@@ -1378,19 +1493,19 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
                 if (!val || val === 0) return '';
                 return val >= 1000 ? 'R$ ' + (val / 1000).toFixed(1) + 'k' : 'R$ ' + val.toFixed(0);
             },
-            style: { fontSize: '9px', colors: ['#333'] },
+            style: { fontSize: '11px', colors: ['#374151'] },
             offsetY: -6
         },
         xaxis: {
             categories: meses,
-            labels: { style: { fontSize: '10px' } }
+            labels: { style: { fontSize: '11px', colors: '#374151', fontWeight: 600 } }
         },
         yaxis: {
             labels: {
                 formatter: function (val) {
                     return val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val;
                 },
-                style: { fontSize: '9px' }
+                style: { fontSize: '12px', colors: '#374151', fontWeight: 600 }
             }
         },
         tooltip: {
@@ -1457,4 +1572,58 @@ function renderizarVariacaoDetalhadaAdmOp(lista) {
     }).join('');
 }
 
+// Funções de controle de banco e filtros do Dashboard
+function filtrarBancoDashboardAdm() {
+    const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
+    
+    // Esconde ou exibe os cards de faturamento correspondentes
+    const colSemear = document.getElementById('col-card-semear');
+    const colAgoracred = document.getElementById('col-card-agoracred');
+    if (colSemear && colAgoracred) {
+        if (banco === 'SEMEAR') {
+            colSemear.style.display = 'block';
+            colSemear.className = 'col-12';
+            colAgoracred.style.display = 'none';
+        } else if (banco === 'AGORACRED') {
+            colSemear.style.display = 'none';
+            colAgoracred.style.display = 'block';
+            colAgoracred.className = 'col-12';
+        } else {
+            colSemear.style.display = 'block';
+            colSemear.className = 'col-6';
+            colAgoracred.style.display = 'block';
+            colAgoracred.className = 'col-6';
+        }
+    }
+
+    // Repopula o dropdown/datalist de operadores baseando-se no banco
+    if (dadosAdmCompletos) {
+        preencherOperadores(dadosAdmCompletos);
+    }
+    
+    // Reseta a busca de operador ativo ao trocar de banco
+    const buscaInput = document.getElementById('busca-operador-adm');
+    if (buscaInput) buscaInput.value = '';
+    
+    const selGlobal = document.getElementById('filtro-operador-adm');
+    if (selGlobal) {
+        selGlobal.value = 'TODOS';
+        carregarDadosAdm();
+    }
+}
+
+function limparFiltroOperadorDashboardAdm() {
+    const buscaInput = document.getElementById('busca-operador-adm');
+    if (buscaInput) buscaInput.value = '';
+    const selGlobal = document.getElementById('filtro-operador-adm');
+    if (selGlobal) {
+        selGlobal.value = 'TODOS';
+        const event = new Event('change');
+        selGlobal.dispatchEvent(event);
+    }
+}
+
+// Expõe globalmente as novas funções
 window.selecionarOperadorPerfAdm = selecionarOperadorPerfAdm;
+window.filtrarBancoDashboardAdm = filtrarBancoDashboardAdm;
+window.limparFiltroOperadorDashboardAdm = limparFiltroOperadorDashboardAdm;

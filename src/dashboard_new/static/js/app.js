@@ -73,10 +73,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     // aparecer pagamento de mês errado).
     if (filtroMes) filtroMes.addEventListener('change', () => {
         if (filtroPagMes) filtroPagMes.value = filtroMes.value;
+        const opPerfMes = document.getElementById('op-perf-mes');
+        if (opPerfMes) opPerfMes.value = filtroMes.value;
         carregarDados();
     });
     if (filtroAno) filtroAno.addEventListener('change', () => {
         if (filtroPagAno) filtroPagAno.value = filtroAno.value;
+        const opPerfAno = document.getElementById('op-perf-ano');
+        if (opPerfAno) opPerfAno.value = filtroAno.value;
+        carregarDados();
+    });
+
+    const opPerfMes = document.getElementById('op-perf-mes');
+    if (opPerfMes) opPerfMes.addEventListener('change', () => {
+        if (filtroMes) filtroMes.value = opPerfMes.value;
+        if (filtroPagMes) filtroPagMes.value = opPerfMes.value;
+        carregarDados();
+    });
+
+    const opPerfAno = document.getElementById('op-perf-ano');
+    if (opPerfAno) opPerfAno.addEventListener('change', () => {
+        if (filtroAno) filtroAno.value = opPerfAno.value;
+        if (filtroPagAno) filtroPagAno.value = opPerfAno.value;
         carregarDados();
     });
     
@@ -383,13 +401,32 @@ async function carregarPerformanceOp() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) overlay.style.display = 'flex';
 
-        const response = await fetch(`${CONFIG.API_BASE}/performance/${login}?mes=${mes}&ano=${ano}`);
+        // Usa /api/resumo para ter indicadores_anterior, resultado_mes_a_mes e tma completos
+        const response = await fetch(`${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`);
         const data = await response.json();
 
         if (overlay) overlay.style.display = 'none';
 
         if (data.success) {
-            renderizarMinhaPerformanceOp(data.data);
+            // Monta estrutura compatível com renderizarMinhaPerformanceOp
+            // que espera { performance, performance_diaria, resultado_mes_a_mes, indicadores_anterior }
+            const dadosRenderizar = {
+                performance: data.data.performance || {},
+                performance_diaria: (data.data.faturamento_dia || []).map(d => ({
+                    dia: d.dia,
+                    realizado: formatarMoeda(d.faturamento || 0),
+                    meta_diaria: formatarMoeda(d.meta_diaria || 0),
+                    meta_batida: (d.faturamento || 0) >= (d.meta_diaria || 0) ? 'Sim ✓' : 'Não ✗',
+                })),
+                resultado_mes_a_mes: data.data.resultado_mes_a_mes || [],
+                indicadores_anterior: data.data.indicadores_anterior || {},
+                tma: data.data.tma || {},
+                ultimos_pagamentos: data.data.ultimos_pagamentos || [],
+            };
+            // Sincroniza pagamentos para a tabela semanal
+            pagamentosRecentesOpData = dadosRenderizar.ultimos_pagamentos;
+            pagamentosRecentesOpFiltrados = pagamentosRecentesOpData;
+            renderizarMinhaPerformanceOp(dadosRenderizar);
         } else {
             console.error('Erro ao carregar performance do operador:', data.message);
         }
@@ -399,6 +436,7 @@ async function carregarPerformanceOp() {
         console.error('Erro:', error);
     }
 }
+
 
 // Override navegar para carregar Performance quando ir para Operadores
 // e sincronizar filtros ao entrar em Pagamentos
