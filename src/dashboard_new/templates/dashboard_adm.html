@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ADM - GestãoPag</title>
+    
+    <!-- CSS Externo -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    
+    <!-- Favicon do site -->
+    <link rel="icon" type="image/png" href="https://i.ibb.co/zW8ksRBh/goldensim.png">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- ApexCharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- ======================================== -->
+        <!-- OVERLAY DE LOADING                       -->
+        <!-- ======================================== -->
+        <div id="loading-overlay" style="display:none;">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Carregando dados...</span>
+            </div>
+        </div>
+
+        <!-- ======================================== -->
+        <!-- SIDEBAR                                  -->
+        <!-- ======================================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <!-- LOGO BRANCA -->
+                <img src="https://i.ibb.co/mrXRt0XY/LOGO-BRANCA-SEM-FUNDO.png" alt="SiM" style="width:80%;">
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active" data-page="dashboard">
+                        <a href="#" onclick="navegar('dashboard')">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li data-page="pagamentos">
+                        <a href="#" onclick="navegar('pagamentos')">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Pagamentos</span>
+                        </a>
+                    </li>
+                    <li data-page="operadores">
+                        <a href="#" onclick="navegar('operadores')">
+                            <i class="fas fa-users"></i>
+                            <span>Operadores</span>
+                        </a>
+                    </li>
+                    <li data-page="campanhas">
+                        <a href="#" onclick="navegar('campanhas')">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Campanhas</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="avatar" id="userAvatar">
+                        <img id="userAvatarImg" src="" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:none;">
+                        <span id="userAvatarText">ADM</span>
+                    </div>
+                    <div>
+                        <div class="user-name" id="userName">Carregando...</div>
+                        <div class="user-role" id="userRole">Administrador</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <!-- ======================================== -->
+        <!-- MAIN CONTENT                            -->
+        <!-- ======================================== -->
+        <main class="main-content">
+            <!-- Header com saudação -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-greeting">
+                        <h1 id="pageTitle">Dashboard ADM</h1>
+                        <p class="header-subtitle">Painel ADM — Visão Geral do Grupo</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span class="date-display" id="currentDate"></span>
+                    <div class="header-avatar" id="headerAvatar">
+                        <div class="avatar-circle" id="headerAvatarCircle">
+                            <img id="headerAvatarImg" src="" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:none;">
+                            <span id="headerAvatarText">ADM</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="avatar-name" id="headerAvatarName">Administrador</span>
+                            <span style="display:block;font-size:11px;color:var(--text-muted);" id="headerAvatarRole">Administrador</span>
+                            <span style="display:block;font-size:10px;color:var(--text-muted);" id="headerAvatarTempo"></span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ==================================== -->
+            <!-- DASHBOARD ADM                       -->
+            <!-- ==================================== -->
+            <section id="page-dashboard" class="page active">
+                <!-- Filtros principais -->
+                <div class="filters-bar filters-adm">
+                    <div class="filter-group">
+                        <i class="fas fa-calendar"></i>
+                        <select id="filtro-mes-adm" onchange="carregarDadosAdm()">
+                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
+                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
+                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
+                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
+                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
+                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
+                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-year"></i>
+                        <select id="filtro-ano-adm" onchange="carregarDadosAdm()">
+                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-range"></i>
+                        <input type="date" id="filtro-data-inicio-adm" onchange="carregarDadosAdm()" placeholder="Início">
+                        <span style="color:var(--text-muted);font-size:12px;">→</span>
+                        <input type="date" id="filtro-data-fim-adm" onchange="carregarDadosAdm()" placeholder="Fim">
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user-check"></i>
+                        <select id="filtro-atividade-adm" onchange="carregarDadosAdm()">
+                            <option value="ATIVO">Somente Ativos</option>
+                            <option value="TODOS">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user"></i>
+                        <select id="filtro-operador-adm" onchange="carregarDadosAdm()">
+                            <option value="TODOS">Todos os Operadores</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filtro Contrato/Cliente + Faixa -->
+                <div class="filters-bar filters-adm-second">
+                    <div class="filter-group" style="flex:1;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="filtro-contrato-adm" placeholder="Buscar por contrato ou cliente..." oninput="filtrarAdm()">
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-tag"></i>
+                        <select id="filtro-faixa-adm" onchange="filtrarAdm()">
+                            <option value="todas">Todas as faixas</option>
+                            <option value="Fase 10 a 30">Fase 10 a 30</option>
+                            <option value="Fase 31 a 60">Fase 31 a 60</option>
+                            <option value="Fase 61 a 90">Fase 61 a 90</option>
+                            <option value="Fase 91 a 120">Fase 91 a 120</option>
+                            <option value="Fase 121 a 180">Fase 121 a 180</option>
+                            <option value="Fase 181 a 240">Fase 181 a 240</option>
+                            <option value="Fase 241 a 360">Fase 241 a 360</option>
+                            <option value="Fase 361 a 720">Fase 361 a 720</option>
+                            <option value="Fase 721 a 1080">Fase 721 a 1080</option>
+                            <option value="Fase 1081 a 1440">Fase 1081 a 1440</option>
+                            <option value="Fase 1441 a 1800">Fase 1441 a 1800</option>
+                            <option value="> 1800">&gt; 1800</option>
+                        </select>
+                    </div>
+                    <div id="badge-filtros-ativos-adm" style="display:none;">
+                        <span class="badge-warning">Filtros ativos</span>
+                    </div>
+                </div>
+
+                <!-- CARDS - LINHA 1: SEMEAR e AGORACRED -->
+                <div class="row cards-adm-row">
+                    <div class="col-6">
+                        <div class="card-meta card-semear">
+                            <div class="meta-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <span class="meta-title">FATURAMENTO SEMEAR</span>
+                                <i class="fas fa-chart-line" style="color:var(--purple-main);font-size:20px;"></i>
+                            </div>
+                            <div class="meta-value" id="kpi-fat-semear" style="font-size:32px;">R$ 0,00</div>
+                            <div class="meta-bar-wrapper">
+                                <div class="meta-bar" id="barra-progresso-semear" style="width:0%;background:var(--purple-main);"></div>
+                            </div>
+                            <div class="meta-info">
+                                <span class="meta-label">Meta: <span id="kpi-meta-semear">R$ 0,00</span></span>
+                                <span class="meta-percent" id="kpi-percentual-semear" style="color:var(--purple-main);font-size:18px;padding:4px 14px;">0%</span>
+                            </div>
+                            <div style="display:flex;gap:16px;margin:8px 0;padding:8px 0;border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;">
+                                <div style="flex:1;text-align:center;">
+                                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Qtd. Pagamentos</div>
+                                    <div style="font-size:18px;font-weight:700;color:var(--purple-main);" id="kpi-ops-semear">0</div>
+                                </div>
+                                <div style="flex:1;text-align:center;border-left:1px solid #f0f0f0;">
+                                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Ticket Médio</div>
+                                    <div style="font-size:18px;font-weight:700;color:var(--purple-main);" id="kpi-ticket-semear">R$ 0,00</div>
+                                </div>
+                            </div>
+                            <div class="meta-footer" id="kpi-fat-semear-anterior" style="font-size:13px;color:var(--text-muted);padding-top:8px;"></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card-meta card-agoracred">
+                            <div class="meta-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <span class="meta-title">FATURAMENTO AGORACRED</span>
+                                <i class="fas fa-chart-line" style="color:var(--emerald);font-size:20px;"></i>
+                            </div>
+                            <div class="meta-value" id="kpi-fat-agoracred" style="font-size:32px;">R$ 0,00</div>
+                            <div class="meta-bar-wrapper">
+                                <div class="meta-bar" id="barra-progresso-agoracred" style="width:0%;background:var(--emerald);"></div>
+                            </div>
+                            <div class="meta-info">
+                                <span class="meta-label">Meta: <span id="kpi-meta-agoracred">R$ 0,00</span></span>
+                                <span class="meta-percent" id="kpi-percentual-agoracred" style="color:var(--emerald);font-size:18px;padding:4px 14px;">0%</span>
+                            </div>
+                            <div style="display:flex;gap:16px;margin:8px 0;padding:8px 0;border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;">
+                                <div style="flex:1;text-align:center;">
+                                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Qtd. Pagamentos</div>
+                                    <div style="font-size:18px;font-weight:700;color:var(--emerald);" id="kpi-ops-agoracred">0</div>
+                                </div>
+                                <div style="flex:1;text-align:center;border-left:1px solid #f0f0f0;">
+                                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Ticket Médio</div>
+                                    <div style="font-size:18px;font-weight:700;color:var(--emerald);" id="kpi-ticket-agoracred">R$ 0,00</div>
+                                </div>
+                            </div>
+                            <div class="meta-footer" id="kpi-fat-agoracred-anterior" style="font-size:13px;color:var(--text-muted);padding-top:8px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARDS - LINHA 2: OPERAÇÕES PAGAS e TICKET MÉDIO (GRUPO) -->
+                <div class="row cards-adm-row" style="margin-top: 16px;">
+                    <!-- OPERAÇÕES PAGAS -->
+                    <div class="col-6">
+                        <div class="card-meta card-operacoes">
+                            <div class="meta-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <span class="meta-title">QUANTIDADE DE PAGAMENTOS (GRUPO)</span>
+                                <i class="fas fa-credit-card" style="color:var(--purple-main);font-size:20px;"></i>
+                            </div>
+                            <div class="meta-value" id="kpi-total-ops-adm" style="font-size:32px;">0</div>
+                            <div style="height: 10px; margin-bottom: 10px;"></div>
+                            <div class="meta-info" style="margin-bottom:12px; height: 26px;"></div>
+                            <div class="meta-footer" id="kpi-ops-adm-anterior-detalhe" style="font-size:13px;color:var(--text-muted);border-top:1px solid #f0f0f0;padding-top:10px;"></div>
+                        </div>
+                    </div>
+                    <!-- TICKET MÉDIO -->
+                    <div class="col-6">
+                        <div class="card-meta card-ticket">
+                            <div class="meta-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <span class="meta-title">TICKET MÉDIO (GRUPO)</span>
+                                <i class="fas fa-receipt" style="color:var(--emerald);font-size:20px;"></i>
+                            </div>
+                            <div class="meta-value" id="kpi-ticket-adm" style="font-size:32px;">R$ 0,00</div>
+                            <div style="height: 10px; margin-bottom: 10px;"></div>
+                            <div class="meta-info" style="margin-bottom:12px; height: 26px;"></div>
+                            <div class="meta-footer" id="kpi-ticket-adm-anterior-detalhe" style="font-size:13px;color:var(--text-muted);border-top:1px solid #f0f0f0;padding-top:10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIVISOR - Gráficos -->
+                <div class="section-divider" style="border-color:var(--purple-main);margin-top:8px;">
+                    <span style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> EVOLUÇÃO DIÁRIA POR BANCO</span>
+                </div>
+
+                <!-- Gráficos de Evolução Diária -->
+                <div class="card-full">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="chart-container">
+                                <h4 style="color:var(--purple-main);font-size:14px;font-weight:600;margin-bottom:10px;">SEMEAR</h4>
+                                <div id="grafico-evolucao-semear-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Carregando...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="chart-container">
+                                <h4 style="color:var(--emerald);font-size:14px;font-weight:600;margin-bottom:10px;">AGORACRED</h4>
+                                <div id="grafico-evolucao-agoracred-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Carregando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Valores Diários -->
+                <div class="card-full">
+                    <h3 class="panel-title">
+                        <i class="fas fa-table"></i> Valores Diários por Banco
+                    </h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">Dia</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">SEMEAR (R$)</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">AGORACRED (R$)</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">TOTAL (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-evolucao-diaria-adm">
+                                <tr><td colspan="4" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DIVISOR - SEMEAR -->
+                <div class="section-divider" style="border-color:var(--purple-main);">
+                    <span style="color:var(--purple-main);">SEMEAR</span>
+                </div>
+
+                <!-- Ranking SEMEAR -->
+                <div class="card-full">
+                    <h3 class="panel-title">
+                        <i class="fas fa-ranking-star"></i> Ranking de Operadores — SEMEAR
+                    </h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:10px 14px;text-align:center;width:40px;background:var(--purple-main);">#</th>
+                                    <th class="sticky-col-2" style="color:white;padding:10px 14px;text-align:center;width:50px;background:var(--purple-main);">Foto</th>
+                                    <th class="sticky-col-3 sticky-col-name" style="color:white;padding:10px 14px;text-align:center;background:var(--purple-main);">Login</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Turno</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Tempo de Casa</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Faturamento</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Feito/Dia</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Meta</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">% Meta</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 70%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 80%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 90%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 100%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta Meta Ranking</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Projeção R$</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Projeção %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-adm-semear">
+                                <tr><td colspan="16" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DIVISOR - Recebimento por Faixa -->
+                <div class="section-divider" style="border-color:var(--purple-light);border-width:1px;opacity:0.5;">
+                    <span style="color:var(--purple-light);font-size:14px;"><i class="fas fa-list"></i> Recebimento por Operador × Faixa de Atraso — SEMEAR</span>
+                </div>
+
+                <!-- Recebimento por Faixa SEMEAR -->
+                <div class="card-full">
+                    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+                        Faturamento de cada operador por faixa de atraso no período selecionado.
+                    </p>
+                    <div class="table-wrapper" style="max-height: 500px; overflow-y: auto;">
+                        <table>
+                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:10px 12px;text-align:center;width:50px;background:var(--purple-main);">Foto</th>
+                                    <th class="sticky-col-2 sticky-col-name" style="color:white;padding:10px 12px;text-align:center;background:var(--purple-main);">Operador</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 10 a 30</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 31 a 60</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 61 a 90</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 91 a 120</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 121 a 180</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 181 a 240</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 241 a 360</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 361 a 720</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 721 a 1080</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 1081 a 1440</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">Fase 1441 a 1800</th>
+                                    <th class="faixa-atraso-col" style="color:white;padding:10px 12px;text-align:center;">&gt; 1800</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-faixas-semear">
+                                <tr><td colspan="14" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DIVISOR - AGORACRED -->
+                <div class="section-divider" style="border-color:var(--emerald);">
+                    <span style="color:var(--emerald);">AGORACRED</span>
+                </div>
+
+                <!-- Ranking AGORACRED -->
+                <div class="card-full">
+                    <h3 class="panel-title">
+                        <i class="fas fa-ranking-star"></i> Ranking de Operadores — AGORACRED
+                    </h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:var(--emerald);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:10px 14px;text-align:center;width:40px;background:var(--emerald);">#</th>
+                                    <th class="sticky-col-2" style="color:white;padding:10px 14px;text-align:center;width:50px;background:var(--emerald);">Foto</th>
+                                    <th class="sticky-col-3 sticky-col-name" style="color:white;padding:10px 14px;text-align:center;background:var(--emerald);">Login</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Turno</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Tempo de Casa</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Faturamento</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Feito/Dia</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Meta</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">% Meta</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 70%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 80%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 90%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta 100%</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Falta Meta Ranking</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Projeção R$</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Projeção %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-adm-agoracred">
+                                <tr><td colspan="16" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DIVISOR - Evolução dos Operadores -->
+                <div class="section-divider" style="border-color:#d97706;">
+                    <span style="color:#d97706;"><i class="fas fa-chart-line"></i> EVOLUÇÃO DOS OPERADORES</span>
+                </div>
+
+                <!-- Evolução dos Operadores -->
+                <div class="card-full evolucao-card">
+                    <h3 class="panel-title" style="color:#d97706;">
+                        <i class="fas fa-arrow-trend-up"></i> Evolução dos Operadores — Variação vs Mês Anterior
+                    </h3>
+                    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+                        Comparação de faturamento e % da meta entre o período selecionado e o mesmo período do mês anterior.
+                    </p>
+                    <div id="resumo-evolucao-adm" style="margin-bottom:16px;"></div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:#d97706;position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:10px 14px;text-align:center;width:50px;background:#d97706;white-space:nowrap;">Foto</th>
+                                    <th class="sticky-col-2" style="color:white;padding:10px 14px;text-align:center;background:#d97706;white-space:nowrap;min-width:100px;">Banco</th>
+                                    <th class="sticky-col-3 sticky-col-name" style="color:white;padding:10px 14px;text-align:center;background:#d97706;white-space:nowrap;">Operador</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">Fat. Atual</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">Fat. Anterior</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">Dif. (R$)</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">VAR. (%)</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">% Meta Atual</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">% Meta Ant.</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">Dif. Meta (pp)</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;white-space:nowrap;">VAR. Ating. (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-evolucao-operadores-adm">
+                                <tr><td colspan="11" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- TMA - Ranking de Acionamentos -->
+                <div class="section-divider" style="border-color:#0891b2;margin-top:24px;">
+                    <span style="color:#0891b2;"><i class="fas fa-headset"></i> Ranking de Acionamentos (TMA) — Mês Selecionado</span>
+                </div>
+                <div class="card-full">
+                    <h3 class="panel-title" style="color:#0891b2;">
+                        <i class="fas fa-headset"></i> Ranking de Acionamentos (TMA) — Mês Selecionado
+                    </h3>
+                    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+                        Dados gerados automaticamente pelo relatório de Acionamento por Operadores.
+                    </p>
+                    <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                        <table>
+                            <thead style="background:#0891b2;position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:10px 14px;text-align:center;width:50px;background:#0891b2;">Foto</th>
+                                    <th class="sticky-col-2 sticky-col-name" style="color:white;padding:10px 14px;text-align:center;background:#0891b2;">Operador</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">TMA</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Acionamentos</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Clientes</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Reacionamento</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Tempo Falado</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">1º Acion.</th>
+                                    <th style="color:white;padding:10px 14px;text-align:center;">Últ. Acion.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-tma-adm">
+                                <tr><td colspan="9" style="text-align:center;color:#6B7280;padding:30px;">Carregando dados de TMA...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================== -->
+            <!-- PAGAMENTOS (ADM)                    -->
+            <!-- ==================================== -->
+            <section id="page-pagamentos" class="page">
+                <!-- Filtros da página de Pagamentos -->
+                <div class="filters-bar filters-adm" style="margin-bottom:12px;">
+                    <div class="filter-group">
+                        <i class="fas fa-calendar"></i>
+                        <select id="filtro-pag-mes-adm" onchange="carregarPagamentosAdm()">
+                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option><option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option><option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option><option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option><option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option><option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option><option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="filtro-pag-ano-adm" onchange="carregarPagamentosAdm()">
+                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user-check"></i>
+                        <select id="filtro-pag-atividade-adm" onchange="carregarPagamentosAdm()">
+                            <option value="ATIVO">Somente Ativos</option>
+                            <option value="TODOS">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-university"></i>
+                        <select id="filtro-pag-banco-adm" onchange="carregarPagamentosAdm()">
+                            <option value="TODOS">Todos os Bancos</option>
+                            <option value="SEMEAR">SEMEAR</option>
+                            <option value="AGORACRED">AGORACRED</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user"></i>
+                        <select id="filtro-pag-operador-adm" onchange="carregarPagamentosAdm()">
+                            <option value="TODOS">Todos os Operadores</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filters-bar filters-adm-second" style="margin-bottom:16px;">
+                    <div class="filter-group" style="flex:1;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="filtro-pag-busca-adm" placeholder="Buscar por cliente ou contrato..." oninput="filtrarTabelaPagamentosAdm()">
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-tag"></i>
+                        <select id="filtro-pag-fase-adm" onchange="filtrarTabelaPagamentosAdm()">
+                            <option value="">Todas as faixas de atraso</option>
+                            <option value="Fase 10 a 30">Fase 10 a 30</option>
+                            <option value="Fase 31 a 60">Fase 31 a 60</option>
+                            <option value="Fase 61 a 90">Fase 61 a 90</option>
+                            <option value="Fase 91 a 120">Fase 91 a 120</option>
+                            <option value="Fase 121 a 180">Fase 121 a 180</option>
+                            <option value="Fase 181 a 240">Fase 181 a 240</option>
+                            <option value="Fase 241 a 360">Fase 241 a 360</option>
+                            <option value="Fase 361 a 720">Fase 361 a 720</option>
+                            <option value="Fase 721 a 1080">Fase 721 a 1080</option>
+                            <option value="Fase 1081 a 1440">Fase 1081 a 1440</option>
+                            <option value="Fase 1441 a 1800">Fase 1441 a 1800</option>
+                            <option value="> 1800">&gt; 1800</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-range"></i>
+                        <input type="date" id="filtro-pag-inicio-adm" onchange="carregarPagamentosAdm()" placeholder="Início">
+                        <span style="color:var(--text-muted);font-size:12px;">→</span>
+                        <input type="date" id="filtro-pag-fim-adm" onchange="carregarPagamentosAdm()" placeholder="Fim">
+                    </div>
+                </div>
+
+                <!-- Resumo rápido -->
+                <div id="pag-adm-resumo" style="display:flex;gap:12px;margin-bottom:16px;"></div>
+
+                <div class="card-full">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h3 class="panel-title" style="margin:0;"><i class="fas fa-list"></i> Relação de Pagamentos</h3>
+                        <span id="pag-adm-total-registros" style="font-size:13px;color:var(--text-muted);">0 registros</span>
+                    </div>
+                    <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
+                        <table>
+                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th style="color:white;padding:10px 12px;text-align:center;white-space:nowrap;">Data</th>
+                                    <th style="color:white;padding:10px 12px;text-align:center;background:var(--purple-main);white-space:nowrap;">Contrato</th>
+                                    <th style="color:white;padding:10px 12px;text-align:left;white-space:nowrap;">Cliente</th>
+                                    <th style="color:white;padding:10px 12px;text-align:center;white-space:nowrap;">Banco</th>
+                                    <th style="color:white;padding:10px 12px;text-align:center;white-space:nowrap;">Operador</th>
+                                    <th style="color:white;padding:10px 12px;text-align:center;white-space:nowrap;">Faixa Atraso</th>
+                                    <th style="color:white;padding:10px 12px;text-align:center;white-space:nowrap;">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-pagamentos-adm-individual">
+                                <tr><td colspan="7" style="text-align:center;color:#6B7280;padding:30px;">Selecione os filtros e aguarde...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Paginação -->
+                    <div id="pag-adm-pagination" style="display:flex;justify-content:center;align-items:center;gap:8px;padding:12px 0;"></div>
+                </div>
+            </section>
+
+            <!-- ==================================== -->
+            <!-- OPERADORES (ADM)                    -->
+            <!-- ==================================== -->
+            <section id="page-operadores" class="page">
+                <!-- Filtros da página de Operadores -->
+                <div class="filters-bar" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                    <div class="filter-group">
+                        <i class="fas fa-calendar"></i>
+                        <select id="filtro-mes-adm-op" onchange="filtrarPeriodoOperadoresAdm()">
+                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
+                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
+                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
+                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
+                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
+                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
+                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-year"></i>
+                        <select id="filtro-ano-adm-op" onchange="filtrarPeriodoOperadoresAdm()">
+                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user-check"></i>
+                        <select id="filtro-atividade-op-adm" onchange="filtrarPeriodoOperadoresAdm()">
+                            <option value="ATIVO">Somente Ativos</option>
+                            <option value="TODOS">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-university"></i>
+                        <select id="filtro-banco-op-adm" onchange="filtrarBancoOperadoresAdm()">
+                            <option value="TODOS">Todos os Bancos</option>
+                            <option value="SEMEAR">SEMEAR</option>
+                            <option value="AGORACRED">AGORACRED</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="flex:1;min-width:220px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="busca-operador-perf-adm"
+                               list="datalist-operadores-perf"
+                               placeholder="Buscar ou selecionar operador..."
+                               oninput="onBuscaOperadorAdm(this.value)"
+                               autocomplete="off"
+                               style="width:100%;">
+                        <datalist id="datalist-operadores-perf"></datalist>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-user-gear"></i>
+                        <select id="filtro-operador-perf-adm" onchange="selecionarOperadorPerfAdm()">
+                            <option value="CONSOLIDADO_SEMEAR">Visão Geral — SEMEAR</option>
+                            <option value="CONSOLIDADO_AGORACRED">Visão Geral — AGORACRED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Banner: Visualizando Operador X -->
+                <div id="banner-operador-selecionado-adm" style="display:none;margin-bottom:12px;padding:10px 18px;background:linear-gradient(90deg,#f3e8ff,#ede9fe);border-left:4px solid var(--purple-main);border-radius:8px;display:none;align-items:center;gap:14px;">
+                    <div id="banner-op-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--purple-main);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;overflow:hidden;">
+                        <span id="banner-op-avatar-txt">?</span>
+                        <img id="banner-op-avatar-img" src="" alt="" style="display:none;width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:1px;">Você está visualizando</div>
+                        <div style="font-weight:700;color:var(--purple-main);font-size:14px;" id="banner-op-nome">—</div>
+                        <div style="font-size:11px;color:var(--text-muted);" id="banner-op-info">—</div>
+                    </div>
+                    <button onclick="voltarConsolidadoAdm()" style="margin-left:auto;padding:5px 14px;background:white;border:1px solid var(--purple-main);border-radius:6px;color:var(--purple-main);font-size:12px;font-weight:600;cursor:pointer;"><i class="fas fa-arrow-left"></i> Voltar</button>
+                </div>
+
+                <!-- Painel de Performance Individual (Inicialmente Oculto) -->
+                <div id="painel-perf-individual-adm" style="display:none; margin-bottom:24px;">
+                    <!-- Header do Operador Selecionado (Avatar + Nome + Banco) -->
+                    <div id="adm-op-header-card" class="card-full" style="display:flex;align-items:center;gap:20px;padding:20px;margin-bottom:16px;background:linear-gradient(135deg,#7e3d97,#a855f7);border-radius:12px;color:white;">
+                        <div id="adm-op-avatar-circle" style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white;overflow:hidden;flex-shrink:0;">
+                            <img id="adm-op-avatar-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;">
+                            <span id="adm-op-avatar-iniciais">?</span>
+                        </div>
+                        <div>
+                            <div id="adm-op-nome" style="font-size:20px;font-weight:800;letter-spacing:0.5px;">—</div>
+                            <div id="adm-op-banco" style="font-size:13px;opacity:0.85;margin-top:2px;">—</div>
+                            <div id="adm-op-tempo-casa" style="font-size:12px;opacity:0.7;margin-top:2px;">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo dos Dias -->
+                    <div class="card-full" style="background:#f3e8ff;border-left:4px solid var(--purple-main);padding:16px;margin-bottom:16px;border-radius:8px;">
+                        <div style="display:flex;flex-wrap:wrap;gap:16px;font-weight:600;font-size:13px;color:#4a1d8c;" id="adm-op-dias-resumo">
+                            <span><i class="fas fa-calendar-check"></i> Dias trabalhados: <span id="adm-op-dias-trab">0</span></span>
+                            <span><i class="fas fa-circle-check"></i> Dias com meta: <span id="adm-op-dias-com-meta">0</span></span>
+                            <span><i class="fas fa-circle-xmark"></i> Dias sem meta: <span id="adm-op-dias-sem-meta">0</span></span>
+                            <span><i class="fas fa-hourglass-half"></i> Dias úteis restantes: <span id="adm-op-dias-rest">0</span></span>
+                            <span><i class="fas fa-calendar"></i> Total dias úteis: <span id="adm-op-total-dias">0</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Recebimento Diário (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária</h3>
+                        <div class="table-wrapper" style="max-height:500px;overflow-y:auto;">
+                            <table>
+                                <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
+                                    <tr>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Dia</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Dia Útil</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Data</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Quantidade</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta Diária</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Bateu Meta?</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-recebimento-diario-adm-op">
+                                    <tr><td colspan="7" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados diários...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Faturamento por Semana (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-week"></i> Faturamento por Semana</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead style="background:var(--purple-main);color:white;">
+                                    <tr>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Semana</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Período</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-faturamento-semanal-adm-op">
+                                    <tr><td colspan="3" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados semanais...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Resultado Mês a Mês (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> Resultado Mês a Mês</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead style="background:var(--purple-main);color:white;">
+                                    <tr>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Mês</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Quantidade</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">% Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Bateu?</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-resultado-mes-a-mes-adm-op">
+                                    <tr><td colspan="6" style="text-align:center;color:#95a5a6;padding:20px;">Carregando histórico...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Faturamento por Mês — Gráfico de Barras (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-column"></i> Faturamento por Mês</h3>
+                        <div id="grafico-barras-faturamento-mensal-adm-op" style="min-height:220px;"></div>
+                    </div>
+
+                    <!-- Variação vs Mês Anterior (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:#d97706;"><i class="fas fa-arrows-left-right"></i> Variação vs Mês Anterior</h3>
+                        <div id="adm-op-variacao-periodo-detalhe" style="padding:18px;border-radius:8px;font-weight:700;font-size:15px;text-align:center;background:#f3f4f6;color:#374151;">
+                            Carregando variação...
+                        </div>
+                        <!-- Tabela de variação detalhada -->
+                        <div class="table-wrapper" style="margin-top:16px;">
+                            <table>
+                                <thead style="background:var(--purple-main);color:white;">
+                                    <tr>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Período</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Contratos</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">% Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Var. R$</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Var. %</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Var. % Meta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-variacao-detalhada-adm-op">
+                                    <tr><td colspan="8" style="text-align:center;color:#95a5a6;padding:20px;">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Performance do Operador (largura total) -->
+                    <div class="card-full" style="margin-bottom:16px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-trophy"></i> Performance do Operador</h3>
+                        <div class="table-wrapper" style="overflow-x:auto;">
+                            <table>
+                                <thead style="background:#d97706;color:white;">
+                                    <tr>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;width:56px;">Foto</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Login</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Turno</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Feito/Dia</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta/Dia</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">% Meta</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;color:#fee2e2;">Falta 70%</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;color:#fee2e2;">Falta 80%</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;color:#fee2e2;">Falta 90%</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;color:#fef3c7;">Falta 100%</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Ranking</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Projeção</th>
+                                        <th style="padding:10px 14px;text-align:center;white-space:nowrap;">% Projeção</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-performance-operador-adm-aba">
+                                    <tr><td colspan="15" style="text-align:center;color:#95a5a6;padding:20px;">Carregando performance...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel Geral (Lista de Operadores) -->
+                <div id="painel-geral-operadores-adm">
+                    <!-- Card info da lista de operadores -->
+                    <div class="card-full">
+                        <h3 class="panel-title">
+                            <i class="fas fa-users"></i> Lista de Operadores
+                        </h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                <tr>
+                                    <th class="sticky-col-1" style="color:white;padding:12px 16px;text-align:center;width:50px;background:var(--purple-main);">Foto</th>
+                                    <th class="sticky-col-2 sticky-col-name" style="color:white;padding:12px 16px;text-align:center;background:var(--purple-main);">Login</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">Banco</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">Turno</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">Tempo de Casa</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">Faturamento</th>
+                                    <th style="color:white;padding:12px 16px;text-align:center;">% Meta</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-operadores-adm">
+                                <tr><td colspan="7" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                </div> <!-- painel-geral-operadores-adm -->
+            </section>
+
+            <!-- ==================================== -->
+            <!-- CAMPANHAS (ADM)                     -->
+            <!-- ==================================== -->
+            <section id="page-campanhas" class="page">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px;">
+                    <div style="background:linear-gradient(135deg,#f3e8ff,#ede9fe);border-radius:20px;padding:60px 80px;border:1px solid #d8b4fe;max-width:600px;">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--purple-main),#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+                            <i class="fas fa-bullhorn" style="font-size:36px;color:white;"></i>
+                        </div>
+                        <h2 style="color:var(--purple-main);font-size:24px;font-weight:700;margin-bottom:12px;">Campanhas</h2>
+                        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin-bottom:0;">
+                            Nenhuma campanha ativa no momento.<br>
+                            <span style="font-size:13px;opacity:0.7;">As campanhas serão exibidas aqui quando estiverem disponíveis.</span>
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ======================================== -->
+    <!-- JAVASCRIPT EXTERNO                      -->
+    <!-- ======================================== -->
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/components.js"></script>
+    <script src="/static/js/dashboard_adm.js"></script>
+    <script src="/static/js/app_adm.js"></script>
+</body>
+</html>

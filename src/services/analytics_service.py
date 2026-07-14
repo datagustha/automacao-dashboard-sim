@@ -173,8 +173,16 @@ def calcular_faturamento_por_dia(pagamentos: List[Any], banco: str = "SEMEAR") -
     df['data'] = pd.to_datetime(df['data']).dt.date
     resultado = df.groupby('data')['valor'].sum().reset_index()
     resultado.columns = ['data', 'total']
-    
-    return resultado.sort_values('data')
+    resultado = resultado.sort_values('data')
+
+    # IMPORTANTE: converte a coluna 'data' para string ISO (YYYY-MM-DD) ANTES de
+    # retornar. Se deixarmos como objeto `date` do Python, o jsonify do Flask
+    # pode serializar em formato RFC (ex: "Wed, 01 Jun 2026 00:00:00 GMT")
+    # dependendo da versão/configuração — e o front-end (que espera "YYYY-MM-DD"
+    # para fatiar em DD/MM) quebra e mostra a string inteira no gráfico.
+    resultado['data'] = resultado['data'].apply(lambda d: d.strftime('%Y-%m-%d'))
+
+    return resultado
 
 
 def calcular_pagamentos_por_fase(pagamentos: List[Any], banco: str = "SEMEAR") -> pd.DataFrame:
