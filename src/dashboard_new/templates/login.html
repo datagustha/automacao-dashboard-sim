@@ -119,20 +119,122 @@
         </div>
     </div>
 
-    <!-- Modal Esqueci Minha Senha -->
-    <div id="modalEsqueciSenha" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:fadeInUp 0.3s ease;">
+    <!-- Modal Esqueci Minha Senha / Primeiro Acesso -->
+    <div id="modalEsqueciSenha" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:fadeInUp 0.3s ease;color:#1e0a3c;">
+            <!-- Cabeçalho do Modal -->
             <div style="text-align:center;margin-bottom:20px;">
                 <div style="width:60px;height:60px;background:linear-gradient(135deg,#7e3d97,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                     <i class="fas fa-key" style="color:#fff;font-size:24px;"></i>
                 </div>
-                <h2 style="color:#1e0a3c;font-size:18px;margin:0 0 8px;">Recuperar Senha</h2>
-                <p style="color:#6b7280;font-size:14px;margin:0;">Para redefinir sua senha, entre em contato com o <strong>administrador do sistema</strong>.</p>
+                <h2 id="modalRecuperarTitulo" style="color:#1e0a3c;font-size:20px;margin:0 0 8px;font-weight:700;">Criar / Recuperar Senha</h2>
+                <p id="modalRecuperarSubtitulo" style="color:#6b7280;font-size:14px;margin:0;">Cadastre ou recupere seu acesso ao sistema de forma rápida.</p>
             </div>
-            <div style="background:#f3e8ff;border-radius:10px;padding:14px;margin-bottom:20px;border-left:4px solid #7e3d97;">
-                <p style="color:#4a1d8c;font-size:13px;margin:0;"><i class="fas fa-info-circle"></i> O administrador irá redefinir seu acesso e enviará a nova senha por e-mail ou WhatsApp.</p>
+
+            <!-- Etapa 1: Solicitar Código de Verificação -->
+            <div id="recuperarEtapa1">
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="recuperarLoginInput" style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#4b5563;">
+                        <i class="fas fa-user" style="color:#7e3d97;"></i> Digite seu Login
+                    </label>
+                    <input
+                        type="text"
+                        id="recuperarLoginInput"
+                        placeholder="Ex: 2552ROSELI"
+                        style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;box-sizing:border-box;outline:none;transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='#7e3d97'"
+                        onblur="this.style.borderColor='#d1d5db'"
+                    >
+                </div>
+
+                <div id="recuperarErro1" style="display:none;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:18px;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="recuperarMensagemErro1">Erro</span>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                    <button type="button" onclick="fecharEsqueciSenha()" style="flex:1;padding:12px;background:#f3f4f6;color:#4b5563;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnEnviarCodigoRecuperacao" onclick="solicitarCodigoRecuperacao()" style="flex:1.5;padding:12px;background:linear-gradient(135deg,#7e3d97,#a855f7);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(126,61,151,0.2);">
+                        Enviar Código
+                    </button>
+                </div>
             </div>
-            <button onclick="fecharEsqueciSenha()" style="width:100%;padding:12px;background:linear-gradient(135deg,#7e3d97,#a855f7);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fas fa-check"></i> Entendi</button>
+
+            <!-- Etapa 2: Validar Código e Cadastrar Nova Senha -->
+            <div id="recuperarEtapa2" style="display:none;">
+                <div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:8px;padding:10px 12px;margin-bottom:20px;">
+                    <p style="color:#2e7d32;font-size:12px;margin:0;" id="textoSucessoEnvio">
+                        <i class="fas fa-check-circle"></i> Código de 6 dígitos enviado para seu e-mail cadastrado.
+                    </p>
+                </div>
+
+                <!-- Campo Código de Verificação -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="recuperarCodigoInput" style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#4b5563;">
+                        <i class="fas fa-key" style="color:#7e3d97;"></i> Código de Verificação
+                    </label>
+                    <input
+                        type="text"
+                        id="recuperarCodigoInput"
+                        placeholder="Digite o código recebido"
+                        maxlength="6"
+                        inputmode="numeric"
+                        style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;box-sizing:border-box;outline:none;"
+                    >
+                </div>
+
+                <!-- Campo Nova Senha -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="recuperarSenhaInput" style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#4b5563;">
+                        <i class="fas fa-lock" style="color:#7e3d97;"></i> Nova Senha
+                    </label>
+                    <div style="position:relative;display:flex;align-items:center;">
+                        <input
+                            type="password"
+                            id="recuperarSenhaInput"
+                            placeholder="Mínimo 6 caracteres"
+                            style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;box-sizing:border-box;outline:none;"
+                        >
+                        <button type="button" onclick="toggleSenhaRecuperar('recuperarSenhaInput', 'iconToggleRecuperarSenha')" style="position:absolute;right:12px;background:none;border:none;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;" tabindex="-1">
+                            <i class="fas fa-eye" id="iconToggleRecuperarSenha"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Campo Confirmar Nova Senha -->
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label for="recuperarConfirmarSenhaInput" style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#4b5563;">
+                        <i class="fas fa-lock" style="color:#7e3d97;"></i> Confirmar Nova Senha
+                    </label>
+                    <div style="position:relative;display:flex;align-items:center;">
+                        <input
+                            type="password"
+                            id="recuperarConfirmarSenhaInput"
+                            placeholder="Repita a nova senha"
+                            style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;box-sizing:border-box;outline:none;"
+                        >
+                        <button type="button" onclick="toggleSenhaRecuperar('recuperarConfirmarSenhaInput', 'iconToggleRecuperarConfirmar')" style="position:absolute;right:12px;background:none;border:none;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;" tabindex="-1">
+                            <i class="fas fa-eye" id="iconToggleRecuperarConfirmar"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="recuperarErro2" style="display:none;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:18px;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="recuperarMensagemErro2">Erro</span>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                    <button type="button" onclick="voltarRecuperarEtapa1()" style="flex:1;padding:12px;background:#f3f4f6;color:#4b5563;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+                        Voltar
+                    </button>
+                    <button type="button" id="btnSalvarNovaSenha" onclick="salvarNovaSenha()" style="flex:1.5;padding:12px;background:linear-gradient(135deg,#7e3d97,#a855f7);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(126,61,151,0.2);">
+                        Salvar Senha
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -315,13 +417,241 @@
         }
 
         function mostrarEsqueciSenha() {
+            // Limpa as mensagens de erro e limpa os campos para segurança sempre que abrir
+            document.getElementById('recuperarLoginInput').value = '';
+            document.getElementById('recuperarCodigoInput').value = '';
+            document.getElementById('recuperarSenhaInput').value = '';
+            document.getElementById('recuperarConfirmarSenhaInput').value = '';
+            document.getElementById('recuperarErro1').style.display = 'none';
+            document.getElementById('recuperarErro2').style.display = 'none';
+            // Garante que inicia na Etapa 1
+            document.getElementById('recuperarEtapa1').style.display = 'block';
+            document.getElementById('recuperarEtapa2').style.display = 'none';
+            
+            // Exibe o modal na tela
             const m = document.getElementById('modalEsqueciSenha');
             m.style.display = 'flex';
+            
+            // Foca no input de login
+            document.getElementById('recuperarLoginInput').focus();
         }
 
         function fecharEsqueciSenha() {
+            // Oculta o modal da tela
             const m = document.getElementById('modalEsqueciSenha');
             m.style.display = 'none';
+        }
+
+        // ============================================================
+        // FLUXO DE CRIAÇÃO / RECUPERAÇÃO DE SENHA (MODAL)
+        // ============================================================
+
+        // Mostra ou esconde a senha nos inputs do modal de redefinição
+        function toggleSenhaRecuperar(inputId, iconId) {
+            // Obtém o elemento de input pelo id correspondente
+            const input = document.getElementById(inputId);
+            // Obtém o elemento do ícone de olho correspondente
+            const icon = document.getElementById(iconId);
+            // Se o tipo atual do input for senha
+            if (input.type === 'password') {
+                // Altera o tipo para texto, tornando visível
+                input.type = 'text';
+                // Remove a classe de olho aberto
+                icon.classList.remove('fa-eye');
+                // Adiciona a classe de olho cortado/fechado
+                icon.classList.add('fa-eye-slash');
+            } else {
+                // Caso contrário (está como texto), muda de volta para senha
+                input.type = 'password';
+                // Remove a classe de olho fechado
+                icon.classList.remove('fa-eye-slash');
+                // Adiciona a classe de olho aberto
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Volta da etapa 2 de cadastro de senha para a etapa 1 de solicitação
+        function voltarRecuperarEtapa1() {
+            // Esconde a etapa 2 de validação e cadastro
+            document.getElementById('recuperarEtapa2').style.display = 'none';
+            // Exibe a etapa 1 de solicitação do login
+            document.getElementById('recuperarEtapa1').style.display = 'block';
+            // Limpa as mensagens de erro da etapa 1
+            document.getElementById('recuperarErro1').style.display = 'none';
+            // Foca novamente no campo de entrada de login do modal
+            document.getElementById('recuperarLoginInput').focus();
+        }
+
+        // Faz o POST para o backend solicitando o código por e-mail
+        async function solicitarCodigoRecuperacao() {
+            // Obtém o login digitado e remove espaços em branco extras
+            const login = document.getElementById('recuperarLoginInput').value.trim();
+            // Obtém o botão de envio para podermos desabilitá-lo/mudar texto
+            const btn = document.getElementById('btnEnviarCodigoRecuperacao');
+            // Obtém a div de erro da etapa 1
+            const erroDiv = document.getElementById('recuperarErro1');
+            // Obtém o span onde escreveremos a mensagem de erro
+            const erroMsg = document.getElementById('recuperarMensagemErro1');
+
+            // Valida se o login foi preenchido
+            if (!login) {
+                // Escreve a mensagem de erro no span
+                erroMsg.textContent = 'Por favor, digite seu login.';
+                // Exibe a div de erro
+                erroDiv.style.display = 'flex';
+                // Para a execução da função
+                return;
+            }
+
+            // Desabilita o botão para evitar múltiplos cliques
+            btn.disabled = true;
+            // Altera o conteúdo do botão para indicar carregamento com spinner
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            // Oculta a div de erro
+            erroDiv.style.display = 'none';
+
+            try {
+                // Envia a requisição POST para a API do backend
+                const response = await fetch('/api/solicitar-recuperacao', {
+                    method: 'POST', // Método de envio
+                    headers: { 'Content-Type': 'application/json' }, // Cabeçalho indicando JSON
+                    body: JSON.stringify({ login: login }) // Transforma o objeto em string JSON
+                });
+
+                // Converte a resposta recebida do servidor em objeto JSON
+                const data = await response.json();
+
+                // Se a resposta retornar sucesso
+                if (data.success) {
+                    // Oculta a tela da etapa 1 no modal
+                    document.getElementById('recuperarEtapa1').style.display = 'none';
+                    // Exibe a tela da etapa 2 no modal
+                    document.getElementById('recuperarEtapa2').style.display = 'block';
+                    // Atualiza o texto de sucesso com o e-mail mascarado retornado
+                    document.getElementById('textoSucessoEnvio').innerHTML = `<i class="fas fa-check-circle"></i> Código de 6 dígitos enviado para seu e-mail: <strong>${data.email}</strong>`;
+                    // Foca no primeiro campo da etapa 2 (campo de código)
+                    document.getElementById('recuperarCodigoInput').focus();
+                } else {
+                    // Se o servidor retornou erro, exibe a mensagem retornada pelo backend
+                    erroMsg.textContent = data.message || 'Erro ao enviar o código.';
+                    // Exibe a div de erro da etapa 1
+                    erroDiv.style.display = 'flex';
+                }
+            } catch (error) {
+                // Se houve falha na conexão/rede
+                erroMsg.textContent = 'Erro de conexão com o servidor.';
+                // Exibe a div de erro da etapa 1
+                erroDiv.style.display = 'flex';
+                // Mostra o erro no console de debug
+                console.error(error);
+            }
+
+            // Habilita novamente o botão após o término da requisição
+            btn.disabled = false;
+            // Restaura o texto original do botão
+            btn.textContent = 'Enviar Código';
+        }
+
+        // Faz o POST para o backend para validar o token e salvar a nova senha
+        async function salvarNovaSenha() {
+            // Obtém o login digitado na etapa 1
+            const login = document.getElementById('recuperarLoginInput').value.trim();
+            // Obtém o código de verificação digitado
+            const codigo = document.getElementById('recuperarCodigoInput').value.trim();
+            // Obtém a nova senha digitada
+            const novaSenha = document.getElementById('recuperarSenhaInput').value;
+            // Obtém a confirmação da nova senha
+            const confirmarSenha = document.getElementById('recuperarConfirmarSenhaInput').value;
+            // Obtém o botão de salvar do modal
+            const btn = document.getElementById('btnSalvarNovaSenha');
+            // Obtém a div de erro da etapa 2
+            const erroDiv = document.getElementById('recuperarErro2');
+            // Obtém o span de mensagem de erro da etapa 2
+            const erroMsg = document.getElementById('recuperarMensagemErro2');
+
+            // Valida se todos os campos estão preenchidos
+            if (!codigo || !novaSenha || !confirmarSenha) {
+                // Define a mensagem de erro
+                erroMsg.textContent = 'Preencha todos os campos obrigatórios.';
+                // Exibe a div de erro
+                erroDiv.style.display = 'flex';
+                // Para a execução da função
+                return;
+            }
+
+            // Valida se a senha possui o tamanho mínimo de segurança (6 caracteres)
+            if (novaSenha.length < 6) {
+                // Define a mensagem de erro
+                erroMsg.textContent = 'A senha deve possuir pelo menos 6 caracteres.';
+                // Exibe a div de erro
+                erroDiv.style.display = 'flex';
+                // Para a execução
+                return;
+            }
+
+            // Valida se a senha e a confirmação coincidem
+            if (novaSenha !== confirmarSenha) {
+                // Define a mensagem de erro
+                erroMsg.textContent = 'As senhas digitadas não coincidem.';
+                // Exibe a div de erro
+                erroDiv.style.display = 'flex';
+                // Para a execução
+                return;
+            }
+
+            // Desabilita o botão para evitar cliques duplicados
+            btn.disabled = true;
+            // Exibe indicador de carregamento
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            // Oculta a div de erro
+            erroDiv.style.display = 'none';
+
+            try {
+                // Envia a requisição POST para salvar a nova senha no backend
+                const response = await fetch('/api/redefinir-senha', {
+                    method: 'POST', // Método de envio
+                    headers: { 'Content-Type': 'application/json' }, // Cabeçalho JSON
+                    body: JSON.stringify({
+                        login: login, // Passa o login
+                        codigo: codigo, // Passa o código de validação
+                        nova_senha: novaSenha // Passa a nova senha
+                    })
+                });
+
+                // Converte a resposta em objeto JSON
+                const data = await response.json();
+
+                // Se a redefinição foi concluída com sucesso
+                if (data.success) {
+                    // Exibe mensagem de confirmação para o operador
+                    alert('Sua senha foi cadastrada com sucesso! Agora você pode realizar o login.');
+                    // Oculta/fecha o modal de recuperação
+                    fecharEsqueciSenha();
+                    // Preenche o campo de login do formulário principal para agilizar o login
+                    document.getElementById('loginInput').value = login;
+                    // Limpa a senha do formulário principal para segurança
+                    document.getElementById('senhaInput').value = '';
+                    // Foca no campo de senha para ele digitar a senha criada
+                    document.getElementById('senhaInput').focus();
+                } else {
+                    // Se o servidor retornou erro, exibe a mensagem correspondente
+                    erroMsg.textContent = data.message || 'Erro ao redefinir a senha.';
+                    // Exibe a div de erro da etapa 2
+                    erroDiv.style.display = 'flex';
+                }
+            } catch (error) {
+                // Se deu erro de conexão
+                erroMsg.textContent = 'Erro de conexão com o servidor.';
+                // Exibe a div de erro
+                erroDiv.style.display = 'flex';
+                // Mostra o erro no log
+                console.error(error);
+            }
+
+            // Reabilita o botão após a finalização
+            btn.disabled = false;
+            // Restaura o texto original do botão
+            btn.textContent = 'Salvar Senha';
         }
 
         function mostrarErroCodigo(msg) {
