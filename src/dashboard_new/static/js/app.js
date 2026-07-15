@@ -179,6 +179,9 @@ async function carregarDados() {
             dadosCompletos = window.dadosCompletos;
             renderizarDashboard(data.data);
             
+            // Atualiza data do último recebimento no header
+            _atualizarUltimoRecebimentoOp(data.data);
+
             // Atualiza pagamentos completos
             if (data.data.ultimos_pagamentos) {
                 renderizarPagamentosCompletos(data.data.ultimos_pagamentos);
@@ -193,6 +196,35 @@ async function carregarDados() {
         showError('Erro de conexão com o servidor');
     }
 }
+
+// ================================================================
+// ÚLTIMO RECEBIMENTO — HEADER (OPERADOR)
+// ================================================================
+
+function _atualizarUltimoRecebimentoOp(dados) {
+    const el = document.getElementById('headerUltimoRecebimento');
+    if (!el) return;
+
+    // Pega a data mais recente dos pagamentos
+    const pagamentos = dados.ultimos_pagamentos || [];
+    if (pagamentos.length === 0) { el.textContent = ''; return; }
+
+    // Ordena por data desc e pega o primeiro
+    const sorted = [...pagamentos].sort((a, b) => {
+        const dA = a.dtPgto || '';
+        const dB = b.dtPgto || '';
+        return dB.localeCompare(dA);
+    });
+
+    const ultima = sorted[0]?.dtPgto;
+    if (!ultima || !ultima.includes('-')) { el.textContent = ''; return; }
+
+    const partes = ultima.split('-');
+    const dataFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
+    el.innerHTML = `<i class="fas fa-clock" style="margin-right:4px;color:#a855f7;"></i>Últ. receb.: <strong>${dataFmt}</strong>`;
+}
+
+window._atualizarUltimoRecebimentoOp = _atualizarUltimoRecebimentoOp;
 
 // ================================================================
 // USUÁRIO
@@ -412,12 +444,7 @@ async function carregarPerformanceOp() {
             // que espera { performance, performance_diaria, resultado_mes_a_mes, indicadores_anterior }
             const dadosRenderizar = {
                 performance: data.data.performance || {},
-                performance_diaria: (data.data.faturamento_dia || []).map(d => ({
-                    dia: d.dia,
-                    realizado: formatarMoeda(d.faturamento || 0),
-                    meta_diaria: formatarMoeda(d.meta_diaria || 0),
-                    meta_batida: (d.faturamento || 0) >= (d.meta_diaria || 0) ? 'Sim ✓' : 'Não ✗',
-                })),
+                performance_diaria: data.data.performance_diaria || data.data.faturamento_dia || [],
                 resultado_mes_a_mes: data.data.resultado_mes_a_mes || [],
                 indicadores_anterior: data.data.indicadores_anterior || {},
                 tma: data.data.tma || {},

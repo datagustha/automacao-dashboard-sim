@@ -111,6 +111,53 @@ function renderizarDashboardAdm(dados) {
         </div>
     `;
 
+    // --- CÁLCULO E EXIBIÇÃO DE ÚLTIMO RECEBIMENTO POR BANCO ---
+    const todasDatasSemear = [];
+    (semear.operadores || []).forEach(op => {
+        const ult = op.ultimo_pagamento || op.ultima_data;
+        if (ult) todasDatasSemear.push(ult);
+    });
+    (semear.evolucao || []).forEach(e => { if (e.data) todasDatasSemear.push(e.data); });
+    
+    const recSemearEl = document.getElementById('kpi-recebimento-semear');
+    if (recSemearEl) {
+        if (todasDatasSemear.length > 0) {
+            todasDatasSemear.sort();
+            const ultD = todasDatasSemear[todasDatasSemear.length - 1];
+            if (ultD && ultD.includes('-')) {
+                const p = ultD.split('-');
+                recSemearEl.innerHTML = `<i class="fas fa-clock" style="color:var(--purple-main);margin-right:4px;"></i>Último Recebimento: <strong>${p[2]}/${p[1]}/${p[0]}</strong>`;
+            } else {
+                recSemearEl.textContent = '';
+            }
+        } else {
+            recSemearEl.textContent = 'Sem recebimentos no período';
+        }
+    }
+
+    const todasDatasAgoracred = [];
+    (agoracred.operadores || []).forEach(op => {
+        const ult = op.ultimo_pagamento || op.ultima_data;
+        if (ult) todasDatasAgoracred.push(ult);
+    });
+    (agoracred.evolucao || []).forEach(e => { if (e.data) todasDatasAgoracred.push(e.data); });
+
+    const recAgoracredEl = document.getElementById('kpi-recebimento-agoracred');
+    if (recAgoracredEl) {
+        if (todasDatasAgoracred.length > 0) {
+            todasDatasAgoracred.sort();
+            const ultD = todasDatasAgoracred[todasDatasAgoracred.length - 1];
+            if (ultD && ultD.includes('-')) {
+                const p = ultD.split('-');
+                recAgoracredEl.innerHTML = `<i class="fas fa-clock" style="color:var(--emerald);margin-right:4px;"></i>Último Recebimento: <strong>${p[2]}/${p[1]}/${p[0]}</strong>`;
+            } else {
+                recAgoracredEl.textContent = '';
+            }
+        } else {
+            recAgoracredEl.textContent = 'Sem recebimentos no período';
+        }
+    }
+
     // ============================================================
     // CARDS - Linha 2: Operações e Ticket (Storytelling Completo)
     // ============================================================
@@ -297,8 +344,12 @@ function renderizarRankingSemear(operadores) {
         return;
     }
 
-    // Ordena por faturamento (decrescente)
-    operadores.sort((a, b) => (b.faturamento || 0) - (a.faturamento || 0));
+    // Ordena por % meta atingida (decrescente)
+    operadores.sort((a, b) => {
+        const percA = a.meta > 0 ? ((a.faturamento || 0) / a.meta) * 100 : 0;
+        const percB = b.meta > 0 ? ((b.faturamento || 0) / b.meta) * 100 : 0;
+        return percB - percA;
+    });
 
     // Pega dias trabalhados e total de dias do mês do primeiro operador (vêm do backend)
     const diasPassados = operadores[0] ? (operadores[0].dias_trabalhados || 1) : 1;
@@ -437,8 +488,12 @@ function renderizarRankingAgoracred(operadores) {
         return;
     }
 
-    // Ordena por faturamento (decrescente)
-    operadores.sort((a, b) => (b.faturamento || 0) - (a.faturamento || 0));
+    // Ordena por % meta atingida (decrescente)
+    operadores.sort((a, b) => {
+        const percA = a.meta > 0 ? ((a.faturamento || 0) / a.meta) * 100 : 0;
+        const percB = b.meta > 0 ? ((b.faturamento || 0) / b.meta) * 100 : 0;
+        return percB - percA;
+    });
 
     const diasPassados = operadores[0] ? (operadores[0].dias_trabalhados || 1) : 1;
     const totalDiasMes = operadores[0] ? (operadores[0].total_dias_uteis || 1) : 1;
@@ -669,6 +724,50 @@ async function carregarPagamentosAdm() {
             _pagamentosAdmData = data.data || [];
             _pagAdmPage = 1;
 
+            // Banner de operador filtrado na aba Pagamentos
+            const bannerPag = document.getElementById('banner-pag-operador-adm');
+            const bannerNome = document.getElementById('banner-pag-op-nome');
+            const bannerImg = document.getElementById('banner-pag-op-avatar-img');
+            const bannerTxt = document.getElementById('banner-pag-op-avatar-txt');
+            if (bannerPag) {
+                if (operador && operador !== 'TODOS') {
+                    if (bannerNome) bannerNome.textContent = operador;
+                    
+                    let opImagem = '';
+                    const selectPagOp = document.getElementById('filtro-pag-operador-adm');
+                    if (selectPagOp) {
+                        const optSel = Array.from(selectPagOp.options).find(opt => opt.value === operador);
+                        if (optSel && optSel.dataset && optSel.dataset.imagem) {
+                            opImagem = optSel.dataset.imagem;
+                        }
+                    }
+                    
+                    if (!opImagem && window.todosOperadoresCadastrados) {
+                        const opCadastrado = window.todosOperadoresCadastrados.find(o => o.login === operador);
+                        if (opCadastrado && opCadastrado.imagem) {
+                            opImagem = opCadastrado.imagem;
+                        }
+                    }
+                    
+                    if (opImagem) {
+                        if (bannerImg) {
+                            bannerImg.src = opImagem;
+                            bannerImg.style.display = 'block';
+                        }
+                        if (bannerTxt) bannerTxt.style.display = 'none';
+                    } else {
+                        if (bannerImg) bannerImg.style.display = 'none';
+                        if (bannerTxt) {
+                            bannerTxt.textContent = operador.replace(/[0-9]/g, '').slice(0, 2).toUpperCase() || 'OP';
+                            bannerTxt.style.display = 'flex';
+                        }
+                    }
+                    bannerPag.style.display = 'flex';
+                } else {
+                    bannerPag.style.display = 'none';
+                }
+            }
+
             // Preenche dropdown de operadores na página de pagamentos
             _preencherOperadoresPagAdm(data.operadores || []);
 
@@ -711,16 +810,20 @@ function _preencherOperadoresPagAdm(operadores) {
     if (datalist) datalist.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
 
     operadores.forEach(op => {
+        const login = op.login;
+        const imagem = op.imagem;
+
         const opt = document.createElement('option');
-        opt.value = op;
-        opt.textContent = op;
-        if (op === cur) opt.selected = true;
+        opt.value = login;
+        opt.textContent = login;
+        opt.dataset.imagem = imagem || '';
+        if (login === cur) opt.selected = true;
         sel.appendChild(opt);
 
         if (datalist) {
             const dOpt = document.createElement('option');
-            dOpt.value = op;
-            dOpt.textContent = op;
+            dOpt.value = login;
+            dOpt.textContent = login;
             datalist.appendChild(dOpt);
         }
     });

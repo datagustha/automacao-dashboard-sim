@@ -114,6 +114,7 @@
                             <span class="avatar-name" id="headerAvatarName">Carregando...</span>
                             <span style="display:block;font-size:11px;color:var(--text-muted);" id="headerAvatarRole">Operador</span>
                             <span style="display:block;font-size:10px;color:var(--text-muted);" id="headerAvatarTempo"></span>
+                            <span style="display:block;font-size:10px;color:var(--text-muted);font-weight:600;" id="headerUltimoRecebimento"></span>
                         </div>
                     </div>
                 </div>
@@ -286,11 +287,12 @@
                     <div id="perf-dias-info-nova" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <div class="table-wrapper">
                         <table>
-                            <thead style="background:#d97706;color:white;">
+                            <thead style="background:var(--purple-main);color:white;">
                                 <tr>
                                     <th style="padding:10px;text-align:center;width:56px;">Foto</th>
                                     <th style="padding:10px;text-align:center;">Login</th>
                                     <th style="padding:10px;text-align:center;">Turno</th>
+                                    <th style="padding:10px;text-align:center;">Qtd. Pgtos</th>
                                     <th style="padding:10px;text-align:center;">Faturamento</th>
                                     <th style="padding:10px;text-align:center;">Feito/Dia</th>
                                     <th style="padding:10px;text-align:center;">Meta</th>
@@ -306,7 +308,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabela-performance-operador-nova">
-                                <tr><td colspan="15" style="text-align:center;color:#95a5a6;padding:20px;">Carregando performance...</td></tr>
+                                <tr><td colspan="16" style="text-align:center;color:#95a5a6;padding:20px;">Carregando performance...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -558,11 +560,12 @@
                                 <tr>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Semana</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Período</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Qtd. Pgtos</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento Total</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-faturamento-semanal-op">
-                                <tr><td colspan="3" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados semanais...</td></tr>
+                                <tr><td colspan="4" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados semanais...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -643,10 +646,11 @@
                     <div id="perf-dias-info-aba" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <div class="table-wrapper" style="overflow-x:auto;">
                         <table>
-                            <thead style="background:#d97706;color:white;">
+                            <thead style="background:var(--purple-main);color:white;">
                                 <tr>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;width:56px;">Foto</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Login</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Qtd. Pgtos</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Feito/Dia</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta</th>
@@ -661,7 +665,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabela-performance-operador-aba">
-                                <tr><td colspan="12" style="text-align:center;color:#95a5a6;padding:20px;">Carregando performance...</td></tr>
+                                <tr><td colspan="14" style="text-align:center;color:#95a5a6;padding:20px;">Carregando performance...</td></tr>
                             </tbody>
                         </table>
                     </div>

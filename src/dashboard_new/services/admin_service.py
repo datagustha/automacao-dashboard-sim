@@ -250,10 +250,12 @@ def montar_ranking(
         ranking_list.append({
             'login': login,
             'imagem': op.get('imagem', '') or '',
+            'atividade': op.get('atividade', '') or '',
             'turno': op.get('turno', ''),
             'tempo_casa': tempo_casa,
             'faturamento': faturamento,
             'faturamento_anterior': faturamento_ant,
+            'quantidade': ops_atual,
             'feito_dia': feito_dia,
             'meta': meta_val,
             'meta_anterior': meta_ant_val,
@@ -306,9 +308,11 @@ def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data
             else:
                 data_str = str(data)[:10]
 
-            evolucao_diaria[data_str] = evolucao_diaria.get(data_str, 0.0) + (p.get('valorTotal') or 0.0)
+            evolucao_diaria.setdefault(data_str, {'total': 0.0, 'quantidade': 0})
+            evolucao_diaria[data_str]['total'] += (p.get('valorTotal') or 0.0)
+            evolucao_diaria[data_str]['quantidade'] += 1
 
-    return [{'data': k, 'total': v} for k, v in sorted(evolucao_diaria.items())]
+    return [{'data': k, 'total': v['total'], 'quantidade': v['quantidade']} for k, v in sorted(evolucao_diaria.items())]
 
 
 def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -650,7 +654,7 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
     filtrados pelo banco, operador e período selecionados.
     """
     pagamentos_filtrados = []
-    operadores_disponiveis = set()
+    operadores_disponiveis = {}
 
     # Define quais bancos buscar
     bancos_a_buscar = ['SEMEAR', 'AGORACRED'] if banco == 'TODOS' else [banco]
@@ -666,7 +670,7 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
             if atividade == 'ATIVO' and op_dict.get('atividade', '').upper() != 'ATIVO':
                 continue
 
-            operadores_disponiveis.add(login)
+            operadores_disponiveis[login] = op_dict.get('imagem', '') or ''
 
             # Filtra operador
             if operador_filtro != 'TODOS' and login != operador_filtro:
@@ -686,7 +690,7 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
                 dt = p.get('dtPgto')
                 dt_str = dt
                 if isinstance(dt, (datetime, date)):
-                    dt_str = dt.strftime('%Y-%m-%d')
+                     dt_str = dt.strftime('%Y-%m-%d')
                 else:
                     dt_str = str(dt)[:10]
 
@@ -705,5 +709,5 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
 
     return {
         'pagamentos': pagamentos_filtrados,
-        'operadores': sorted(list(operadores_disponiveis))
+        'operadores': [{'login': l, 'imagem': img} for l, img in sorted(operadores_disponiveis.items())]
     }

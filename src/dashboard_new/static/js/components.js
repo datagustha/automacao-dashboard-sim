@@ -154,6 +154,9 @@ function criarGraficoEvolucao(dados, cor = '#7e3d97') {
         
         // Mapeia datas e valores
         const datas = dados.map(d => {
+            if (d.dia !== undefined) {
+                return String(d.dia); // Formato do operador individual
+            }
             if (!d.data) return '';
             const partes = d.data.split('-');
             if (partes.length === 3) {
@@ -161,7 +164,18 @@ function criarGraficoEvolucao(dados, cor = '#7e3d97') {
             }
             return d.data;
         });
-        const valores = dados.map(d => d.total || 0);
+        
+        const valores = dados.map(d => {
+            if (d.total !== undefined) return d.total;
+            if (d.realizado !== undefined) {
+                if (typeof d.realizado === 'number') return d.realizado;
+                // Converte string formatada "R$ 1.234,56" para float
+                const limpo = d.realizado.replace(/[R$\s.]/g, '').replace(',', '.');
+                const parsed = parseFloat(limpo);
+                return isNaN(parsed) ? 0 : parsed;
+            }
+            return 0;
+        });
         
         // Configurações do ApexCharts
         const options = {

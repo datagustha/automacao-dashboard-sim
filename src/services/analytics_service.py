@@ -320,6 +320,7 @@ def calcular_performance_operador(
     # ----------------------------------------------------------------
     # 6. RETORNA DICIONÁRIO
     # ----------------------------------------------------------------
+    quantidade = len(df_mes)
     return {
         'login': login,
         'faturamento': round(faturamento, 2),
@@ -336,7 +337,8 @@ def calcular_performance_operador(
         'projecao_percentual': round(projecao_percentual, 2),
         'dias_trabalhados': dias_trabalhados,
         'dias_restantes': dias_restantes,
-        'total_dias_uteis': total_dias_uteis
+        'total_dias_uteis': total_dias_uteis,
+        'quantidade': quantidade
     }
 
 
@@ -569,16 +571,21 @@ def calcular_meta_diaria_por_dia(
 
     # Agrupa por dia
     df['dia'] = df['dtPgto'].dt.day
-    por_dia = df.groupby('dia')['valorTotal'].sum().reset_index()
+    por_dia = df.groupby('dia').agg(
+        valorTotal=('valorTotal', 'sum'),
+        quantidade=('valorTotal', 'count')
+    ).reset_index()
     por_dia = por_dia.sort_values('dia')
 
     resultado = []
     for _, row in por_dia.iterrows():
         fat = float(row['valorTotal'])
+        qtd = int(row['quantidade'])
         bateu = fat >= meta_diaria if meta_diaria > 0 else None
 
         resultado.append({
             'dia': int(row['dia']),
+            'quantidade': qtd,
             'realizado': (
                 f"R$ {fat:,.2f}"
                 .replace(",", "X").replace(".", ",").replace("X", ".")

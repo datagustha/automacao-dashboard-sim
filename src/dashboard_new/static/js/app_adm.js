@@ -14,6 +14,7 @@ const CONFIG_ADM = {
 let dadosAdmCompletos = {};
 let operadorAdmLogado = null;
 let todosOperadoresCadastrados = [];
+window.todosOperadoresCadastrados = todosOperadoresCadastrados;
 
 // ================================================================
 // INICIALIZAÇÃO
@@ -182,6 +183,9 @@ async function carregarDadosAdm() {
             renderizarDashboardAdm(data.data);
             carregarTmaAdm();
 
+            // Atualiza data do último recebimento no header
+            _atualizarUltimoRecebimentoAdm(data.data);
+
             // Mostra / Esconde o banner de operador filtrado no Dashboard
             const bannerDash = document.getElementById('banner-operador-selecionado-dashboard-adm');
             if (bannerDash) {
@@ -234,6 +238,121 @@ async function carregarDadosAdm() {
         showErrorAdm('Erro de conexão com o servidor');
     }
 }
+
+// ================================================================
+// ÚLTIMO RECEBIMENTO — HEADER
+// ================================================================
+
+function _atualizarUltimoRecebimentoAdm(dados) {
+    const el = document.getElementById('headerUltimoRecebimento');
+    if (!el) return;
+
+    // Coleta todas as datas de pagamento de todos os operadores (semear + agoracred)
+    const todasDatas = [];
+    const bancos = ['semear', 'agoracred'];
+    bancos.forEach(b => {
+        const ops = dados[b]?.operadores || [];
+        ops.forEach(op => {
+            const ult = op.ultimo_pagamento || op.ultima_data;
+            if (ult) todasDatas.push(ult);
+        });
+        // Também tenta a evolução
+        const evol = dados[b]?.evolucao || [];
+        evol.forEach(e => { if (e.data) todasDatas.push(e.data); });
+    });
+
+    if (todasDatas.length === 0) {
+        el.textContent = '';
+        return;
+    }
+
+    // Pega a mais recente
+    todasDatas.sort();
+    const ultData = todasDatas[todasDatas.length - 1];
+    if (!ultData || !ultData.includes('-')) { el.textContent = ''; return; }
+
+    const partes = ultData.split('-');
+    const dataFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
+    el.innerHTML = `<i class="fas fa-clock" style="margin-right:4px;color:#a855f7;"></i>Últ. receb.: <strong>${dataFmt}</strong>`;
+}
+
+function limparFiltrosTodosAdm() {
+    // Reseta filtros do Dashboard
+    const filtroMes = document.getElementById('filtro-mes-adm');
+    const filtroAno = document.getElementById('filtro-ano-adm');
+    const filtroBanco = document.getElementById('filtro-banco-adm');
+    const filtroAtiv = document.getElementById('filtro-atividade-adm');
+    const busca = document.getElementById('busca-operador-adm');
+    const sel = document.getElementById('filtro-operador-adm');
+    const inicio = document.getElementById('filtro-data-inicio-adm');
+    const fim = document.getElementById('filtro-data-fim-adm');
+    const contrato = document.getElementById('filtro-contrato-adm');
+    const faixa = document.getElementById('filtro-faixa-adm');
+
+    const hoje = new Date();
+    if (filtroMes) filtroMes.value = hoje.getMonth() + 1;
+    if (filtroAno) filtroAno.value = hoje.getFullYear();
+    if (filtroBanco) filtroBanco.value = 'TODOS';
+    if (filtroAtiv) filtroAtiv.value = 'ATIVO';
+    if (busca) busca.value = '';
+    if (sel) sel.value = 'TODOS';
+    if (inicio) inicio.value = '';
+    if (fim) fim.value = '';
+    if (contrato) contrato.value = '';
+    if (faixa) faixa.value = 'todas';
+
+    const badge = document.getElementById('badge-filtros-ativos-adm');
+    if (badge) badge.style.display = 'none';
+
+    const bannerDash = document.getElementById('banner-operador-selecionado-dashboard-adm');
+    if (bannerDash) bannerDash.style.display = 'none';
+
+    carregarDadosAdm();
+}
+
+function limparFiltrosPagAdm() {
+    const filtroPagMes = document.getElementById('filtro-pag-mes-adm');
+    const filtroPagAno = document.getElementById('filtro-pag-ano-adm');
+    const filtroPagBanco = document.getElementById('filtro-pag-banco-adm');
+    const filtroPagAtiv = document.getElementById('filtro-pag-atividade-adm');
+    const busca = document.getElementById('busca-pag-operador-adm');
+    const sel = document.getElementById('filtro-pag-operador-adm');
+    const busca2 = document.getElementById('filtro-pag-busca-adm');
+    const fase = document.getElementById('filtro-pag-fase-adm');
+    const inicio = document.getElementById('filtro-pag-inicio-adm');
+    const fim = document.getElementById('filtro-pag-fim-adm');
+
+    const hoje = new Date();
+    if (filtroPagMes) filtroPagMes.value = hoje.getMonth() + 1;
+    if (filtroPagAno) filtroPagAno.value = hoje.getFullYear();
+    if (filtroPagBanco) filtroPagBanco.value = 'TODOS';
+    if (filtroPagAtiv) filtroPagAtiv.value = 'ATIVO';
+    if (busca) busca.value = '';
+    if (sel) sel.value = 'TODOS';
+    if (busca2) busca2.value = '';
+    if (fase) fase.value = '';
+    if (inicio) inicio.value = '';
+    if (fim) fim.value = '';
+
+    carregarPagamentosAdm();
+}
+
+function limparFiltrosOpAdm() {
+    const filtroBanco = document.getElementById('filtro-banco-op-adm');
+    const filtroAtiv = document.getElementById('filtro-atividade-op-adm');
+    const busca = document.getElementById('busca-operador-perf-adm');
+    const sel = document.getElementById('filtro-operador-perf-adm');
+
+    if (filtroBanco) filtroBanco.value = 'TODOS';
+    if (filtroAtiv) filtroAtiv.value = 'ATIVO';
+    if (busca) busca.value = '';
+    atualizarFiltrosOperadoresAdm();
+    voltarConsolidadoAdm();
+}
+
+window.limparFiltrosTodosAdm = limparFiltrosTodosAdm;
+window.limparFiltrosPagAdm = limparFiltrosPagAdm;
+window.limparFiltrosOpAdm = limparFiltrosOpAdm;
 
 // ================================================================
 // USUÁRIO COM FOTO E TEMPO DE CASA
@@ -423,8 +542,7 @@ function onBuscaOperadorGlobal(valor) {
 
     const valorUpper = valor.trim().toUpperCase();
     const optMatch = Array.from(sel.options).find(opt => 
-        opt.value.toUpperCase() === valorUpper || 
-        opt.textContent.toUpperCase().includes(valorUpper)
+        opt.value.toUpperCase() === valorUpper
     );
 
     if (optMatch) {
@@ -446,8 +564,7 @@ function onBuscaOperadorPag(valor) {
 
     const valorUpper = valor.trim().toUpperCase();
     const optMatch = Array.from(sel.options).find(opt => 
-        opt.value.toUpperCase() === valorUpper || 
-        opt.textContent.toUpperCase().includes(valorUpper)
+        opt.value.toUpperCase() === valorUpper
     );
 
     if (optMatch) {
@@ -578,7 +695,7 @@ function renderizarOperadoresAdm(dados) {
     opsAgoracred.forEach(op => todos.push({ ...op, banco: 'AGORACRED' }));
 
     if (todos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:30px;">Nenhum operador disponível</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:30px;">Nenhum operador disponível</td></tr>';
         return;
     }
 
@@ -614,6 +731,7 @@ function renderizarOperadoresAdm(dados) {
                 <td style="padding:8px 12px;text-align:center;">${op.turno || '-'}</td>
                 <td style="padding:8px 12px;text-align:center;font-size:11px;white-space:nowrap;">${op.tempo_casa || '-'}</td>
                 <td style="padding:8px 12px;text-align:center;font-weight:700;">${formatarMoeda(op.faturamento || 0)}</td>
+                <td style="padding:8px 12px;text-align:center;font-weight:700;">${op.quantidade || 0}</td>
                 <td style="padding:8px 12px;text-align:center;">${progressoHtml}</td>
             </tr>
         `;
@@ -621,6 +739,7 @@ function renderizarOperadoresAdm(dados) {
 
     // Linha de Total consolidada
     const totalFat = todos.reduce((s, op) => s + (op.faturamento || 0), 0);
+    const totalQtd = todos.reduce((s, op) => s + (op.quantidade || 0), 0);
     const totalMeta = todos.reduce((s, op) => s + (op.meta || 0), 0);
     const totalPerc = totalMeta > 0 ? (totalFat / totalMeta) * 100 : 0;
 
@@ -641,6 +760,7 @@ function renderizarOperadoresAdm(dados) {
             <td style="text-align:center;padding:10px;"></td>
             <td style="text-align:center;padding:10px;"></td>
             <td style="text-align:center;padding:10px;color:var(--purple-main);font-weight:700;">${formatarMoeda(totalFat)}</td>
+            <td style="text-align:center;padding:10px;color:var(--purple-main);font-weight:700;">${totalQtd}</td>
             <td style="text-align:center;padding:10px;">${progressoTotalHtml}</td>
         </tr>
     `;
@@ -648,6 +768,7 @@ function renderizarOperadoresAdm(dados) {
     
     // Salva a lista de operadores globalmente e atualiza os filtros
     todosOperadoresCadastrados = todos;
+    window.todosOperadoresCadastrados = todos; // garante acesso via window.* (usado em dashboard_adm.js)
     atualizarFiltrosOperadoresAdm();
 }
 
@@ -673,6 +794,23 @@ function navegar(pagina) {
     };
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) pageTitle.textContent = titulos[pagina] || pagina;
+
+    // Sincroniza operador filtrado ao ir para a página de pagamentos
+    if (pagina === 'pagamentos') {
+        const operadorGlobal = document.getElementById('filtro-operador-adm')?.value || 'TODOS';
+        const buscaGlobal = document.getElementById('busca-operador-adm')?.value || '';
+        
+        const filtroPagOperador = document.getElementById('filtro-pag-operador-adm');
+        const buscaPagOperador = document.getElementById('busca-pag-operador-adm');
+
+        if (filtroPagOperador) {
+            filtroPagOperador.value = operadorGlobal;
+            if (buscaPagOperador) {
+                buscaPagOperador.value = (operadorGlobal === 'TODOS') ? '' : (buscaGlobal || operadorGlobal);
+            }
+            carregarPagamentosAdm();
+        }
+    }
 }
 
 function toggleSidebar() {
@@ -915,6 +1053,7 @@ function obterDadosConsolidadosBanco(banco) {
     const perf = {
         login: `GRUPO ${banco}`,
         turno: 'GERAL',
+        quantidade: dadosBanco.operacoes || 0,
         faturamento: faturamento,
         feito_diario: feitoDiario,
         meta: meta,
@@ -942,6 +1081,7 @@ function obterDadosConsolidadosBanco(banco) {
         const bateu = realizadoVal >= metaDiaria ? 'Sim' : 'Não';
         return {
             dia: dia,
+            quantidade: ev.quantidade || 0,
             realizado: formatarMoeda(realizadoVal),
             meta_diaria: formatarMoeda(metaDiaria),
             meta_batida: bateu
@@ -950,7 +1090,8 @@ function obterDadosConsolidadosBanco(banco) {
 
     const ultimosPagamentos = (dadosBanco.evolucao || []).map(ev => ({
         dtPgto: ev.data,
-        valorTotal: ev.total
+        valorTotal: ev.total,
+        quantidade: ev.quantidade || 0
     }));
 
     // Usa o histórico real de 12 meses retornado pela API (resultado_mes_a_mes)
@@ -1070,17 +1211,19 @@ function filtrarBancoOperadoresAdm() {
 
 function onBuscaOperadorAdm(valor) {
     const sel = document.getElementById('filtro-operador-perf-adm');
-    if (!sel || !valor) return;
+    if (!sel) return;
 
-    // Procura se o valor digitado corresponde exatamente a algum login do select auxiliar
+    if (!valor || valor.trim() === '') return;
+
+    // Exige match exato para evitar disparar a busca a cada letra digitada
     const valorUpper = valor.trim().toUpperCase();
-    const optMatch = Array.from(sel.options).find(opt => opt.value.toUpperCase() === valorUpper);
+    const optMatch = Array.from(sel.options).find(opt =>
+        opt.value.toUpperCase() === valorUpper
+    );
 
     if (optMatch) {
         sel.value = optMatch.value;
         selecionarOperadorPerfAdm();
-        
-        // Remove o foco do input para indicar sucesso na busca
         document.getElementById('busca-operador-perf-adm')?.blur();
     }
 }
@@ -1187,7 +1330,8 @@ async function selecionarOperadorPerfAdm() {
                 indicadores_anterior: resumo.indicadores_anterior || {},
                 imagem: operadorInfo.imagem || perf.imagem || '',
                 banco: operadorInfo.banco || banco,
-                tempo_casa: operadorInfo.tempo_casa || resumo.tempo_casa || ''
+                tempo_casa: operadorInfo.tempo_casa || resumo.tempo_casa || '',
+                tma: resumo.tma || {}
             };
             
             renderizarMinhaPerformanceOpAdm(_admOpSelecionadoData, mes, ano);
@@ -1271,27 +1415,18 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
             }
             avatarImg.style.display = 'none';
             avatarIniciais.style.display = 'flex';
+        }
     }
 
-    // --- TMA (Métricas de Ligação) ---
-    const tmaData = dadosPerformance.tma || {};
-    const tmaEl = document.getElementById('adm-op-kpi-tma-valor');
-    const tmafEl = document.getElementById('adm-op-kpi-tma-falado');
-    const acionEl = document.getElementById('adm-op-kpi-tma-acionamentos');
-    const ultEl = document.getElementById('adm-op-kpi-tma-ultimo');
-    const reacEl = document.getElementById('adm-op-kpi-tma-reacionamento');
-    const cliEl = document.getElementById('adm-op-kpi-tma-clientes');
 
-    if (tmaEl) tmaEl.textContent = tmaData.tma || '00:00:00';
-    if (tmafEl) tmafEl.innerHTML = `Falado no mês: <strong>${tmaData.tempo_falado || '0h 00min'}</strong>`;
-    if (acionEl) acionEl.textContent = tmaData.acionamentos || 0;
-    if (ultEl) ultEl.innerHTML = `Últ. Acion.: <strong>${tmaData.ultimo_acionamento || '-'}</strong>`;
-    if (reacEl) reacEl.textContent = tmaData.reacionamento || '1.00';
-    if (cliEl) cliEl.innerHTML = `Clientes únicos: <strong>${tmaData.clientes || 0}</strong>`;
 
     // --- 1. RENDERIZAR PERFORMANCE NA ABA DE PERFORMANCE ---
     const tbodyPerf = document.getElementById('tabela-performance-operador-adm-aba');
     if (tbodyPerf) {
+        const theadPerf = tbodyPerf.previousElementSibling;
+        if (theadPerf) {
+            theadPerf.style.backgroundColor = (banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+        }
         const iniciaisOpPerf = login.replace(/[0-9]/g, '').slice(0, 2).toUpperCase() || '??';
         const fotoHtmlPerf = imagem
             ? `<img src="${imagem}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;margin:0 auto;display:block;">`
@@ -1308,6 +1443,7 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
                 <td style="text-align:center;">${fotoHtmlPerf}</td>
                 <td style="text-align:center;font-weight:600;color:var(--purple-main);">${login}</td>
                 <td style="text-align:center;">${perf.turno || '-'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--purple-main);">${perf.quantidade || 0}</td>
                 <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.faturamento || 0)}</td>
                 <td style="text-align:center;">${formatarMoeda(perf.feito_diario || 0)}</td>
                 <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.meta || 0)}</td>
@@ -1341,31 +1477,64 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
     // --- 3. RECEBIMENTO DIÁRIO ---
     const tbodyDiario = document.getElementById('tabela-recebimento-diario-adm-op');
     if (tbodyDiario) {
+        const theadDiario = tbodyDiario.previousElementSibling;
+        if (theadDiario) {
+            theadDiario.style.backgroundColor = (banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+        }
         if (diarios.length === 0) {
             tbodyDiario.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:20px;">Nenhum faturamento registrado nos dias úteis.</td></tr>';
         } else {
-            tbodyDiario.innerHTML = diarios.map((d, idx) => `
-                <tr>
-                    <td style="text-align:center;font-weight:600;">${d.dia}</td>
-                    <td style="text-align:center;">${idx + 1}</td>
-                    <td style="text-align:center;">${d.dia < 10 ? '0' + d.dia : d.dia}/${(mes < 10 ? '0' + mes : mes)}/${ano}</td>
-                    <td style="text-align:center;">1</td>
-                    <td style="text-align:center;font-weight:600;">${d.realizado}</td>
-                    <td style="text-align:center;">${d.meta_diaria}</td>
-                    <td style="text-align:center;">
-                        <span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;background:${d.meta_batida.includes('Sim')?'#dcfce7':'#fee2e2'};color:${d.meta_batida.includes('Sim')?'#16a34a':'#dc2626'};">${d.meta_batida}</span>
-                    </td>
-                </tr>
-            `).join('');
+            tbodyDiario.innerHTML = diarios.map((d, idx) => {
+                // Normaliza campo dia: pode vir como número direto ou extraído do campo 'data'
+                let diaNum = d.dia;
+                let dataStr = d.data || d.dtPgto || '';
+
+                if ((diaNum === undefined || diaNum === null || diaNum === 0) && dataStr) {
+                    diaNum = parseInt(dataStr.split('-')[2], 10) || 0;
+                }
+
+                // Data formatada: usa dataStr se disponível, senão reconstrói
+                let dataFormatada = '—';
+                if (dataStr && dataStr.includes('-')) {
+                    const partes = dataStr.split('-');
+                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                } else if (diaNum > 0) {
+                    const diaP = diaNum < 10 ? '0' + diaNum : diaNum;
+                    const mesP = mes < 10 ? '0' + mes : mes;
+                    dataFormatada = `${diaP}/${mesP}/${ano}`;
+                }
+
+                const diaExib = diaNum > 0 ? diaNum : '—';
+                const qtd = d.quantidade ?? d.qtd ?? d.contratos ?? '—';
+                const metaBatida = d.meta_batida || 'Não';
+
+                return `
+                    <tr>
+                        <td style="text-align:center;font-weight:600;">${diaExib}</td>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:center;">${dataFormatada}</td>
+                        <td style="text-align:center;">${qtd}</td>
+                        <td style="text-align:center;font-weight:600;">${d.realizado}</td>
+                        <td style="text-align:center;">${d.meta_diaria}</td>
+                        <td style="text-align:center;">
+                            <span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;background:${metaBatida.includes('Sim')?'#dcfce7':'#fee2e2'};color:${metaBatida.includes('Sim')?'#16a34a':'#dc2626'};"> ${metaBatida}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
     }
 
     // --- 4. FATURAMENTO POR SEMANA ---
-    renderizarSemanalOpAdm(dadosPerformance.ultimos_pagamentos || [], mes);
+    renderizarSemanalOpAdm(dadosPerformance.ultimos_pagamentos || [], mes, banco);
 
     // --- 5. RESULTADO MÊS A MÊS ---
     const tbodyMesAPerf = document.getElementById('tabela-resultado-mes-a-mes-adm-op');
     if (tbodyMesAPerf && dadosPerformance.resultado_mes_a_mes) {
+        const theadMesAPerf = tbodyMesAPerf.previousElementSibling;
+        if (theadMesAPerf) {
+            theadMesAPerf.style.backgroundColor = (banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+        }
         const listaHistorico = dadosPerformance.resultado_mes_a_mes;
         tbodyMesAPerf.innerHTML = listaHistorico.map((item, idx) => {
             // suporte aos campos do backend (mes_nome) e legado (mes)
@@ -1413,33 +1582,41 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
     renderizarVariacaoDetalhadaAdmOp(dadosPerformance.resultado_mes_a_mes || []);
 
     // --- 7. GRÁFICOS ---
-    renderizarGraficoBarrasMensalOpAdm(dadosPerformance.resultado_mes_a_mes || []);
+    renderizarGraficoBarrasMensalOpAdm(dadosPerformance.resultado_mes_a_mes || [], banco);
 }
 
-function renderizarSemanalOpAdm(pagamentosRecentes, mes) {
+function renderizarSemanalOpAdm(pagamentosRecentes, mes, banco) {
     const tbody = document.getElementById('tabela-faturamento-semanal-adm-op');
     if (!tbody) return;
 
+    const theadSemanal = tbody.previousElementSibling;
+    if (theadSemanal) {
+        theadSemanal.style.backgroundColor = (banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+    }
+
     if (!pagamentosRecentes || pagamentosRecentes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#6B7280;padding:20px;">Sem pagamentos no período.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6B7280;padding:20px;">Sem pagamentos no período.</td></tr>';
         return;
     }
 
     const semanas = [
-        { nome: 'Semana 1', inicio: 1, fim: 7, total: 0 },
-        { nome: 'Semana 2', inicio: 8, fim: 14, total: 0 },
-        { nome: 'Semana 3', inicio: 15, fim: 21, total: 0 },
-        { nome: 'Semana 4', inicio: 22, fim: 28, total: 0 },
-        { nome: 'Semana 5', inicio: 29, fim: 31, total: 0 }
+        { nome: 'Semana 1', inicio: 1, fim: 7, total: 0, qtd: 0 },
+        { nome: 'Semana 2', inicio: 8, fim: 14, total: 0, qtd: 0 },
+        { nome: 'Semana 3', inicio: 15, fim: 21, total: 0, qtd: 0 },
+        { nome: 'Semana 4', inicio: 22, fim: 28, total: 0, qtd: 0 },
+        { nome: 'Semana 5', inicio: 29, fim: 31, total: 0, qtd: 0 }
     ];
 
     pagamentosRecentes.forEach(p => {
-        const dia = parseInt(p.dtPgto.split('-')[2], 10);
+        const dtStr = p.dtPgto || '';
+        if (!dtStr.includes('-')) return;
+        const dia = parseInt(dtStr.split('-')[2], 10);
         if (isNaN(dia)) return;
 
         for (let s of semanas) {
             if (dia >= s.inicio && dia <= s.fim) {
-                s.total += p.valorTotal || 0;
+                s.total += parseFloat(p.valorTotal || 0);
+                s.qtd += p.quantidade !== undefined ? p.quantidade : 1;
                 break;
             }
         }
@@ -1448,17 +1625,19 @@ function renderizarSemanalOpAdm(pagamentosRecentes, mes) {
     tbody.innerHTML = semanas.map(s => {
         const mesStr = mes < 10 ? '0' + mes : mes;
         const pd = `${s.inicio < 10 ? '0' + s.inicio : s.inicio}/${mesStr} a ${s.fim}/${mesStr}`;
+        const corTotal = (banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
         return `
             <tr>
                 <td style="text-align:center;font-weight:600;">${s.nome}</td>
                 <td style="text-align:center;font-size:12px;">${pd}</td>
-                <td style="text-align:center;font-weight:700;color:var(--purple-main);">${formatarMoeda(s.total)}</td>
+                <td style="text-align:center;font-weight:700;">${s.qtd}</td>
+                <td style="text-align:center;font-weight:700;color:${corTotal};">${formatarMoeda(s.total)}</td>
             </tr>
         `;
     }).join('');
 }
 
-function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
+function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes, banco) {
     const el = document.getElementById('grafico-barras-faturamento-mensal-adm-op');
     if (!el || !resultadoMesAMes || resultadoMesAMes.length === 0) return;
 
@@ -1469,8 +1648,7 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
 
     const options = {
         series: [
-            { name: 'Faturamento', data: faturamentos },
-            { name: 'Meta', data: metas }
+            { name: 'Faturamento', data: faturamentos }
         ],
         chart: {
             type: 'bar',
@@ -1478,7 +1656,7 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
             toolbar: { show: false },
             fontFamily: 'Inter, sans-serif'
         },
-        colors: ['#7e3d97', '#e0ccf0'],
+        colors: [banco === 'AGORACRED' ? '#10B981' : '#7e3d97'],
         plotOptions: {
             bar: {
                 borderRadius: 4,
@@ -1494,7 +1672,7 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
                 return val >= 1000 ? 'R$ ' + (val / 1000).toFixed(1) + 'k' : 'R$ ' + val.toFixed(0);
             },
             style: { fontSize: '11px', colors: ['#374151'] },
-            offsetY: -6
+            offsetY: -20
         },
         xaxis: {
             categories: meses,
@@ -1515,7 +1693,8 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
                 }
             }
         },
-        legend: { show: true, position: 'top', fontSize: '11px' }
+        legend: { show: true, position: 'top', fontSize: '11px' },
+        grid: { padding: { top: 25 } }
     };
 
     if (chartMensalOpAdm) {
@@ -1528,12 +1707,24 @@ function renderizarGraficoBarrasMensalOpAdm(resultadoMesAMes) {
 
 function renderizarVariacaoDetalhadaAdmOp(lista) {
     const tbody = document.getElementById('tabela-variacao-detalhada-adm-op');
-    if (!tbody || !lista || lista.length === 0) return;
+    if (!tbody) return;
+
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:20px;">Nenhum histórico disponível</td></tr>';
+        return;
+    }
+
+    // Filtra só meses com meta definida
+    const comMeta = lista.filter(item => (item.meta || 0) > 0);
+    if (comMeta.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:20px;">Nenhum mês com meta definida no período</td></tr>';
+        return;
+    }
 
     let prevFat = null;
     let prevPerc = null;
 
-    tbody.innerHTML = lista.map((item, idx) => {
+    tbody.innerHTML = comMeta.map((item, idx) => {
         const varR = prevFat !== null ? (item.faturamento - prevFat) : 0;
         const varPct = prevFat !== null && prevFat > 0 ? ((item.faturamento - prevFat) / prevFat) * 100 : 0;
         const varMeta = prevPerc !== null ? (item.perc_meta - prevPerc) : 0;

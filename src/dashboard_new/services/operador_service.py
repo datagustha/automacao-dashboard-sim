@@ -97,9 +97,14 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
     
     tempo_casa = calcular_tempo_de_casa(operador.get('admissao'))
     
-    faturamento_dia = calcular_faturamento_por_dia(pagamentos_mes, banco)
-    faturamento_dia_json = faturamento_dia.to_dict('records') if not faturamento_dia.empty else []
-    
+    performance_diaria = calcular_meta_diaria_por_dia(
+        pagamentos=pagamentos,
+        metas=metas,
+        ano=ano,
+        mes=mes,
+        banco=banco
+    )
+
     pagamentos_fase = calcular_pagamentos_por_fase(pagamentos_mes, banco)
     pagamentos_fase_json = pagamentos_fase.to_dict('records') if not pagamentos_fase.empty else []
     
@@ -195,7 +200,8 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
         'indicadores_anterior': indicadores_ant,
         'performance': performance,
         'tempo_casa': tempo_casa,
-        'faturamento_dia': faturamento_dia_json,
+        'performance_diaria': performance_diaria,
+        'faturamento_dia': performance_diaria,  # mantém compatibilidade legacy
         'pagamentos_fase': pagamentos_fase_json,
         'ultimos_pagamentos': todos_pagamentos_mes,
         'resultado_mes_a_mes': resultado_mes_a_mes,

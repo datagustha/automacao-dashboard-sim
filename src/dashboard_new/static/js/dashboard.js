@@ -527,8 +527,13 @@ function renderizarTabelaPerformanceOpNova(perf) {
     const tbody = document.getElementById('tabela-performance-operador-nova');
     if (!tbody) return;
 
+    const thead = tbody.previousElementSibling;
+    if (thead) {
+        thead.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+    }
+
     if (!perf || Object.keys(perf).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:#6B7280;padding:20px;">Nenhum dado disponível</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:#6B7280;padding:20px;">Nenhum dado disponível</td></tr>';
         return;
     }
 
@@ -544,6 +549,7 @@ function renderizarTabelaPerformanceOpNova(perf) {
             <td style="text-align:center;">${fotoHtml}</td>
             <td style="text-align:center;font-weight:600;color:var(--purple-main);">${perf.login || '-'}</td>
             <td style="text-align:center;">${perf.turno || '-'}</td>
+            <td style="text-align:center;font-weight:700;color:var(--purple-main);">${perf.quantidade || 0}</td>
             <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.faturamento || 0)}</td>
             <td style="text-align:center;">${formatarMoeda(perf.feito_diario || 0)}</td>
             <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.meta || 0)}</td>
@@ -720,6 +726,10 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
     // --- 1. RENDERIZAR PERFORMANCE NA ABA DE PERFORMANCE ---
     const tbodyPerf = document.getElementById('tabela-performance-operador-aba');
     if (tbodyPerf) {
+        const theadPerf = tbodyPerf.previousElementSibling;
+        if (theadPerf) {
+            theadPerf.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+        }
         const nomeOpPerf = (window.operadorLogado && window.operadorLogado.nome) || perf.login || 'Operador';
         const imagemOpPerf = window.operadorLogado && window.operadorLogado.imagem;
         const iniciaisOpPerf = getIniciais(nomeOpPerf);
@@ -731,6 +741,7 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
             <tr>
                 <td style="text-align:center;">${fotoHtmlPerf}</td>
                 <td style="text-align:center;font-weight:600;color:var(--purple-main);">${perf.login || '-'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--purple-main);">${perf.quantidade || 0}</td>
                 <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.faturamento || 0)}</td>
                 <td style="text-align:center;">${formatarMoeda(perf.feito_diario || 0)}</td>
                 <td style="text-align:center;font-weight:700;">${formatarMoeda(perf.meta || 0)}</td>
@@ -778,22 +789,52 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
     // --- 3. RECEBIMENTO DIÁRIO ---
     const tbodyDiario = document.getElementById('tabela-recebimento-diario-op');
     if (tbodyDiario) {
+        const theadDiario = tbodyDiario.previousElementSibling;
+        if (theadDiario) {
+            theadDiario.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+        }
         if (diarios.length === 0) {
             tbodyDiario.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:20px;">Nenhum faturamento registrado nos dias úteis.</td></tr>';
         } else {
-            tbodyDiario.innerHTML = diarios.map((d, idx) => `
-                <tr>
-                    <td style="text-align:center;font-weight:600;">${d.dia}</td>
-                    <td style="text-align:center;">${idx + 1}</td>
-                    <td style="text-align:center;">${d.dia < 10 ? '0' + d.dia : d.dia}/${(getMesAtual() < 10 ? '0' + getMesAtual() : getMesAtual())}/${getAnoAtual()}</td>
-                    <td style="text-align:center;">1</td>
-                    <td style="text-align:center;font-weight:600;">${d.realizado}</td>
-                    <td style="text-align:center;">${d.meta_diaria}</td>
-                    <td style="text-align:center;">
-                        <span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;background:${d.meta_batida.includes('Sim')?'#dcfce7':'#fee2e2'};color:${d.meta_batida.includes('Sim')?'#16a34a':'#dc2626'};">${d.meta_batida}</span>
-                    </td>
-                </tr>
-            `).join('');
+            const mesSel = document.getElementById('filtro-mes')?.value || getMesAtual();
+            const anoSel = document.getElementById('filtro-ano')?.value || getAnoAtual();
+
+            tbodyDiario.innerHTML = diarios.map((d, idx) => {
+                let diaNum = d.dia;
+                let dataStr = d.data || d.dtPgto || '';
+
+                if ((diaNum === undefined || diaNum === null || diaNum === 0) && dataStr) {
+                    diaNum = parseInt(dataStr.split('-')[2], 10) || 0;
+                }
+
+                let dataFormatada = '—';
+                if (dataStr && dataStr.includes('-')) {
+                    const partes = dataStr.split('-');
+                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                } else if (diaNum > 0) {
+                    const diaP = diaNum < 10 ? '0' + diaNum : diaNum;
+                    const mesP = mesSel < 10 ? '0' + mesSel : mesSel;
+                    dataFormatada = `${diaP}/${mesP}/${anoSel}`;
+                }
+
+                const diaExib = diaNum > 0 ? diaNum : '—';
+                const qtd = d.quantidade ?? d.qtd ?? d.contratos ?? '—';
+                const metaBatida = d.meta_batida || 'Não';
+
+                return `
+                    <tr>
+                        <td style="text-align:center;font-weight:600;">${diaExib}</td>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:center;">${dataFormatada}</td>
+                        <td style="text-align:center;">${qtd}</td>
+                        <td style="text-align:center;font-weight:600;">${d.realizado}</td>
+                        <td style="text-align:center;">${d.meta_diaria}</td>
+                        <td style="text-align:center;">
+                            <span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;background:${metaBatida.includes('Sim')?'#dcfce7':'#fee2e2'};color:${metaBatida.includes('Sim')?'#16a34a':'#dc2626'};"> ${metaBatida}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
     }
 
@@ -875,18 +916,23 @@ function renderizarSemanalOp() {
     const tbody = document.getElementById('tabela-faturamento-semanal-op');
     if (!tbody) return;
 
+    const theadSemanal = tbody.previousElementSibling;
+    if (theadSemanal) {
+        theadSemanal.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+    }
+
     const pagamentos = pagamentosRecentesOpData;
     if (pagamentos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#6B7280;padding:20px;">Sem pagamentos no período.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6B7280;padding:20px;">Sem pagamentos no período.</td></tr>';
         return;
     }
 
     const semanas = [
-        { nome: 'Semana 1', inicio: 1, fim: 7, total: 0 },
-        { nome: 'Semana 2', inicio: 8, fim: 14, total: 0 },
-        { nome: 'Semana 3', inicio: 15, fim: 21, total: 0 },
-        { nome: 'Semana 4', inicio: 22, fim: 28, total: 0 },
-        { nome: 'Semana 5', inicio: 29, fim: 31, total: 0 }
+        { nome: 'Semana 1', inicio: 1, fim: 7, total: 0, qtd: 0 },
+        { nome: 'Semana 2', inicio: 8, fim: 14, total: 0, qtd: 0 },
+        { nome: 'Semana 3', inicio: 15, fim: 21, total: 0, qtd: 0 },
+        { nome: 'Semana 4', inicio: 22, fim: 28, total: 0, qtd: 0 },
+        { nome: 'Semana 5', inicio: 29, fim: 31, total: 0, qtd: 0 }
     ];
 
     pagamentos.forEach(p => {
@@ -896,6 +942,7 @@ function renderizarSemanalOp() {
         for (let s of semanas) {
             if (dia >= s.inicio && dia <= s.fim) {
                 s.total += p.valorTotal || 0;
+                s.qtd++;
                 break;
             }
         }
@@ -904,11 +951,13 @@ function renderizarSemanalOp() {
     tbody.innerHTML = semanas.map(s => {
         const mes = getMesAtual() < 10 ? '0' + getMesAtual() : getMesAtual();
         const pd = `${s.inicio < 10 ? '0' + s.inicio : s.inicio}/${mes} a ${s.fim}/${mes}`;
+        const corTotal = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
         return `
             <tr>
                 <td style="text-align:center;font-weight:600;">${s.nome}</td>
                 <td style="text-align:center;font-size:12px;">${pd}</td>
-                <td style="text-align:center;font-weight:700;color:var(--purple-main);">${formatarMoeda(s.total)}</td>
+                <td style="text-align:center;font-weight:700;">${s.qtd}</td>
+                <td style="text-align:center;font-weight:700;color:${corTotal};">${formatarMoeda(s.total)}</td>
             </tr>
         `;
     }).join('');
@@ -935,7 +984,7 @@ function renderizarGraficoBarrasMensalOp() {
             height: 180,
             toolbar: { show: false }
         },
-        colors: ['#7e3d97'],
+        colors: [window.operadorLogado?.banco === 'AGORACRED' ? '#10B981' : '#7e3d97'],
         plotOptions: {
             bar: {
                 borderRadius: 4,
