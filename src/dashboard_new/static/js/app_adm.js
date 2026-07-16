@@ -1267,32 +1267,58 @@ function obterDadosConsolidadosBanco(banco) {
 
 function atualizarFiltrosOperadoresAdm() {
     const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
+    const atividade = document.getElementById('filtro-atividade-adm')?.value || 'ATIVO';
     const sel = document.getElementById('filtro-operador-perf-adm');
     if (!sel) return;
 
     // Salva o valor atualmente selecionado
     const valAtual = sel.value;
 
-    // Limpa e repovoa com apenas as visões consolidadas (sem individuais)
+    // Limpa e repovoa com consolidados no topo + operadores individuais abaixo
     sel.innerHTML = '';
 
     if (banco === 'TODOS' || banco === 'SEMEAR') {
         const optSem = document.createElement('option');
         optSem.value = 'CONSOLIDADO_SEMEAR';
-        optSem.textContent = 'Visão Geral Consolidada — SEMEAR';
+        optSem.textContent = '── Visão Geral Consolidada — SEMEAR ──';
         sel.appendChild(optSem);
     }
     if (banco === 'TODOS' || banco === 'AGORACRED') {
         const optAgo = document.createElement('option');
         optAgo.value = 'CONSOLIDADO_AGORACRED';
-        optAgo.textContent = 'Visão Geral Consolidada — AGORACRED';
+        optAgo.textContent = '── Visão Geral Consolidada — AGORACRED ──';
         sel.appendChild(optAgo);
     }
 
     const optTabela = document.createElement('option');
     optTabela.value = 'LISTA_OPERADORES';
-    optTabela.textContent = 'Lista Geral de Operadores (Tabela)';
+    optTabela.textContent = '── Lista Geral (Tabela) ──';
     sel.appendChild(optTabela);
+
+    // Separador visual
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '─────────────────────';
+    sel.appendChild(sep);
+
+    // Filtra e popula operadores individuais
+    const operadoresFiltrados = (window.todosOperadoresCadastrados || []).filter(op => {
+        const matchBanco = banco === 'TODOS' || op.banco === banco;
+        const matchAtiv = atividade === 'TODOS' || (op.atividade && op.atividade.toUpperCase() === 'ATIVO');
+        return matchBanco && matchAtiv;
+    });
+
+    const loginsUnicos = new Set();
+    operadoresFiltrados.forEach(op => {
+        if (op.login && !loginsUnicos.has(op.login)) {
+            loginsUnicos.add(op.login);
+            const opt = document.createElement('option');
+            opt.value = op.login;
+            opt.dataset.banco = op.banco;
+            opt.textContent = `${op.login}${op.banco ? ' (' + op.banco + ')' : ''}`;
+            sel.appendChild(opt);
+        }
+    });
 
     // Recupera valor se ainda existir na lista de opções
     if (Array.from(sel.options).some(opt => opt.value === valAtual)) {
@@ -1301,8 +1327,9 @@ function atualizarFiltrosOperadoresAdm() {
         sel.value = banco === 'AGORACRED' ? 'CONSOLIDADO_AGORACRED' : 'CONSOLIDADO_SEMEAR';
     }
 
-    console.log(`[ADM FILTROS] Filtros de operadores atualizados. Banco: ${banco}`);
+    console.log(`[ADM FILTROS] Operadores atualizados. Banco: ${banco}, Total: ${operadoresFiltrados.length}`);
 }
+
 
 function filtrarBancoOperadoresAdm() {
     // Ao mudar o banco na aba operadores, atualiza a lista de operadores disponíveis
