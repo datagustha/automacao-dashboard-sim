@@ -103,7 +103,7 @@ def montar_ranking(
     faixa_filtro: str = 'todas',
     data_inicio: Optional[str] = None,
     data_fim: Optional[str] = None
-) -> Tuple[List[Dict[str, Any]], Dict[str, Any], int, float, int, float, float, float]:
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any], int, float, int, float, float, float, Optional[str]]:
     """
     Calcula a performance de cada operador, aplica os filtros de busca e
     monta o ranking ordenado de faturamento/atingimento de metas.
@@ -640,6 +640,7 @@ def montar_dashboard_adm(
         mes=mes,
         operador_filtro=operador_filtro,
         contrato_filtro=contrato_filtro,
+        faixa_filtro=faixa_filtro,
         data_inicio=data_inicio,
         data_fim=data_fim
     )
