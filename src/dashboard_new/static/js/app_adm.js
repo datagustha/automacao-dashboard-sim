@@ -930,6 +930,16 @@ function navegar(pagina) {
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) pageTitle.textContent = titulos[pagina] || pagina;
 
+    // Se estiver na aba Operadores, oculta o multiselect de operadores do topo global
+    const topOperadorMultiselect = document.getElementById('multiselect-operador-adm');
+    if (topOperadorMultiselect) {
+        if (pagina === 'operadores') {
+            topOperadorMultiselect.style.display = 'none';
+        } else {
+            topOperadorMultiselect.style.display = 'block';
+        }
+    }
+
     // Atualiza dados específicos de cada aba ao navegar
     if (pagina === 'pagamentos') {
         if (typeof carregarPagamentosAdm === 'function') {
@@ -1257,19 +1267,15 @@ function obterDadosConsolidadosBanco(banco) {
 
 function atualizarFiltrosOperadoresAdm() {
     const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
-    const atividade = document.getElementById('filtro-atividade-adm')?.value || 'ATIVO';
     const sel = document.getElementById('filtro-operador-perf-adm');
-    const datalist = document.getElementById('datalist-operadores-perf');
-    const buscaInput = document.getElementById('busca-operador-perf-adm');
-
     if (!sel) return;
 
-    // Salva o valor atualmente selecionado no select auxiliar
+    // Salva o valor atualmente selecionado
     const valAtual = sel.value;
 
-    // Limpa e repovoa o select auxiliar com as opções estruturadas
+    // Limpa e repovoa com apenas as visões consolidadas (sem individuais)
     sel.innerHTML = '';
-    
+
     if (banco === 'TODOS' || banco === 'SEMEAR') {
         const optSem = document.createElement('option');
         optSem.value = 'CONSOLIDADO_SEMEAR';
@@ -1288,47 +1294,14 @@ function atualizarFiltrosOperadoresAdm() {
     optTabela.textContent = 'Lista Geral de Operadores (Tabela)';
     sel.appendChild(optTabela);
 
-    // Filtra os operadores cadastrados com base no banco e atividade
-    const operadoresFiltrados = todosOperadoresCadastrados.filter(op => {
-        const matchBanco = banco === 'TODOS' || op.banco === banco;
-        const matchAtiv = atividade === 'TODOS' || (op.atividade && op.atividade.toUpperCase() === 'ATIVO');
-        return matchBanco && matchAtiv;
-    });
-
-    // Popula logins individuais
-    const loginsUnicos = new Set();
-    operadoresFiltrados.forEach(op => {
-        if (op.login && !loginsUnicos.has(op.login)) {
-            loginsUnicos.add(op.login);
-            const opt = document.createElement('option');
-            opt.value = op.login;
-            opt.dataset.banco = op.banco;
-            opt.textContent = op.login;
-            sel.appendChild(opt);
-        }
-    });
-
     // Recupera valor se ainda existir na lista de opções
     if (Array.from(sel.options).some(opt => opt.value === valAtual)) {
         sel.value = valAtual;
     } else {
-        // Fallback: seleciona o primeiro consolidado disponível para o banco
         sel.value = banco === 'AGORACRED' ? 'CONSOLIDADO_AGORACRED' : 'CONSOLIDADO_SEMEAR';
     }
 
-    // Popula datalist do autocomplete de busca
-    if (datalist) {
-        datalist.innerHTML = '';
-        operadoresFiltrados.forEach(op => {
-            const opt = document.createElement('option');
-            opt.value = op.login;
-            opt.textContent = op.login; // Mostra apenas o login do operador sem sufixo redundante
-            datalist.appendChild(opt);
-        });
-    }
-
-
-    console.log(`[ADM FILTROS] Filtros de operadores atualizados. Banco: ${banco}, Atividade: ${atividade}, Total: ${operadoresFiltrados.length}`);
+    console.log(`[ADM FILTROS] Filtros de operadores atualizados. Banco: ${banco}`);
 }
 
 function filtrarBancoOperadoresAdm() {
