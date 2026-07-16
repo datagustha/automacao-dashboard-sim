@@ -75,11 +75,12 @@ def api_resumo(login):
                 'message': f'Operador {login} não encontrado'
             }), 404
         
-        # Filtros de data
+        # Filtros de data e faixa
         ano = request.args.get('ano', datetime.now().year, type=int)
         mes = request.args.get('mes', datetime.now().month, type=int)
+        faixa = request.args.get('faixa', 'todas')
         
-        resultado = montar_dashboard_operador(operador, ano, mes)
+        resultado = montar_dashboard_operador(operador, ano, mes, faixa=faixa)
         
         if resultado:
             return jsonify({'success': True, 'data': resultado})

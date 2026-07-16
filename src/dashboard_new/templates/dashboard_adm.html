@@ -127,103 +127,109 @@
             </header>
             
             <!-- Barra de Filtros Global do Admin (Mês, Ano, Banco, Atividade, Operadores e Faixas) -->
-            <div class="filters-bar filters-adm" style="margin: 0 24px 16px;">
-                <div class="filter-group">
-                    <i class="fas fa-calendar"></i>
-                    <select id="filtro-mes-adm" onchange="carregarDadosAdm()">
-                        <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
-                        <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                        <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
-                        <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                        <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
-                        <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                        <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
-                        <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                        <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
-                        <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                        <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
-                        <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <i class="fas fa-calendar-alt"></i>
-                    <select id="filtro-ano-adm" onchange="carregarDadosAdm()">
-                        <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                        <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                        <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <i class="fas fa-university"></i>
-                    <select id="filtro-banco-adm" onchange="carregarDadosAdm()">
-                        <option value="TODOS">Todos os Bancos</option>
-                        <option value="SEMEAR">SEMEAR</option>
-                        <option value="AGORACRED">AGORACRED</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <i class="fas fa-user-check"></i>
-                    <select id="filtro-activity-adm" onchange="carregarDadosAdm()">
-                        <option value="ATIVO">Somente Ativos</option>
-                        <option value="TODOS">Todos</option>
-                    </select>
-                </div>
-
-                <!-- Input oculto para operadores selecionados -->
-                <input type="hidden" id="filtro-operador-adm" value="TODOS">
-                
-                <!-- Dropdown Multiselect Customizado Premium para Operadores -->
-                <div class="filter-group dropdown-multiselect" id="multiselect-operador-adm" style="position:relative; z-index:100; min-width:180px; flex:1;">
-                    <button type="button" onclick="toggleDropdownMultiselect('dropdown-operadores-content')" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
-                        <span><i class="fas fa-user-friends" style="margin-right:6px;color:var(--purple-main);"></i><span id="label-operadores-selecionados" style="color:var(--text-main);">Todos os Operadores</span></span>
-                        <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
-                    </button>
-                    <div id="dropdown-operadores-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:280px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
-                        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
-                            <input type="checkbox" id="chk-operador-todos" checked onchange="toggleTodosOperadores(this)"> Todos os Operadores
-                        </label>
-                        <div class="options-operadores-container" id="options-operadores-container" style="display:flex;flex-direction:column;gap:2px;">
-                            <!-- Preenchido dinamicamente via JS -->
-                        </div>
+            <div class="filters-bar filters-adm" style="margin: 0 24px 16px; display: flex; flex-direction: column; gap: 12px; align-items: stretch; padding: 16px 20px;">
+                <!-- Linha 1: Seletores de período e ações -->
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-start; width: 100%;">
+                    <div class="filter-group" style="min-width: 140px; flex: 1;">
+                        <i class="fas fa-calendar"></i>
+                        <select id="filtro-mes-adm" onchange="carregarDadosAdm()" style="width: 100%;">
+                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
+                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
+                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
+                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
+                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
+                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
+                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width: 100px; flex: 1;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="filtro-ano-adm" onchange="carregarDadosAdm()" style="width: 100%;">
+                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width: 160px; flex: 1.5;">
+                        <i class="fas fa-university"></i>
+                        <select id="filtro-banco-adm" onchange="carregarDadosAdm()" style="width: 100%;">
+                            <option value="TODOS">Todos os Bancos</option>
+                            <option value="SEMEAR">SEMEAR</option>
+                            <option value="AGORACRED">AGORACRED</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="min-width: 160px; flex: 1.5;">
+                        <i class="fas fa-user-check"></i>
+                        <select id="filtro-atividade-adm" onchange="carregarDadosAdm()" style="width: 100%;">
+                            <option value="ATIVO">Somente Ativos</option>
+                            <option value="TODOS">Todos</option>
+                        </select>
+                    </div>
+                    <div id="badge-filtros-ativos-adm" style="display:none;">
+                        <span class="badge-warning">Filtros ativos</span>
+                    </div>
+                    <div class="filter-group" style="margin-left: auto;">
+                        <button onclick="limparFiltrosTodosAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar todos os filtros">
+                            <i class="fas fa-times-circle" style="color:#dc2626;"></i> Limpar Filtros
+                        </button>
                     </div>
                 </div>
-
-                <!-- Input oculto para faixas selecionadas -->
-                <input type="hidden" id="filtro-faixa-adm" value="todas">
                 
-                <!-- Dropdown Multiselect Customizado Premium -->
-                <div class="filter-group dropdown-multiselect" id="multiselect-faixa-adm" style="position:relative; z-index:100; min-width:280px; flex:1.5;">
-                    <button type="button" onclick="toggleDropdownMultiselect('dropdown-faixas-content')" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
-                        <span><i class="fas fa-tag" style="margin-right:6px;color:var(--purple-main);"></i><span id="label-faixas-selecionadas" style="color:var(--text-main);">Todas as faixas</span></span>
-                        <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
-                    </button>
-                    <div id="dropdown-faixas-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:280px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
-                        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
-                            <input type="checkbox" id="chk-faixa-todas" checked onchange="toggleTodasFaixas(this)"> Todas as faixas
-                        </label>
-                        <div class="options-faixas-container" style="display:flex;flex-direction:column;gap:2px;">
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 10 a 30" onchange="atualizarSelecaoFaixas()"> Fase 10 a 30</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 31 a 60" onchange="atualizarSelecaoFaixas()"> Fase 31 a 60</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 61 a 90" onchange="atualizarSelecaoFaixas()"> Fase 61 a 90</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 91 a 120" onchange="atualizarSelecaoFaixas()"> Fase 91 a 120</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 121 a 180" onchange="atualizarSelecaoFaixas()"> Fase 121 a 180</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 181 a 240" onchange="atualizarSelecaoFaixas()"> Fase 181 a 240</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 241 a 360" onchange="atualizarSelecaoFaixas()"> Fase 241 a 360</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 361 a 720" onchange="atualizarSelecaoFaixas()"> Fase 361 a 720</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 721 a 1080" onchange="atualizarSelecaoFaixas()"> Fase 721 a 1080</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 1081 a 1440" onchange="atualizarSelecaoFaixas()"> Fase 1081 a 1440</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 1441 a 1800" onchange="atualizarSelecaoFaixas()"> Fase 1441 a 1800</label>
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="> 1800" onchange="atualizarSelecaoFaixas()"> &gt; 1800</label>
+                <!-- Linha 2: Dropdowns Grandes Lado a Lado -->
+                <div style="display: flex; gap: 16px; align-items: center; width: 100%;">
+                    <!-- Input oculto para operadores selecionados -->
+                    <input type="hidden" id="filtro-operador-adm" value="TODOS">
+                    
+                    <!-- Dropdown Multiselect Customizado Premium para Operadores -->
+                    <div class="filter-group dropdown-multiselect" id="multiselect-operador-adm" style="position:relative; z-index:100; flex: 1; width: 50%; min-width: 250px; background: white; padding: 0;">
+                        <button type="button" onclick="toggleDropdownMultiselect('dropdown-operadores-content')" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
+                            <span><i class="fas fa-user-friends" style="margin-right:8px;color:var(--purple-main);"></i><span id="label-operadores-selecionados" style="color:var(--text-main); font-size: 13px;">Todos os Operadores</span></span>
+                            <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
+                        </button>
+                        <div id="dropdown-operadores-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:280px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
+                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
+                                <input type="checkbox" id="chk-operador-todos" checked onchange="toggleTodosOperadores(this)"> Todos os Operadores
+                            </label>
+                            <div class="options-operadores-container" id="options-operadores-container" style="display:flex;flex-direction:column;gap:2px;">
+                                <!-- Preenchido dinamicamente via JS -->
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div id="badge-filtros-ativos-adm" style="display:none;">
-                    <span class="badge-warning">Filtros ativos</span>
-                </div>
-                <div class="filter-group">
-                    <button onclick="limparFiltrosTodosAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar todos os filtros">
-                        <i class="fas fa-times-circle" style="color:#dc2626;"></i> Limpar Filtros
-                    </button>
+
+                    <!-- Input oculto para faixas selecionadas -->
+                    <input type="hidden" id="filtro-faixa-adm" value="todas">
+                    
+                    <!-- Dropdown Multiselect Customizado Premium -->
+                    <div class="filter-group dropdown-multiselect" id="multiselect-faixa-adm" style="position:relative; z-index:100; flex: 1; width: 50%; min-width: 250px; background: white; padding: 0;">
+                        <button type="button" onclick="toggleDropdownMultiselect('dropdown-faixas-content')" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
+                            <span><i class="fas fa-tag" style="margin-right:8px;color:var(--purple-main);"></i><span id="label-faixas-selecionadas" style="color:var(--text-main); font-size: 13px;">Todas as faixas</span></span>
+                            <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
+                        </button>
+                        <div id="dropdown-faixas-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:280px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
+                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
+                                <input type="checkbox" id="chk-faixa-todas" checked onchange="toggleTodasFaixas(this)"> Todas as faixas
+                            </label>
+                            <div class="options-faixas-container" style="display:flex;flex-direction:column;gap:2px;">
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 10 a 30" onchange="atualizarSelecaoFaixas()"> Fase 10 a 30</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 31 a 60" onchange="atualizarSelecaoFaixas()"> Fase 31 a 60</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 61 a 90" onchange="atualizarSelecaoFaixas()"> Fase 61 a 90</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 91 a 120" onchange="atualizarSelecaoFaixas()"> Fase 91 a 120</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 121 a 180" onchange="atualizarSelecaoFaixas()"> Fase 121 a 180</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 181 a 240" onchange="atualizarSelecaoFaixas()"> Fase 181 a 240</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 241 a 360" onchange="atualizarSelecaoFaixas()"> Fase 241 a 360</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 361 a 720" onchange="atualizarSelecaoFaixas()"> Fase 361 a 720</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 721 a 1080" onchange="atualizarSelecaoFaixas()"> Fase 721 a 1080</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 1081 a 1440" onchange="atualizarSelecaoFaixas()"> Fase 1081 a 1440</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="Fase 1441 a 1800" onchange="atualizarSelecaoFaixas()"> Fase 1441 a 1800</label>
+                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item" value="> 1800" onchange="atualizarSelecaoFaixas()"> &gt; 1800</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- FIM DA BARRA DE FILTROS GLOBAL ADM -->
@@ -616,110 +622,43 @@
             <!-- PAGAMENTOS (ADM)                    -->
             <!-- ==================================== -->
             <section id="page-pagamentos" class="page">
-                <!-- Filtros da página de Pagamentos -->
-                <div class="filters-bar filters-adm" style="margin-bottom:12px;">
-                    <div class="filter-group">
-                        <i class="fas fa-calendar"></i>
-                        <select id="filtro-pag-mes-adm" onchange="carregarPagamentosAdm()">
-                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option><option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option><option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option><option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option><option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option><option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option><option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-alt"></i>
-                        <select id="filtro-pag-ano-adm" onchange="carregarPagamentosAdm()">
-                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-user-check"></i>
-                        <select id="filtro-pag-atividade-adm" onchange="carregarPagamentosAdm()">
-                            <option value="ATIVO">Somente Ativos</option>
-                            <option value="TODOS">Todos</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-university"></i>
-                        <select id="filtro-pag-banco-adm" onchange="carregarPagamentosAdm()">
-                            <option value="TODOS">Todos os Bancos</option>
-                            <option value="SEMEAR">SEMEAR</option>
-                            <option value="AGORACRED">AGORACRED</option>
-                        </select>
-                    </div>
-                    <div class="filter-group" style="min-width:200px;flex:1;">
+                <!-- Elementos ocultos para compatibilidade de JS legado -->
+                <select id="filtro-pag-operador-adm" style="display:none;"><option value="TODOS">Todos</option></select>
+                <datalist id="datalist-operadores-pag" style="display:none;"></datalist>
+                <select id="filtro-pag-mes-adm" style="display:none;"></select>
+                <select id="filtro-pag-ano-adm" style="display:none;"></select>
+                <select id="filtro-pag-atividade-adm" style="display:none;"></select>
+                <select id="filtro-pag-banco-adm" style="display:none;"></select>
+                <input type="hidden" id="filtro-pag-fase-adm" value="todas">
+
+                <!-- Filtros da página de Pagamentos (Apenas específicos) -->
+                <div class="filters-bar" style="margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <!-- Busca por cliente ou contrato -->
+                    <div class="filter-group" style="flex:2; min-width:250px;">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="busca-pag-operador-adm"
-                               list="datalist-operadores-pag"
-                               placeholder="Buscar ou selecionar operador..."
-                               oninput="onBuscaOperadorPag(this.value)"
-                               autocomplete="off"
-                               style="width:100%;">
-                        <datalist id="datalist-operadores-pag"></datalist>
+                        <input type="text" id="filtro-pag-busca-adm" placeholder="Buscar por cliente ou contrato..." oninput="filtrarTabelaPagamentosAdm()" style="width:100%;">
                     </div>
-                    <!-- Select auxiliar oculto para compatibilidade de eventos de carga -->
-                    <div class="filter-group" style="display:none;">
-                        <select id="filtro-pag-operador-adm" onchange="carregarPagamentosAdm()">
-                            <option value="TODOS">Todos os Operadores</option>
-                        </select>
+
+                    <!-- Período Data Range -->
+                    <div class="filter-group" style="flex:1.5; min-width:280px; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="date" id="filtro-pag-inicio-adm" onchange="carregarPagamentosAdm()" style="padding:10px 4px;">
+                        <span style="color:var(--text-muted);font-size:12px;">→</span>
+                        <input type="date" id="filtro-pag-fim-adm" onchange="carregarPagamentosAdm()" style="padding:10px 4px;">
                     </div>
+
+                    <!-- Botão Limpar Filtros Específicos -->
                     <div class="filter-group">
-                        <button onclick="limparFiltrosPagAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar todos os filtros">
+                        <button onclick="limparFiltrosPagAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar filtros específicos de pagamentos">
                             <i class="fas fa-times-circle" style="color:#dc2626;"></i> Limpar Filtros
                         </button>
                     </div>
-                    <!-- Botão de download CSV dos pagamentos filtrados -->
-                    <!-- Baixa apenas os dados que estão visíveis com os filtros atuais -->
+
+                    <!-- Exportar CSV -->
                     <div class="filter-group">
-                        <button id="btn-download-pagamentos-adm" onclick="exportarPagamentosCSV()" title="Baixar pagamentos filtrados em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1px solid #7e3d9740;background:linear-gradient(135deg,#7e3d97,#a855f7);color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                        <button id="btn-download-pagamentos-adm" onclick="exportarPagamentosCSV()" title="Baixar pagamentos filtrados em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7e3d97,#a855f7);color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
                             <i class="fas fa-download"></i> Exportar CSV
                         </button>
-                    </div>
-                </div>
-                <div class="filters-bar filters-adm-second" style="margin-bottom:16px;">
-                    <div class="filter-group" style="flex:1;">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="filtro-pag-busca-adm" placeholder="Buscar por cliente ou contrato..." oninput="filtrarTabelaPagamentosAdm()">
-                    </div>
-
-                    <!-- Multiselect de Faixas de Atraso — Pagamentos Admin -->
-                    <input type="hidden" id="filtro-pag-fase-adm" value="todas">
-                    <div class="filter-group dropdown-multiselect" id="multiselect-faixa-pag-adm" style="position:relative;z-index:100;min-width:280px;flex:1.5;">
-                        <button type="button" onclick="toggleDropdownMultiselect('dropdown-faixas-pag-adm-content')" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
-                            <span><i class="fas fa-tag" style="margin-right:6px;color:var(--purple-main);"></i><span id="label-faixas-pag-adm" style="color:var(--text-main);">Todas as faixas</span></span>
-                            <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
-                        </button>
-                        <div id="dropdown-faixas-pag-adm-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:320px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
-                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
-                                <input type="checkbox" id="chk-faixa-pag-todas-adm" checked onchange="toggleTodasFaixasPagAdm(this)"> Todas as faixas
-                            </label>
-                            <div style="display:flex;flex-direction:column;gap:2px;">
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 10 a 30" onchange="atualizarFaixasPagAdm()"> Fase 10 a 30</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 31 a 60" onchange="atualizarFaixasPagAdm()"> Fase 31 a 60</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 61 a 90" onchange="atualizarFaixasPagAdm()"> Fase 61 a 90</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 91 a 120" onchange="atualizarFaixasPagAdm()"> Fase 91 a 120</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 121 a 180" onchange="atualizarFaixasPagAdm()"> Fase 121 a 180</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 181 a 240" onchange="atualizarFaixasPagAdm()"> Fase 181 a 240</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 241 a 360" onchange="atualizarFaixasPagAdm()"> Fase 241 a 360</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 361 a 720" onchange="atualizarFaixasPagAdm()"> Fase 361 a 720</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 721 a 1080" onchange="atualizarFaixasPagAdm()"> Fase 721 a 1080</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 1081 a 1440" onchange="atualizarFaixasPagAdm()"> Fase 1081 a 1440</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="Fase 1441 a 1800" onchange="atualizarFaixasPagAdm()"> Fase 1441 a 1800</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-pag-adm" value="> 1800" onchange="atualizarFaixasPagAdm()"> &gt; 1800</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-range"></i>
-                        <input type="date" id="filtro-pag-inicio-adm" onchange="carregarPagamentosAdm()" placeholder="Início">
-                        <span style="color:var(--text-muted);font-size:12px;">→</span>
-                        <input type="date" id="filtro-pag-fim-adm" onchange="carregarPagamentosAdm()" placeholder="Fim">
                     </div>
                 </div>
 
@@ -772,95 +711,27 @@
             <!-- ==================================== -->
             <section id="page-operadores" class="page">
                 <!-- Filtros da página de Operadores -->
-                <div class="filters-bar" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-                    <div class="filter-group">
-                        <i class="fas fa-calendar"></i>
-                        <select id="filtro-mes-adm-op" onchange="filtrarPeriodoOperadoresAdm()">
-                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
-                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
-                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
-                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
-                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
-                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
-                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-year"></i>
-                        <select id="filtro-ano-adm-op" onchange="filtrarPeriodoOperadoresAdm()">
-                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-user-check"></i>
-                        <select id="filtro-atividade-op-adm" onchange="filtrarPeriodoOperadoresAdm()">
-                            <option value="ATIVO">Somente Ativos</option>
-                            <option value="TODOS">Todos</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-university"></i>
-                        <select id="filtro-banco-op-adm" onchange="filtrarBancoOperadoresAdm()">
-                            <option value="TODOS">Todos os Bancos</option>
-                            <option value="SEMEAR">SEMEAR</option>
-                            <option value="AGORACRED">AGORACRED</option>
-                        </select>
-                    </div>
-                    <div class="filter-group" style="flex:1;min-width:220px;">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="busca-operador-perf-adm"
-                               list="datalist-operadores-perf"
-                               placeholder="Buscar ou selecionar operador..."
-                               oninput="onBuscaOperadorAdm(this.value)"
-                               autocomplete="off"
-                               style="width:100%;">
-                        <datalist id="datalist-operadores-perf"></datalist>
-                    </div>
-                    <div class="filter-group">
+                <div class="filters-bar" style="margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <!-- Elementos ocultos para compatibilidade com JS legado -->
+                    <select id="filtro-mes-adm-op" style="display:none;"></select>
+                    <select id="filtro-ano-adm-op" style="display:none;"></select>
+                    <select id="filtro-atividade-op-adm" style="display:none;"></select>
+                    <select id="filtro-banco-op-adm" style="display:none;"></select>
+                    <input type="hidden" id="busca-operador-perf-adm" value="">
+                    <input type="hidden" id="filtro-faixa-op-adm" value="todas">
+
+                    <!-- Selecionar Operador (Unificado) -->
+                    <div class="filter-group" style="flex:2; min-width:300px;">
                         <i class="fas fa-user-gear"></i>
-                        <select id="filtro-operador-perf-adm" onchange="selecionarOperadorPerfAdm()">
+                        <select id="filtro-operador-perf-adm" onchange="selecionarOperadorPerfAdm()" style="width:100%; font-weight:600; padding:10px 8px; border:none; background:transparent; outline:none; font-size:14px; color:#374151;">
                             <option value="CONSOLIDADO_SEMEAR">Visão Geral — SEMEAR</option>
                             <option value="CONSOLIDADO_AGORACRED">Visão Geral — AGORACRED</option>
                         </select>
                     </div>
 
-                    <!-- Multiselect de Faixas de Atraso — Operadores Admin -->
-                    <input type="hidden" id="filtro-faixa-op-adm" value="todas">
-                    <div class="filter-group dropdown-multiselect" id="multiselect-faixa-op-adm" style="position:relative;z-index:100;min-width:280px;flex:1.5;">
-                        <button type="button" onclick="toggleDropdownMultiselect('dropdown-faixas-op-adm-content')" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
-                            <span><i class="fas fa-tag" style="margin-right:6px;color:var(--purple-main);"></i><span id="label-faixas-op-adm" style="color:var(--text-main);">Todas as faixas</span></span>
-                            <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
-                        </button>
-                        <div id="dropdown-faixas-op-adm-content" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:320px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
-                            <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
-                                <input type="checkbox" id="chk-faixa-op-todas-adm" checked onchange="toggleTodasFaixasOpAdm(this)"> Todas as faixas
-                            </label>
-                            <div style="display:flex;flex-direction:column;gap:2px;">
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 10 a 30" onchange="atualizarFaixasOpAdm()"> Fase 10 a 30</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 31 a 60" onchange="atualizarFaixasOpAdm()"> Fase 31 a 60</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 61 a 90" onchange="atualizarFaixasOpAdm()"> Fase 61 a 90</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 91 a 120" onchange="atualizarFaixasOpAdm()"> Fase 91 a 120</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 121 a 180" onchange="atualizarFaixasOpAdm()"> Fase 121 a 180</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 181 a 240" onchange="atualizarFaixasOpAdm()"> Fase 181 a 240</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 241 a 360" onchange="atualizarFaixasOpAdm()"> Fase 241 a 360</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 361 a 720" onchange="atualizarFaixasOpAdm()"> Fase 361 a 720</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 721 a 1080" onchange="atualizarFaixasOpAdm()"> Fase 721 a 1080</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 1081 a 1440" onchange="atualizarFaixasOpAdm()"> Fase 1081 a 1440</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="Fase 1441 a 1800" onchange="atualizarFaixasOpAdm()"> Fase 1441 a 1800</label>
-                                <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-op-adm" value="> 1800" onchange="atualizarFaixasOpAdm()"> &gt; 1800</label>
-                            </div>
-                        </div>
-                    </div>
-
+                    <!-- Botão Limpar Filtros -->
                     <div class="filter-group">
-                        <button onclick="limparFiltrosOpAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar filtros de operador">
+                        <button onclick="limparFiltrosOpAdm()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:#f9fafb;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;" title="Limpar seleção de operador">
                             <i class="fas fa-times-circle" style="color:#dc2626;"></i> Limpar Filtros
                         </button>
                     </div>

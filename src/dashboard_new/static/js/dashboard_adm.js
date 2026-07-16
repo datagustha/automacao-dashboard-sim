@@ -751,7 +751,7 @@ async function carregarPagamentosAdm() {
     const ano = document.getElementById('filtro-ano-adm')?.value || getAnoAtual();
     const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
     const operador = document.getElementById('filtro-operador-adm')?.value || 'TODOS';
-    const atividade = document.getElementById('filtro-activity-adm')?.value || 'ATIVO';
+    const atividade = document.getElementById('filtro-atividade-adm')?.value || 'ATIVO';
 
     const dataInicio = document.getElementById('filtro-pag-inicio-adm')?.value || '';
     const dataFim = document.getElementById('filtro-pag-fim-adm')?.value || '';

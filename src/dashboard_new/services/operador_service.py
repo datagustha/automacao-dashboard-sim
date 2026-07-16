@@ -45,7 +45,7 @@ def _pagamento_no_mes(pagamento: dict, a: int, m: int) -> bool:
         return False
 
 
-def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
+def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None, faixa: str = 'todas'):
     """
     Monta o dashboard completo do operador.
     """
@@ -77,6 +77,14 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
     if pagamentos and not isinstance(pagamentos[0], dict):
         pagamentos = [p.__dict__ for p in pagamentos]
     
+    # Filtra por faixa de atraso se fornecido (SEMEAR apenas)
+    if banco == 'SEMEAR' and faixa and faixa != 'todas':
+        if ',' in faixa:
+            lista_faixas = [f.strip().lower() for f in faixa.split(',') if f.strip()]
+            pagamentos = [p for p in pagamentos if (p.get('faseAtraso', '') or '').strip().lower() in lista_faixas]
+        else:
+            pagamentos = [p for p in pagamentos if (p.get('faseAtraso', '') or '').strip().lower() == faixa.strip().lower()]
+
     # Calcular ano/mês anterior
     ano_ant = ano
     mes_ant = mes - 1
@@ -125,9 +133,17 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
         # Filtra pagamentos do mês
         op_pagamentos_mes = [p for p in op_pagamentos if _pagamento_no_mes(p, ano, mes)]
 
-        # Filtra fora da fase para o Semear
+        # Filtra por faixa de atraso se fornecido (SEMEAR apenas)
         if banco == 'SEMEAR':
-            op_pagamentos_mes = [p for p in op_pagamentos_mes if p.get('faseAtraso') != "Fora da fase"]
+            if faixa and faixa != 'todas':
+                if ',' in faixa:
+                    lista_faixas = [f.strip().lower() for f in faixa.split(',') if f.strip()]
+                    op_pagamentos_mes = [p for p in op_pagamentos_mes if (p.get('faseAtraso', '') or '').strip().lower() in lista_faixas]
+                else:
+                    op_pagamentos_mes = [p for p in op_pagamentos_mes if (p.get('faseAtraso', '') or '').strip().lower() == faixa.strip().lower()]
+            else:
+                # Caso contrário, remove "Fora da fase" por padrão
+                op_pagamentos_mes = [p for p in op_pagamentos_mes if p.get('faseAtraso') != "Fora da fase"]
 
         op_fat = sum(float(p.get('valorTotal', 0.0) or 0.0) for p in op_pagamentos_mes)
         # Guarda pagamentos_mes junto com o faturamento para calcular max_data_banco posteriormente

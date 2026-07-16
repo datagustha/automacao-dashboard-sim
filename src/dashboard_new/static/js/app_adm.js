@@ -357,15 +357,6 @@ function limparFiltrosPagAdm() {
 }
 
 function limparFiltrosOpAdm() {
-    const filtroBanco = document.getElementById('filtro-banco-op-adm');
-    const filtroAtiv = document.getElementById('filtro-atividade-op-adm');
-    const busca = document.getElementById('busca-operador-perf-adm');
-    const sel = document.getElementById('filtro-operador-perf-adm');
-
-    if (filtroBanco) filtroBanco.value = 'TODOS';
-    if (filtroAtiv) filtroAtiv.value = 'ATIVO';
-    if (busca) busca.value = '';
-    atualizarFiltrosOperadoresAdm();
     voltarConsolidadoAdm();
 }
 
@@ -909,6 +900,11 @@ function renderizarOperadoresAdm(dados) {
     todosOperadoresCadastrados = todos;
     window.todosOperadoresCadastrados = todos; // garante acesso via window.* (usado em dashboard_adm.js)
     atualizarFiltrosOperadoresAdm();
+    
+    // Se a aba de operadores estiver ativa, atualiza a visão individual/consolidada
+    if (document.getElementById('page-operadores')?.classList.contains('active')) {
+        selecionarOperadorPerfAdm();
+    }
 }
 
 // ================================================================
@@ -1260,8 +1256,8 @@ function obterDadosConsolidadosBanco(banco) {
 }
 
 function atualizarFiltrosOperadoresAdm() {
-    const banco = document.getElementById('filtro-banco-op-adm')?.value || 'TODOS';
-    const atividade = document.getElementById('filtro-atividade-op-adm')?.value || 'ATIVO';
+    const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
+    const atividade = document.getElementById('filtro-atividade-adm')?.value || 'ATIVO';
     const sel = document.getElementById('filtro-operador-perf-adm');
     const datalist = document.getElementById('datalist-operadores-perf');
     const buscaInput = document.getElementById('busca-operador-perf-adm');
@@ -1364,7 +1360,7 @@ function onBuscaOperadorAdm(valor) {
 function voltarConsolidadoAdm() {
     const sel = document.getElementById('filtro-operador-perf-adm');
     const buscaInput = document.getElementById('busca-operador-perf-adm');
-    const banco = document.getElementById('filtro-banco-op-adm')?.value || 'TODOS';
+    const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
 
     if (buscaInput) buscaInput.value = '';
     if (sel) {
@@ -1445,8 +1441,9 @@ async function selecionarOperadorPerfAdm() {
         tbodyDiario.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Carregando dados do operador...</td></tr>';
     }
     
+    const faixa = document.getElementById('filtro-faixa-adm')?.value || 'todas';
     try {
-        const response = await fetch(`/api/resumo/${login}?mes=${mes}&ano=${ano}`);
+        const response = await fetch(`/api/resumo/${login}?mes=${mes}&ano=${ano}&faixa=${encodeURIComponent(faixa)}`);
         const data = await response.json();
         
         if (data.success) {
