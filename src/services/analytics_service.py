@@ -246,7 +246,8 @@ def calcular_performance_operador(
     ano: int, 
     mes: int,
     login: str = None,
-    banco: str = "SEMEAR"
+    banco: str = "SEMEAR",
+    data_referencia_banco: datetime = None
 ) -> Dict[str, Any]:
     """
     CALCULA A PERFORMANCE COMPLETA DE UM OPERADOR PARA A TABELA.
@@ -255,11 +256,65 @@ def calcular_performance_operador(
     # ----------------------------------------------------------------
     # 1. FILTRA PAGAMENTOS DO MÊS
     # ----------------------------------------------------------------
+    # Guard: se lista de pagamentos estiver vazia, retorna zeros imediatamente
+    # Evita crash ao acessar df['dtPgto'] quando não há dados (ex: faixa filtrada sem registros)
+    if not pagamentos:
+        meta_valor = buscar_meta_do_mes(metas, ano, mes)
+        return {
+            'login': login,
+            'faturamento': 0.0,
+            'feito_diario': 0.0,
+            'meta': round(meta_valor, 2),
+            'meta_diaria': 0.0,
+            'atingido_meta': 0.0,
+            'falta_70': round(meta_valor * 0.7, 2),
+            'falta_80': round(meta_valor * 0.8, 2),
+            'falta_90': round(meta_valor * 0.9, 2),
+            'falta_100': round(meta_valor, 2),
+            'meta_ranking': 0.0,
+            'projecao': 0.0,
+            'projecao_percentual': 0.0,
+            'dias_trabalhados': 0,
+            'dias_restantes': 0,
+            'total_dias_uteis': 0,
+            'quantidade': 0,
+            'ultima_baixa_banco': None,  # sem pagamentos, sem data máxima
+        }
+
+    # Cria DataFrame e converte a coluna de data de pagamento para datetime
     df = pd.DataFrame(pagamentos)
+
+    # Guard: verifica se a coluna dtPgto exists antes de acessá-la
+    # (pode faltar se o dicionário de pagamentos vier com estrutura incorreta)
+    if 'dtPgto' not in df.columns:
+        meta_valor = buscar_meta_do_mes(metas, ano, mes)
+        return {
+            'login': login,
+            'faturamento': 0.0,
+            'feito_diario': 0.0,
+            'meta': round(meta_valor, 2),
+            'meta_diaria': 0.0,
+            'atingido_meta': 0.0,
+            'falta_70': round(meta_valor * 0.7, 2),
+            'falta_80': round(meta_valor * 0.8, 2),
+            'falta_90': round(meta_valor * 0.9, 2),
+            'falta_100': round(meta_valor, 2),
+            'meta_ranking': 0.0,
+            'projecao': 0.0,
+            'projecao_percentual': 0.0,
+            'dias_trabalhados': 0,
+            'dias_restantes': 0,
+            'total_dias_uteis': 0,
+            'quantidade': 0,
+            'ultima_baixa_banco': None,  # sem coluna de data, sem data máxima
+        }
+
+    # Converte a coluna dtPgto para datetime
     df['dtPgto'] = pd.to_datetime(df['dtPgto'])
-    
+
+    # Filtra apenas os pagamentos do mês e ano informados
     df_mes = df[
-        (df['dtPgto'].dt.month == mes) & 
+        (df['dtPgto'].dt.month == mes) &
         (df['dtPgto'].dt.year == ano)
     ].copy()
     
@@ -293,15 +348,37 @@ def calcular_performance_operador(
     # ----------------------------------------------------------------
     # 4. CÁLCULO DE DIAS ÚTEIS
     # ----------------------------------------------------------------
-    ultima_data = df_mes['dtPgto'].max() if not df_mes.empty else datetime.now()
-    
+    # Se uma data de referência global do banco foi fornecida, nós a priorizamos
+    # para garantir consistência no feito_diario de todos os operadores daquele banco
+    if data_referencia_banco is not None:
+        ultima_data = data_referencia_banco
+    else:
+        ultima_data = df_mes['dtPgto'].max() if not df_mes.empty else datetime.now()
+
+    # Formata a data máxima como string ISO para serialização
+    if pd.notna(ultima_data):
+        ultima_baixa_banco_str = ultima_data.strftime('%Y-%m-%d')
+    else:
+        ultima_baixa_banco_str = None
+
     total_dias_uteis, dias_trabalhados = _contar_dias_uteis(ano, mes, ultima_data)
     dias_restantes = total_dias_uteis - dias_trabalhados
     
+    # Determina o dia corrido divisor baseado na última baixa do banco
+    if pd.notna(ultima_data):
+        dia_divisor = ultima_data.day
+    else:
+        import datetime as dt_lib
+        dia_divisor = dt_lib.datetime.now().day
+
+    # Calcula total de dias corridos no mês para projeção
+    import calendar as cal_lib
+    total_dias_corridos_mes = cal_lib.monthrange(ano, mes)[1]
+
     # ----------------------------------------------------------------
-    # 5. CÁLCULO DAS MÉTRICAS
+    # 5. CÁLCULO DAS MÉTRICAS (Unificado com Admin: por dia corrido da data máxima)
     # ----------------------------------------------------------------
-    feito_diario = faturamento / dias_trabalhados if dias_trabalhados > 0 else 0
+    feito_diario = faturamento / dia_divisor if dia_divisor > 0 else 0.0
     meta_diaria = meta_valor / total_dias_uteis if total_dias_uteis > 0 else 0
     atingido_meta = (faturamento / meta_valor) * 100 if meta_valor > 0 else 0
     
@@ -310,11 +387,8 @@ def calcular_performance_operador(
     falta_90 = max(0, (meta_valor * 0.9) - faturamento)
     falta_100 = max(0, meta_valor - faturamento)
     
-    if dias_restantes > 0 and feito_diario > 0:
-        projecao = faturamento + (feito_diario * dias_restantes)
-    else:
-        projecao = faturamento
-    
+    # Projeção baseada no feito_diario corrido multiplicado pelo total de dias corridos do mês
+    projecao = feito_diario * total_dias_corridos_mes
     projecao_percentual = (projecao / meta_valor) * 100 if meta_valor > 0 else 0
     
     # ----------------------------------------------------------------
@@ -338,7 +412,10 @@ def calcular_performance_operador(
         'dias_trabalhados': dias_trabalhados,
         'dias_restantes': dias_restantes,
         'total_dias_uteis': total_dias_uteis,
-        'quantidade': quantidade
+        'quantidade': quantidade,
+        # Data máxima de pagamento desse operador no mês — usada pelo serviço caller
+        # para calcular o máximo do banco inteiro e usar como divisor do feito/dia
+        'ultima_baixa_banco': ultima_baixa_banco_str,
     }
 
 

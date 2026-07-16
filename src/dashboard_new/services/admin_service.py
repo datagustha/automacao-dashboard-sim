@@ -109,6 +109,9 @@ def montar_ranking(
     monta o ranking ordenado de faturamento/atingimento de metas.
 
     Retorna: (ranking_list, faixas_acumuladas, ops_atual, fat_atual, ops_anterior, fat_anterior, ticket_medio, ticket_medio_ant)
+
+    FEITO/DIA: usa a data máxima de pagamento do banco inteiro (não do operador individual),
+    pois as baixas bancárias têm delay e podem não ser uniformes entre operadores.
     """
     ranking_list = []
     total_faturamento = 0.0
@@ -117,17 +120,34 @@ def montar_ranking(
     total_operacoes_ant = 0
     faixas_acumuladas = {}
 
+    # Acumula a data máxima de pagamento do banco inteiro no período
+    # Será usada como divisor do feito/dia para todos os operadores
+    max_data_banco: Optional[datetime] = None
+
     ano_ant, mes_ant = _mes_anterior(ano, mes)
 
     # Verifica se tem filtro de range de data ativo
     tem_range = bool(data_inicio or data_fim)
 
+    # ---------------------------------------------------------------
+    # PRIMEIRA PASSAGEM: coleta pagamentos e performance de cada operador
+    # Também coleta a data máxima de pagamento do banco inteiro
+    # ---------------------------------------------------------------
+    # Lista temporária para recalcular feito_dia após saber o max_data_banco
+    dados_temporarios = []
+
     for op in operadores:
         login = op.get('login')
 
-        # Filtra pelo operador específico caso seja solicitado
-        if operador_filtro != 'TODOS' and login != operador_filtro:
-            continue
+        # Filtra pelo operador específico caso seja solicitado (suporta múltiplos separados por vírgula)
+        if operador_filtro != 'TODOS' and operador_filtro:
+            if ',' in operador_filtro:
+                lista_operadores = [o.strip().upper() for o in operador_filtro.split(',') if o.strip()]
+                if login.strip().upper() not in lista_operadores:
+                    continue
+            else:
+                if login.strip().upper() != operador_filtro.strip().upper():
+                    continue
 
         # Busca os pagamentos e metas do operador com base no banco correspondente
         if banco == 'SEMEAR':
@@ -150,8 +170,13 @@ def montar_ranking(
             ]
 
         # Filtra os pagamentos por faixa de atraso específica (apenas para SEMEAR)
-        if banco == 'SEMEAR' and faixa_filtro != 'todas':
-            pagamentos = [p for p in pagamentos if (p.get('faseAtraso', '') or '') == faixa_filtro]
+        if banco == 'SEMEAR' and faixa_filtro != 'todas' and faixa_filtro:
+            # Suporta múltiplas faixas separadas por vírgula
+            if ',' in faixa_filtro:
+                lista_faixas = [f.strip() for f in faixa_filtro.split(',') if f.strip()]
+                pagamentos = [p for p in pagamentos if (p.get('faseAtraso', '') or '') in lista_faixas]
+            else:
+                pagamentos = [p for p in pagamentos if (p.get('faseAtraso', '') or '') == faixa_filtro]
 
         # Se tem filtro de range, filtra por data range; caso contrário, filtra por mês/ano
         if tem_range:
@@ -164,6 +189,22 @@ def montar_ranking(
             pagamentos_ant = [p for p in pagamentos if _pagamento_no_mes(p, ano_ant, mes_ant)]
             mes_para_meta = mes
             ano_para_meta = ano
+
+        # Coleta a data máxima de pagamento do período deste operador
+        # para compor a data máxima GLOBAL do banco inteiro
+        for p in pagamentos_periodo:
+            dt_val = p.get('dtPgto')
+            if not dt_val:
+                continue
+            try:
+                if isinstance(dt_val, datetime):
+                    dt_obj = dt_val
+                else:
+                    dt_obj = datetime.strptime(str(dt_val)[:10], '%Y-%m-%d')
+                if max_data_banco is None or dt_obj > max_data_banco:
+                    max_data_banco = dt_obj  # atualiza o máximo do banco
+            except Exception:
+                pass
 
         # Calcula a performance do operador (mês atual / período)
         performance = calcular_performance_operador(
@@ -208,21 +249,6 @@ def montar_ranking(
         perc_meta_atual = (faturamento / meta_val * 100) if meta_val > 0 else 0.0
         perc_meta_ant = (faturamento_ant / meta_ant_val * 100) if meta_ant_val > 0 else 0.0
 
-        # Calcula feito_dia (faturamento do período / dias passados no mês)
-        hoje = datetime.now()
-        if tem_range:
-            feito_dia = faturamento  # Sem lógica diária para range
-            dias_passados_calc = 1
-            total_dias_mes = 1
-        else:
-            total_dias_mes = monthrange(ano, mes)[1]
-            dias_passados_calc = hoje.day if (hoje.year == ano and hoje.month == mes) else total_dias_mes
-            feito_dia = faturamento / dias_passados_calc if dias_passados_calc > 0 else 0.0
-
-        # Calcula projeção do mês com base no ritmo atual
-        projecao = (faturamento / dias_passados_calc * total_dias_mes) if dias_passados_calc > 0 else 0.0
-        projecao_percentual = (projecao / meta_val * 100) if meta_val > 0 else 0.0
-
         # Mapeamento do meta_ranking para o mês/ano selecionado
         meta_ranking_val = 0.0
         for m in metas:
@@ -234,34 +260,93 @@ def montar_ranking(
                 else:
                     m_data = m.get('data')
                     m_val = m.get('meta_ranking', 0.0) or 0.0
-                
+
                 if isinstance(m_data, str):
                     dt_obj = datetime.strptime(m_data[:10], '%Y-%m-%d').date()
                 else:
                     dt_obj = m_data
-                
+
                 if dt_obj and dt_obj.year == ano and dt_obj.month == mes:
                     meta_ranking_val = float(m_val)
                     break
             except Exception:
                 continue
 
+        # Armazena os dados temporários — feito_dia e projecao serão calculados
+        # apenas após a primeira passagem, quando tivermos max_data_banco definitivo
+        dados_temporarios.append({
+            'op': op,
+            'login': login,
+            'pagamentos': pagamentos,
+            'faturamento': faturamento,
+            'faturamento_ant': faturamento_ant,
+            'meta_val': meta_val,
+            'meta_ant_val': meta_ant_val,
+            'ops_atual': ops_atual,
+            'ops_anterior': ops_anterior,
+            'tempo_casa': tempo_casa,
+            'perc_meta_atual': perc_meta_atual,
+            'perc_meta_ant': perc_meta_ant,
+            'meta_ranking_val': meta_ranking_val,
+        })
+
+    # ---------------------------------------------------------------
+    # Formata a data máxima do banco para exibição no banner
+    # Exemplo: "14/07/2026"
+    # ---------------------------------------------------------------
+    if max_data_banco:
+        ultima_baixa_str = max_data_banco.strftime('%d/%m/%Y')  # ex: "14/07/2026"
+        dia_divisor = max_data_banco.day  # dia numérico para feito/dia
+    else:
+        ultima_baixa_str = None
+        dia_divisor = datetime.now().day  # fallback para o dia atual
+
+    # ---------------------------------------------------------------
+    # SEGUNDA PASSAGEM: monta o ranking usando dia_divisor do banco
+    # ---------------------------------------------------------------
+    hoje = datetime.now()
+    total_dias_mes = monthrange(ano, mes)[1]
+
+    for item in dados_temporarios:
+        faturamento = item['faturamento']
+
+        # Feito/dia usa a data máxima do banco inteiro, não o dia atual
+        # Isso garante que o cálculo reflita a realidade das baixas bancárias
+        if tem_range:
+            feito_dia = faturamento  # Sem lógica diária para range
+            dias_passados_calc = 1
+            total_dias_calc = 1
+        else:
+            total_dias_calc = total_dias_mes
+            # Usa dia_divisor (data máxima do banco) para meses atuais
+            # Para meses passados usa o total de dias do mês
+            if hoje.year == ano and hoje.month == mes:
+                dias_passados_calc = dia_divisor  # DATA MÁXIMA DO BANCO INTEIRO
+            else:
+                dias_passados_calc = total_dias_mes
+            feito_dia = faturamento / dias_passados_calc if dias_passados_calc > 0 else 0.0
+
+        # Calcula projeção do mês com base no ritmo do feito/dia
+        projecao = (faturamento / dias_passados_calc * total_dias_calc) if dias_passados_calc > 0 else 0.0
+        meta_val = item['meta_val']
+        projecao_percentual = (projecao / meta_val * 100) if meta_val > 0 else 0.0
+
         # Monta a estrutura de dados do operador para o ranking
         ranking_list.append({
-            'login': login,
-            'imagem': op.get('imagem', '') or '',
-            'atividade': op.get('atividade', '') or '',
-            'turno': op.get('turno', ''),
-            'tempo_casa': tempo_casa,
+            'login': item['login'],
+            'imagem': item['op'].get('imagem', '') or '',
+            'atividade': item['op'].get('atividade', '') or '',
+            'turno': item['op'].get('turno', ''),
+            'tempo_casa': item['tempo_casa'],
             'faturamento': faturamento,
-            'faturamento_anterior': faturamento_ant,
-            'quantidade': ops_atual,
-            'feito_dia': feito_dia,
+            'faturamento_anterior': item['faturamento_ant'],
+            'quantidade': item['ops_atual'],
+            'feito_dia': round(feito_dia, 2),
             'meta': meta_val,
-            'meta_anterior': meta_ant_val,
-            'meta_ranking': meta_ranking_val,
-            'perc_meta': perc_meta_atual,
-            'perc_meta_anterior': perc_meta_ant,
+            'meta_anterior': item['meta_ant_val'],
+            'meta_ranking': item['meta_ranking_val'],
+            'perc_meta': item['perc_meta_atual'],
+            'perc_meta_anterior': item['perc_meta_ant'],
             'falta_70': max(0.0, (meta_val * 0.7) - faturamento),
             'falta_80': max(0.0, (meta_val * 0.8) - faturamento),
             'falta_90': max(0.0, (meta_val * 0.9) - faturamento),
@@ -269,15 +354,18 @@ def montar_ranking(
             'projecao': round(projecao, 2),
             'projecao_percentual': round(projecao_percentual, 2),
             'dias_trabalhados': dias_passados_calc,
-            'total_dias_uteis': total_dias_mes,
-            'pagamentos_brutos': pagamentos  # Mantém referência para cálculo de faixas e evolução
+            'total_dias_uteis': total_dias_calc,
+            'ultima_baixa': ultima_baixa_str,  # "Baixas até dia X" — mesma para todos do banco
+            'pagamentos_brutos': item['pagamentos']  # Mantém referência para cálculo de faixas e evolução
         })
 
     # Calcula ticket médio atual e anterior
     ticket_medio = total_faturamento / total_operacoes if total_operacoes > 0 else 0.0
     ticket_medio_ant = total_faturamento_ant / total_operacoes_ant if total_operacoes_ant > 0 else 0.0
 
-    return ranking_list, faixas_acumuladas, total_operacoes, total_faturamento, total_operacoes_ant, total_faturamento_ant, ticket_medio, ticket_medio_ant
+    # Expõe a data máxima do banco como string no primeiro elemento da lista (para uso do caller)
+    # A data fica também no campo dedicado ultima_baixa de cada operador
+    return ranking_list, faixas_acumuladas, total_operacoes, total_faturamento, total_operacoes_ant, total_faturamento_ant, ticket_medio, ticket_medio_ant, ultima_baixa_str
 
 
 def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -317,8 +405,8 @@ def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data
 
 def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[Dict[str, Any]]:
     """
-    Monta a distribuição de faturamento por faixas de atraso para os operadores.
-    Mapeia os valores totais cobrados de cada operador por faixa (faseAtraso).
+    Monta a distribuição de faturamento e quantidade de pagamentos por faixas de atraso para os operadores.
+    Mapeia os valores totais cobrados e a quantidade de cada operador por faixa (faseAtraso).
     """
     faixas_operadores = {}
     fases_encontradas = set()
@@ -341,7 +429,14 @@ def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_i
             fase = p.get('faseAtraso') or 'Outros'
             fases_encontradas.add(str(fase))
 
-            faixas_operadores[login][fase] = faixas_operadores[login].get(fase, 0.0) + (p.get('valorTotal') or 0.0)
+            # Inicializa a fase com estrutura de dicionário para guardar valor e quantidade
+            if fase not in faixas_operadores[login]:
+                faixas_operadores[login][fase] = {'valor': 0.0, 'qtd': 0}
+            elif not isinstance(faixas_operadores[login][fase], dict):
+                faixas_operadores[login][fase] = {'valor': float(faixas_operadores[login][fase]), 'qtd': 0}
+
+            faixas_operadores[login][fase]['valor'] += (p.get('valorTotal') or 0.0)
+            faixas_operadores[login][fase]['qtd'] += 1
 
     # Formata o retorno estruturado esperado pelo frontend
     faixas_list = []
@@ -354,7 +449,14 @@ def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_i
 
         fases_filtradas = sorted([f for f in fases_encontradas if f])
         for fase in fases_filtradas:
-            op_faixas[str(fase)] = faixas_operadores[login].get(fase, 0.0)
+            fase_data = faixas_operadores[login].get(fase, {'valor': 0.0, 'qtd': 0})
+            if not isinstance(fase_data, dict):
+                fase_data = {'valor': float(fase_data), 'qtd': 0}
+            
+            # Mantém chave padrão (valor em reais) para compatibilidade
+            op_faixas[str(fase)] = fase_data['valor']
+            # Adiciona nova chave com sufixo _qtd para a quantidade de contratos
+            op_faixas[str(fase) + '_qtd'] = fase_data['qtd']
 
         faixas_list.append(op_faixas)
 
@@ -517,7 +619,8 @@ def montar_dashboard_adm(
     operadores_agoracred = buscar_dados_agoracred(atividade)
 
     # 2. Monta o ranking e dados de performance dos operadores (SEMEAR)
-    ranking_semear, _, ops_semear, fat_semear, ops_semear_ant, fat_semear_ant, ticket_semear, ticket_semear_ant = montar_ranking(
+    # O 9º valor retornado é a data máxima de pagamento do banco (ex: "14/07/2026")
+    ranking_semear, _, ops_semear, fat_semear, ops_semear_ant, fat_semear_ant, ticket_semear, ticket_semear_ant, ultima_baixa_semear = montar_ranking(
         operadores=operadores_semear,
         banco='SEMEAR',
         ano=ano,
@@ -530,7 +633,7 @@ def montar_dashboard_adm(
     )
 
     # 3. Monta o ranking e dados de performance dos operadores (AGORACRED)
-    ranking_agoracred, _, ops_agoracred, fat_agoracred, ops_agoracred_ant, fat_agoracred_ant, ticket_agoracred, ticket_agoracred_ant = montar_ranking(
+    ranking_agoracred, _, ops_agoracred, fat_agoracred, ops_agoracred_ant, fat_agoracred_ant, ticket_agoracred, ticket_agoracred_ant, ultima_baixa_agoracred = montar_ranking(
         operadores=operadores_agoracred,
         banco='AGORACRED',
         ano=ano,
@@ -584,7 +687,9 @@ def montar_dashboard_adm(
             'evolucao': evolucao_semear,
             'operadores': ranking_semear,
             'faixas': faixas_semear,
-            'resultado_mes_a_mes': historico_semear
+            'resultado_mes_a_mes': historico_semear,
+            # Data máxima de pagamento do SEMEAR (usada no banner "Baixas até dia X")
+            'ultima_baixa': ultima_baixa_semear,
         },
         'agoracred': {
             'faturamento': fat_agoracred,
@@ -596,7 +701,9 @@ def montar_dashboard_adm(
             'ticket_medio_anterior': ticket_agoracred_ant,
             'evolucao': evolucao_agoracred,
             'operadores': ranking_agoracred,
-            'resultado_mes_a_mes': historico_agoracred
+            'resultado_mes_a_mes': historico_agoracred,
+            # Data máxima de pagamento do AGORACRED (usada no banner "Baixas até dia X")
+            'ultima_baixa': ultima_baixa_agoracred,
         },
         'total_operacoes': total_ops,
         'operacoes_anterior': total_ops_ant,

@@ -167,7 +167,7 @@ function renderizarDashboard(dados) {
         document.getElementById('kpi-tma-falado').innerHTML = `Falado no mês: <strong>${dados.tma.tempo_falado || '0h 00min'}</strong>`;
         
         document.getElementById('kpi-tma-acionamentos').textContent = dados.tma.acionamentos || 0;
-        document.getElementById('kpi-tma-ultimo').innerHTML = `Últ. Acion.: <strong>${dados.tma.ultimo_acionamento || '—'}</strong>`;
+        document.getElementById('kpi-tma-ultimo').innerHTML = `Últ. Acion.: <strong>${_formatarDataAcionamento(dados.tma.ultimo_acionamento)}</strong>`;
         
         // Formata reacionamento (ex: "2.10x" ou similar)
         let reacStr = dados.tma.reacionamento || '1.00';
@@ -527,6 +527,30 @@ function renderizarTabelaPerformanceOpNova(perf) {
     const tbody = document.getElementById('tabela-performance-operador-nova');
     if (!tbody) return;
 
+    // Atualiza o banner de última baixa bancária na página inicial do operador
+    const bannerEl = document.getElementById('banner-ultima-baixa-operador-nova');
+    const txtEl = document.getElementById('txt-ultima-baixa-operador-nova');
+    if (bannerEl && txtEl) {
+        const ultimaBaixa = perf.ultima_baixa_banco;
+        if (ultimaBaixa) {
+            // Normaliza para DD/MM/YYYY (pode chegar como 'YYYY-MM-DD' ou 'DD/MM/YYYY')
+            let dataFmt = ultimaBaixa;
+            if (ultimaBaixa.includes('-')) {
+                const partes = ultimaBaixa.split('-');
+                dataFmt = `${partes[2].substring(0,2)}/${partes[1]}/${partes[0]}`;
+            }
+            const diaBaixa = dataFmt.split('/')[0];
+            txtEl.innerHTML = `<strong>Baixas até ${dataFmt}</strong> <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${parseInt(diaBaixa)} dias)</span>`;
+            const isAgoracred = window.operadorLogado?.banco === 'AGORACRED';
+            bannerEl.style.background = isAgoracred ? 'linear-gradient(90deg,#10b98120,#34d39910)' : 'linear-gradient(90deg,#7e3d9720,#a855f710)';
+            bannerEl.style.borderColor = isAgoracred ? '#10b98140' : '#a855f740';
+            bannerEl.querySelector('i').style.color = isAgoracred ? '#10b981' : '#a855f7';
+            bannerEl.style.display = 'flex';
+        } else {
+            bannerEl.style.display = 'none';
+        }
+    }
+
     const thead = tbody.previousElementSibling;
     if (thead) {
         thead.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
@@ -701,6 +725,31 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
     if (!dadosPerformance) return;
 
     const perf = dadosPerformance.performance || {};
+    
+    // Atualiza o banner de última baixa bancária na aba Minha Performance
+    const bannerElAba = document.getElementById('banner-ultima-baixa-operador-aba');
+    const txtElAba = document.getElementById('txt-ultima-baixa-operador-aba');
+    if (bannerElAba && txtElAba) {
+        const ultimaBaixa = perf.ultima_baixa_banco;
+        if (ultimaBaixa) {
+            // Normaliza para DD/MM/YYYY (pode chegar como 'YYYY-MM-DD' ou 'DD/MM/YYYY')
+            let dataFmtAba = ultimaBaixa;
+            if (ultimaBaixa.includes('-')) {
+                const partes = ultimaBaixa.split('-');
+                dataFmtAba = `${partes[2].substring(0,2)}/${partes[1]}/${partes[0]}`;
+            }
+            const diaBaixaAba = dataFmtAba.split('/')[0];
+            txtElAba.innerHTML = `<strong>Baixas até ${dataFmtAba}</strong> <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${parseInt(diaBaixaAba)} dias)</span>`;
+            const isAgoracred = window.operadorLogado?.banco === 'AGORACRED';
+            bannerElAba.style.background = isAgoracred ? 'linear-gradient(90deg,#10b98120,#34d39910)' : 'linear-gradient(90deg,#7e3d9720,#a855f710)';
+            bannerElAba.style.borderColor = isAgoracred ? '#10b98140' : '#a855f740';
+            bannerElAba.querySelector('i').style.color = isAgoracred ? '#10b981' : '#a855f7';
+            bannerElAba.style.display = 'flex';
+        } else {
+            bannerElAba.style.display = 'none';
+        }
+    }
+
     const diarios = dadosPerformance.performance_diaria || [];
     // Usa indicadores_anterior que vem junto com os dados (fix variação de mês)
     const indAnt = dadosPerformance.indicadores_anterior || window.dadosCompletos?.indicadores_anterior || {};
@@ -718,7 +767,7 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
         if (tmaEl) tmaEl.textContent = tmaData.tma || '00:00:00';
         if (tmafEl) tmafEl.innerHTML = `Falado no mês: <strong>${tmaData.tempo_falado || '0h 00min'}</strong>`;
         if (acionEl) acionEl.textContent = tmaData.acionamentos || 0;
-        if (ultEl) ultEl.innerHTML = `Últ. Acion.: <strong>${tmaData.ultimo_acionamento || '-'}</strong>`;
+        if (ultEl) ultEl.innerHTML = `Últ. Acion.: <strong>${_formatarDataAcionamento(tmaData.ultimo_acionamento)}</strong>`;
         if (reacEl) reacEl.textContent = tmaData.reacionamento || '1.00';
         if (cliEl) cliEl.innerHTML = `Clientes únicos: <strong>${tmaData.clientes || 0}</strong>`;
     }
@@ -1085,3 +1134,439 @@ function renderizarVariacaoDetalhada(lista) {
 }
 
 window.renderizarMinhaPerformanceOp = renderizarMinhaPerformanceOp;
+
+// ================================================================
+// UTILITÁRIOS DE DATA
+// ================================================================
+
+/**
+ * Formata uma data de acionamento do formato ISO americano para pt-BR.
+ * Ex: "2026-07-07 09:21:36" → "07/07/2026 09:21"
+ * Ex: "2026-07-07" → "07/07/2026"
+ * Retorna '—' se o valor for nulo/inválido.
+ */
+function _formatarDataAcionamento(valor) {
+    if (!valor || valor === '-' || valor === 'nan') return '—';
+    try {
+        // Tenta criar o objeto Date a partir da string
+        const dt = new Date(valor.replace(' ', 'T'));
+        if (isNaN(dt.getTime())) return String(valor);
+        const d  = String(dt.getDate()).padStart(2, '0');
+        const m  = String(dt.getMonth() + 1).padStart(2, '0');
+        const y  = dt.getFullYear();
+        const h  = String(dt.getHours()).padStart(2, '0');
+        const mi = String(dt.getMinutes()).padStart(2, '0');
+        return `${d}/${m}/${y} ${h}:${mi}`;
+    } catch (e) {
+        return String(valor);
+    }
+}
+
+// ================================================================
+// DOWNLOAD CSV — PAGAMENTOS DO OPERADOR
+// ================================================================
+
+/**
+ * Exporta para CSV os pagamentos visíveis na aba de pagamentos do operador.
+ * Respeita os filtros ativos (busca, fase, data início/fim).
+ */
+function exportarPagamentosCSVOperador() {
+    // Usa os dados em memória filtrados
+    const dados = (window._pagamentosOperadorFiltrados || window._pagamentosOperadorData || []);
+
+    if (!dados.length) {
+        alert('Nenhum dado para exportar.');
+        return;
+    }
+
+    const cabecalho = ['Data Pgto', 'Cliente', 'Contrato', 'Valor', 'Fase Atraso'];
+    const linhas = dados.map(p => [
+        p.dtPgto || '',
+        `"${(p.cliente || '').replace(/"/g, '""')}"`,
+        p.contrato || '',
+        String(p.valorTotal || '').replace('.', ','),
+        p.faseAtraso || ''
+    ]);
+
+    const csvContent = [cabecalho.join(';'), ...linhas.map(l => l.join(';'))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `pagamentos_operador_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+window.exportarPagamentosCSVOperador = exportarPagamentosCSVOperador;
+window._formatarDataAcionamento      = _formatarDataAcionamento;
+
+// ================================================================
+// MULTISELECT DE FAIXAS DE ATRASO — OPERADOR
+// ================================================================
+
+function toggleDropdownMultiselectOp() {
+    const content = document.getElementById('dropdown-faixas-content-op');
+    if (content) {
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function toggleTodasFaixasOp(chkTodos) {
+    const checkboxes = document.querySelectorAll('.chk-faixa-item-op');
+    checkboxes.forEach(chk => {
+        chk.checked = false; // desmarca individuais se marcou "Todas"
+    });
+    atualizarSelecaoFaixasOp();
+}
+
+function atualizarSelecaoFaixasOp() {
+    const chkTodos = document.getElementById('chk-faixa-todas-op');
+    const chkItems = document.querySelectorAll('.chk-faixa-item-op');
+    const inputHidden = document.getElementById('filtro-faixa-op');
+    const labelSelected = document.getElementById('label-faixas-selecionadas-op');
+
+    const selecionadas = [];
+    chkItems.forEach(chk => {
+        if (chk.checked) selecionadas.push(chk.value);
+    });
+
+    if (selecionadas.length > 0) {
+        if (chkTodos) chkTodos.checked = false;
+        const valorFiltro = selecionadas.join(',');
+        if (inputHidden) inputHidden.value = valorFiltro;
+        if (labelSelected) {
+            if (selecionadas.length <= 2) {
+                labelSelected.textContent = selecionadas.join(', ');
+            } else {
+                labelSelected.textContent = `${selecionadas.length} selecionadas`;
+            }
+        }
+    } else {
+        if (chkTodos) chkTodos.checked = true;
+        if (inputHidden) inputHidden.value = 'todas';
+        if (labelSelected) labelSelected.textContent = 'Todas as faixas';
+    }
+
+    // Chama a filtragem local dos dados
+    filtrarDadosPorFaixaOpLocal();
+}
+
+/**
+ * Filtra localmente no frontend os dados que vieram da API de resumo do operador
+ * de acordo com a seleção de faixas de atraso, recalculando faturamento, metas,
+ * projeções e feito/dia instantaneamente, sem requisições adicionais de rede.
+ */
+function filtrarDadosPorFaixaOpLocal() {
+    const dados = window.dadosCompletos;
+    if (!dados) return;
+
+    const faixaVal = document.getElementById('filtro-faixa-op')?.value || 'todas';
+    const tbodyFull = document.getElementById('tabela-pagamentos-full');
+    
+    // Se selecionou todas as faixas, restaura o estado original da API
+    if (faixaVal === 'todas') {
+        renderizarDashboard(dados);
+        if (dados.ultimos_pagamentos) {
+            window._pagamentosOperadorFiltrados = dados.ultimos_pagamentos;
+            renderizarPagamentosCompletos(dados.ultimos_pagamentos);
+        }
+        return;
+    }
+
+    const listaFaixas = faixaVal.split(',').map(f => f.trim());
+    const pagamentosFiltrados = (dados.ultimos_pagamentos || []).filter(p => {
+        const fase = p.faseAtraso || p.fase || '';
+        return listaFaixas.includes(fase);
+    });
+
+    // Salva a lista filtrada no escopo global para exportação de CSV
+    window._pagamentosOperadorFiltrados = pagamentosFiltrados;
+
+    // Recalcula Indicadores Básicos
+    const faturamento = pagamentosFiltrados.reduce((sum, p) => sum + parseFloat(p.valorTotal || 0), 0);
+    const quantidade = pagamentosFiltrados.length;
+    const ticket = quantidade > 0 ? faturamento / quantidade : 0;
+
+    // Recalcula Performance e Meta
+    const performance = dados.performance || {};
+    const meta = performance.meta || 0;
+    const atingido = meta > 0 ? (faturamento / meta) * 100 : 0;
+
+    // Obtém o dia divisor a partir da data de última baixa
+    let diaDivisor = new Date().getDate(); // fallback
+    if (performance.ultima_baixa_banco) {
+        const partesData = performance.ultima_baixa_banco.split('/');
+        if (partesData.length === 3) {
+            diaDivisor = parseInt(partesData[0]);
+        }
+    }
+
+    // Calcula o total de dias no mês selecionado
+    const filtroAno = parseInt(document.getElementById('filtro-ano')?.value || new Date().getFullYear());
+    const filtroMes = parseInt(document.getElementById('filtro-mes')?.value || (new Date().getMonth() + 1));
+    const totalDiasCorridosMes = new Date(filtroAno, filtroMes, 0).getDate();
+
+    const feitoDiario = diaDivisor > 0 ? faturamento / diaDivisor : 0;
+    const projecao = feitoDiario * totalDiasCorridosMes;
+    const projecaoPercentual = meta > 0 ? (projecao / meta) * 100 : 0;
+
+    const falta_70 = Math.max(0, (meta * 0.7) - faturamento);
+    const falta_80 = Math.max(0, (meta * 0.8) - faturamento);
+    const falta_90 = Math.max(0, (meta * 0.9) - faturamento);
+    const falta_100 = Math.max(0, meta - faturamento);
+
+    // Clona o objeto de dados original
+    const dadosFiltrados = JSON.parse(JSON.stringify(dados));
+    
+    // Injeta os indicadores recalculados
+    dadosFiltrados.indicadores.faturamento_total = faturamento;
+    dadosFiltrados.indicadores.total_pagamentos = quantidade;
+    dadosFiltrados.indicadores.ticket_medio = ticket;
+
+    dadosFiltrados.performance.faturamento = faturamento;
+    dadosFiltrados.performance.quantidade = quantidade;
+    dadosFiltrados.performance.feito_diario = feitoDiario;
+    dadosFiltrados.performance.atingido_meta = atingido;
+    dadosFiltrados.performance.projecao = projecao;
+    dadosFiltrados.performance.projecao_percentual = projecaoPercentual;
+    dadosFiltrados.performance.falta_70 = falta_70;
+    dadosFiltrados.performance.falta_80 = falta_80;
+    dadosFiltrados.performance.falta_90 = falta_90;
+    dadosFiltrados.performance.falta_100 = falta_100;
+
+    dadosFiltrados.ultimos_pagamentos = pagamentosFiltrados;
+
+    // Renderiza o painel principal com os dados recalculados!
+    renderizarDashboard(dadosFiltrados);
+    
+    // Atualiza a tabela completa na aba de pagamentos
+    renderizarPagamentosCompletos(pagamentosFiltrados);
+}
+
+// Event listener global para fechar o dropdown ao clicar fora do componente de faixas do operador
+document.addEventListener('click', function(event) {
+    const container = document.getElementById('multiselect-faixa-op-container');
+    const content = document.getElementById('dropdown-faixas-content-op');
+    if (container && content && !container.contains(event.target)) {
+        content.style.display = 'none';
+    }
+});
+
+// Expõe globalmente
+window.toggleDropdownMultiselectOp = toggleDropdownMultiselectOp;
+window.toggleTodasFaixasOp          = toggleTodasFaixasOp;
+window.atualizarSelecaoFaixasOp     = atualizarSelecaoFaixasOp;
+window.filtrarDadosPorFaixaOpLocal  = filtrarDadosPorFaixaOpLocal;
+
+// ================================================================
+// HORÁRIOS / PONTO ELETRÔNICO (OPERADOR)
+// ================================================================
+
+// Array em memória para guardar os pontos do mês
+let _pontosMockados = [];
+let _relogioIntervalId = null;
+
+/**
+ * Inicializa o relógio dinâmico no card de Ponto Eletrônico.
+ * Atualiza o horário a cada segundo e formata a data atual.
+ */
+function inicializarRelogioPonto() {
+    const relogio = document.getElementById('ponto-relogio');
+    const dataEl = document.getElementById('ponto-data');
+    if (!relogio || !dataEl) return;
+
+    // Cancela interval anterior se existir
+    if (_relogioIntervalId) {
+        clearInterval(_relogioIntervalId);
+    }
+
+    function atualizarTempo() {
+        const agora = new Date();
+        const hrs = String(agora.getHours()).padStart(2, '0');
+        const mins = String(agora.getMinutes()).padStart(2, '0');
+        const secs = String(agora.getSeconds()).padStart(2, '0');
+        relogio.textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    // Configura data atual por extenso
+    const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    dataEl.textContent = new Date().toLocaleDateString('pt-BR', opcoes);
+
+    atualizarTempo();
+    _relogioIntervalId = setInterval(atualizarTempo, 1000);
+}
+
+/**
+ * Gera e renderiza a tabela de espelho de ponto eletrônico para o operador.
+ * Utiliza o turno dele (obtido da sessão) para gerar entradas/saídas realistas.
+ */
+function renderizarPontoOperador() {
+    const tbody = document.getElementById('tabela-ponto-operador');
+    const turnoEl = document.getElementById('turno-operador-ponto');
+    if (!tbody) return;
+
+    // Obtém o turno
+    const turno = window.operadorLogado?.turno || '08:00 às 17:00 (1h)';
+    if (turnoEl) turnoEl.textContent = turno;
+
+    // Gera dados se o array em memória estiver vazio
+    if (_pontosMockados.length === 0) {
+        _gerarPontosMêsAtual(turno);
+    }
+
+    // Renderiza na tabela
+    tbody.innerHTML = _pontosMockados.map((p, idx) => {
+        const saldoCor = p.saldo.startsWith('+') ? '#10b981' : (p.saldo.startsWith('-') ? '#ef4444' : 'var(--text-main)');
+        const bgRow = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+        return `
+            <tr style="background:${bgRow}; transition: all 0.2s;">
+                <td style="text-align:center;font-weight:600;padding:10px 14px;">${p.data}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.ent1 || '—'}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.sai1 || '—'}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.ent2 || '—'}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.sai2 || '—'}</td>
+                <td style="text-align:center;font-weight:700;padding:10px 14px;">${p.total || '—'}</td>
+                <td style="text-align:center;font-weight:700;color:${saldoCor};padding:10px 14px;">${p.saldo || '—'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Gera os pontos diários do mês até a data de hoje de forma realista.
+ */
+function _gerarPontosMêsAtual(turno) {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+    const diaAtual = hoje.getDate();
+
+    // Determina o horário padrão baseado no turno
+    let padraoEnt1 = "08:00", padraoSai1 = "12:00", padraoEnt2 = "13:00", padraoSai2 = "17:00";
+    if (turno.includes("13:") || turno.includes("Tarde")) {
+        padraoEnt1 = "13:00"; padraoSai1 = "17:00"; padraoEnt2 = "18:00"; padraoSai2 = "22:00";
+    }
+
+    _pontosMockados = [];
+
+    // Preenche do dia 1 até hoje
+    for (let d = 1; d <= diaAtual; d++) {
+        const dataDia = new Date(ano, mes, d);
+        
+        // Ignora fins de semana para o espelho
+        if (dataDia.getDay() === 0 || dataDia.getDay() === 6) {
+            continue;
+        }
+
+        const dataFmt = String(d).padStart(2, '0') + '/' + String(mes + 1).padStart(2, '0') + '/' + ano;
+
+        // Se for o dia de hoje, gera entradas parciais dependendo da hora atual
+        if (d === diaAtual) {
+            const horaAgora = hoje.getHours();
+            let ent1 = '', sai1 = '', ent2 = '', sai2 = '', total = '—', saldo = '—';
+            
+            if (horaAgora >= 8) ent1 = padraoEnt1;
+            if (horaAgora >= 12) sai1 = padraoSai1;
+            if (horaAgora >= 13) ent2 = padraoEnt2;
+            if (horaAgora >= 17) {
+                sai2 = padraoSai2;
+                total = "08h 00min";
+                saldo = "0h 00min";
+            }
+
+            _pontosMockados.push({
+                data: dataFmt,
+                ent1, sai1, ent2, sai2, total, saldo
+            });
+            continue;
+        }
+
+        // Para dias passados, gera uma pequena variação para dar realismo
+        let ent1 = padraoEnt1, sai1 = padraoSai1, ent2 = padraoEnt2, sai2 = padraoSai2;
+        let total = "08h 00min", saldo = "0h 00min";
+
+        // Cria variações em alguns dias (atrasos ou extras)
+        if (d % 7 === 0) {
+            // Dia com 15 min de hora extra
+            const m = parseInt(padraoSai2.split(':')[1]) + 15;
+            sai2 = padraoSai2.split(':')[0] + ':' + String(m).padStart(2, '0');
+            total = "08h 15min";
+            saldo = "+15min";
+        } else if (d % 11 === 0) {
+            // Dia com atraso de 15 min na entrada 1
+            const m = parseInt(padraoEnt1.split(':')[1]) + 15;
+            ent1 = padraoEnt1.split(':')[0] + ':' + String(m).padStart(2, '0');
+            total = "07h 45min";
+            saldo = "-15min";
+        }
+
+        _pontosMockados.push({
+            data: dataFmt,
+            ent1, sai1, ent2, sai2, total, saldo
+        });
+    }
+
+    // Ordena do mais recente para o mais antigo na tabela
+    _pontosMockados.reverse();
+}
+
+/**
+ * Simula a batida de ponto eletrônico do operador na hora atual.
+ * Atualiza o registro do dia de hoje na tabela com animação.
+ */
+function simularBaterPonto() {
+    const agora = new Date();
+    const hrs = String(agora.getHours()).padStart(2, '0');
+    const mins = String(agora.getMinutes()).padStart(2, '0');
+    const horaFmt = `${hrs}:${mins}`;
+
+    // Procura o registro do dia de hoje no array (primeiro elemento por causa da reversão)
+    const hojeFmt = String(agora.getDate()).padStart(2, '0') + '/' + String(agora.getMonth() + 1).padStart(2, '0') + '/' + agora.getFullYear();
+    const pontoHoje = _pontosMockados.find(p => p.data === hojeFmt);
+
+    if (pontoHoje) {
+        let batidaTipo = '';
+        
+        if (!pontoHoje.ent1) {
+            pontoHoje.ent1 = horaFmt;
+            batidaTipo = 'Entrada 1';
+        } else if (!pontoHoje.sai1) {
+            pontoHoje.sai1 = horaFmt;
+            batidaTipo = 'Saída 1 (Intervalo)';
+        } else if (!pontoHoje.ent2) {
+            pontoHoje.ent2 = horaFmt;
+            batidaTipo = 'Entrada 2 (Retorno)';
+        } else if (!pontoHoje.sai2) {
+            pontoHoje.sai2 = horaFmt;
+            pontoHoje.total = "08h 00min";
+            pontoHoje.saldo = "0h 00min";
+            batidaTipo = 'Saída 2 (Fim do Expediente)';
+        } else {
+            alert('Todos os 4 registros do ponto de hoje já foram preenchidos!');
+            return;
+        }
+
+        // Toca animação no botão
+        const btn = document.getElementById('btn-bater-ponto');
+        if (btn) {
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
+        }
+
+        // Recarrega a tabela
+        renderizarPontoOperador();
+
+        // Notifica o operador
+        alert(`Sucesso! Batida de [${batidaTipo}] registrada às ${horaFmt}.`);
+    } else {
+        alert('Não foi possível localizar o registro para o dia de hoje.');
+    }
+}
+
+// Expõe para uso nos escopos onclick
+window.inicializarRelogioPonto = inicializarRelogioPonto;
+window.renderizarPontoOperador = renderizarPontoOperador;
+window.simularBaterPonto        = simularBaterPonto;

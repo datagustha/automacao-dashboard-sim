@@ -42,7 +42,7 @@ app = Flask(__name__,
 
 # Chave secreta para sessões
 app.secret_key = os.urandom(24)
-app.config['PERMANENT_SESSION_LIFETIME'] = 28800  # 8 horas
+app.config['PERMANENT_SESSION_LIFETIME'] = 1209600  # 2 semanas (14 dias * 24h * 3600s)
 
 print("[OK] Flask configurado")
 

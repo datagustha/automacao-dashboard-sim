@@ -68,6 +68,12 @@
                             <span>Campanhas</span>
                         </a>
                     </li>
+                    <li data-page="horarios">
+                        <a href="#" onclick="navegar('horarios')">
+                            <i class="fas fa-clock"></i>
+                            <span>Horários</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -120,38 +126,70 @@
                 </div>
             </header>
 
+            <!-- Barra de Filtros Global do Operador (Mês, Ano e Faixas) -->
+            <div class="filters-bar" style="margin: 0 24px 16px;">
+                <div class="filter-group">
+                    <i class="fas fa-calendar"></i>
+                    <select id="filtro-mes" onchange="filtrarDados()">
+                        <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
+                        <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
+                        <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
+                        <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
+                        <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
+                        <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
+                        <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
+                        <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
+                        <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
+                        <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <i class="fas fa-calendar-year"></i>
+                    <select id="filtro-ano" onchange="filtrarDados()">
+                        <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
+                        <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
+                        <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
+                    </select>
+                </div>
+
+                <!-- Input oculto para faixas selecionadas no operador -->
+                <input type="hidden" id="filtro-faixa-op" value="todas">
+                
+                <!-- Dropdown Multiselect Customizado para Faixas (Exibido via JS apenas se for SEMEAR) -->
+                <div class="filter-group dropdown-multiselect" id="multiselect-faixa-op-container" style="position:relative; z-index:100; display:none; min-width:280px; flex:1.5;">
+                    <button type="button" onclick="toggleDropdownMultiselectOp()" style="padding:6px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
+                        <span><i class="fas fa-tag" style="margin-right:6px;color:var(--purple-main);"></i><span id="label-faixas-selecionadas-op" style="color:var(--text-main);">Todas as faixas</span></span>
+                        <i class="fas fa-chevron-down" style="font-size:10px;color:#9ca3af;"></i>
+                    </button>
+                    <div id="dropdown-faixas-content-op" class="dropdown-multiselect-content" style="display:none;position:absolute;top:100%;left:0;z-index:1000;background:white;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);padding:8px;min-width:320px;max-height:500px;overflow-y:auto;margin-top:4px;width:100%;">
+                        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#374151;cursor:pointer;font-weight:600;border-bottom:1px solid #f3f4f6;margin-bottom:4px;width:100%;">
+                            <input type="checkbox" id="chk-faixa-todas-op" checked onchange="toggleTodasFaixasOp(this)"> Todas as faixas
+                        </label>
+                        <div class="options-faixas-container-op" style="display:flex;flex-direction:column;gap:2px;">
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 10 a 30" onchange="atualizarSelecaoFaixasOp()"> Fase 10 a 30</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 31 a 60" onchange="atualizarSelecaoFaixasOp()"> Fase 31 a 60</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 61 a 90" onchange="atualizarSelecaoFaixasOp()"> Fase 61 a 90</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 91 a 120" onchange="atualizarSelecaoFaixasOp()"> Fase 91 a 120</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 121 a 180" onchange="atualizarSelecaoFaixasOp()"> Fase 121 a 180</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 181 a 240" onchange="atualizarSelecaoFaixasOp()"> Fase 181 a 240</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 241 a 360" onchange="atualizarSelecaoFaixasOp()"> Fase 241 a 360</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 361 a 720" onchange="atualizarSelecaoFaixasOp()"> Fase 361 a 720</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 721 a 1080" onchange="atualizarSelecaoFaixasOp()"> Fase 721 a 1080</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 1081 a 1440" onchange="atualizarSelecaoFaixasOp()"> Fase 1081 a 1440</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="Fase 1441 a 1800" onchange="atualizarSelecaoFaixasOp()"> Fase 1441 a 1800</label>
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;white-space:nowrap;margin:0;"><input type="checkbox" class="chk-faixa-item-op" value="> 1800" onchange="atualizarSelecaoFaixasOp()"> &gt; 1800</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM DA BARRA DE FILTROS GLOBAL -->
+
             <!-- ========================================== -->
             <!-- PÁGINA: DASHBOARD                        -->
             <!-- ========================================== -->
             <section id="page-dashboard" class="page active">
-                <!-- Filtros de Mês e Ano do Operador -->
-                <div class="filters-bar">
-                    <div class="filter-group">
-                        <i class="fas fa-calendar"></i>
-                        <select id="filtro-mes" onchange="filtrarDados()">
-                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
-                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
-                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
-                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
-                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
-                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
-                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-year"></i>
-                        <select id="filtro-ano" onchange="filtrarDados()">
-                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                        </select>
-                    </div>
-                </div>
                 <!-- Cards de resumo (Nova estrutura refinada e minimalista) -->
                 <div class="row cards-adm-row grid-3">
                     <!-- Faturamento & Progresso da Meta -->
@@ -284,6 +322,12 @@
                 <!-- Nova Seção: Performance do Operador -->
                 <div class="card-full" style="margin-bottom:24px;">
                     <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-user-gear"></i> Performance do Operador</h3>
+                    <!-- Banner de Última Baixa Bancária do Banco do Operador -->
+                    <div id="banner-ultima-baixa-operador-nova" style="display:none;background:linear-gradient(90deg,#7e3d9720,#a855f710);border:1px solid #a855f740;border-radius:10px;padding:8px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-calendar-check" style="color:#a855f7;"></i>
+                        <span id="txt-ultima-baixa-operador-nova" style="font-size:13px;color:var(--text-main);"></span>
+                        <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">(Feito/Dia e projeção calculados até esta data de baixas do banco)</span>
+                    </div>
                     <div id="perf-dias-info-nova" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <div class="table-wrapper">
                         <table>
@@ -381,38 +425,16 @@
             <!-- PÁGINA: PAGAMENTOS                       -->
             <!-- ========================================== -->
             <section id="page-pagamentos" class="page">
-                <!-- Filtros da página de Pagamentos -->
+                <!-- Filtros da página de Pagamentos (Mês e Ano sincronizados de forma oculta) -->
+                <input type="hidden" id="filtro-pagamento-mes" value="">
+                <input type="hidden" id="filtro-pagamento-ano" value="">
                 <div class="filters-bar">
-                    <div class="filter-group">
-                        <i class="fas fa-calendar"></i>
-                        <select id="filtro-pagamento-mes" onchange="filtrarPagamentosPeriodo()">
-                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
-                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
-                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
-                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
-                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
-                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
-                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-days"></i>
-                        <select id="filtro-pagamento-ano" onchange="filtrarPagamentosPeriodo()">
-                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                        </select>
-                    </div>
                     <div class="filter-group" style="flex:1;">
                         <i class="fas fa-search"></i>
                         <input type="text" id="filtro-pagamento-busca" placeholder="Buscar cliente ou contrato..." oninput="filtrarPagamentos()">
                     </div>
-                    <div class="filter-group">
+                    <!-- Select de fase de atraso simples ocultado para priorizar o multiselect unificado no topo -->
+                    <div class="filter-group" style="display:none;">
                         <i class="fas fa-tag"></i>
                         <select id="filtro-pagamento-fase" onchange="filtrarPagamentos()">
                             <option value="">Todas as fases de atraso</option>
@@ -441,7 +463,12 @@
                 <div class="card-full">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                         <h3 class="panel-title" style="margin:0;"><i class="fas fa-list"></i> Relação de Pagamentos</h3>
-                        <span id="total-registros" style="font-size:13px;color:var(--text-muted);">0 registros</span>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span id="total-registros" style="font-size:13px;color:var(--text-muted);">0 registros</span>
+                            <button onclick="exportarPagamentosCSVOperador()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--purple-main);border-radius:8px;background:transparent;color:var(--purple-main);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--purple-main)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--purple-main)'">
+                                <i class="fas fa-download"></i> Baixar CSV
+                            </button>
+                        </div>
                     </div>
                     <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
                         <table>
@@ -471,34 +498,9 @@
             <!-- ========================================== -->
             <section id="page-operadores" class="page">
 
-                <!-- Filtros de Mês e Ano (Minha Performance) -->
-                <div class="filters-bar" style="margin-bottom:16px;">
-                    <div class="filter-group">
-                        <i class="fas fa-calendar"></i>
-                        <select id="op-perf-mes" onchange="document.getElementById('filtro-mes').value=this.value; filtrarDados();">
-                            <option value="1" {% if mes_atual==1 %}selected{% endif %}>Janeiro</option>
-                            <option value="2" {% if mes_atual==2 %}selected{% endif %}>Fevereiro</option>
-                            <option value="3" {% if mes_atual==3 %}selected{% endif %}>Março</option>
-                            <option value="4" {% if mes_atual==4 %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes_atual==5 %}selected{% endif %}>Maio</option>
-                            <option value="6" {% if mes_atual==6 %}selected{% endif %}>Junho</option>
-                            <option value="7" {% if mes_atual==7 %}selected{% endif %}>Julho</option>
-                            <option value="8" {% if mes_atual==8 %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes_atual==9 %}selected{% endif %}>Setembro</option>
-                            <option value="10" {% if mes_atual==10 %}selected{% endif %}>Outubro</option>
-                            <option value="11" {% if mes_atual==11 %}selected{% endif %}>Novembro</option>
-                            <option value="12" {% if mes_atual==12 %}selected{% endif %}>Dezembro</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-year"></i>
-                        <select id="op-perf-ano" onchange="document.getElementById('filtro-ano').value=this.value; filtrarDados();">
-                            <option value="2024" {% if ano_atual==2024 %}selected{% endif %}>2024</option>
-                            <option value="2025" {% if ano_atual==2025 %}selected{% endif %}>2025</option>
-                            <option value="2026" {% if ano_atual==2026 %}selected{% endif %}>2026</option>
-                        </select>
-                    </div>
-                </div>
+                <!-- Filtros da página de Performance (sincronizados de forma oculta) -->
+                <input type="hidden" id="op-perf-mes" value="">
+                <input type="hidden" id="op-perf-ano" value="">
 
                 <!-- Resumo de Dias -->
 
@@ -643,6 +645,12 @@
                 <!-- Performance do Operador (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
                     <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-trophy"></i> Performance do Operador</h3>
+                    <!-- Banner de Última Baixa Bancária do Banco do Operador -->
+                    <div id="banner-ultima-baixa-operador-aba" style="display:none;background:linear-gradient(90deg,#7e3d9720,#a855f710);border:1px solid #a855f740;border-radius:10px;padding:8px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-calendar-check" style="color:#a855f7;"></i>
+                        <span id="txt-ultima-baixa-operador-aba" style="font-size:13px;color:var(--text-main);"></span>
+                        <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">(Feito/Dia e projeção calculados até esta data de baixas do banco)</span>
+                    </div>
                     <div id="perf-dias-info-aba" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <div class="table-wrapper" style="overflow-x:auto;">
                         <table>
@@ -688,6 +696,57 @@
                         </p>
                     </div>
                 </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- PÁGINA: HORÁRIOS (PONTO ELETRÔNICO)        -->
+            <!-- ========================================== -->
+            <section id="page-horarios" class="page">
+
+                <!-- Banner Em Breve -->
+                <div style="text-align:center;padding:32px 20px 24px;">
+                    <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(126,61,151,0.1),rgba(168,85,247,0.06));border:1px solid rgba(126,61,151,0.2);border-radius:16px;padding:12px 24px;margin-bottom:12px;">
+                        <i class="fas fa-tools" style="color:var(--purple-main);font-size:18px;"></i>
+                        <span style="font-weight:700;color:var(--purple-main);font-size:15px;">Em breve será implementado</span>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:13px;margin:0;">
+                        O controle de ponto eletrônico está sendo desenvolvido e em breve estará disponível.
+                    </p>
+                </div>
+
+                <!-- Cards zerados (visual preview) -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;opacity:0.45;pointer-events:none;">
+                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
+                        <i class="fas fa-clock" style="font-size:22px;color:var(--purple-main);margin-bottom:8px;display:block;"></i>
+                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Horas no Mês</span>
+                        <span style="font-size:22px;font-weight:800;color:var(--text-main);">— h</span>
+                    </div>
+                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
+                        <i class="fas fa-piggy-bank" style="font-size:22px;color:#10b981;margin-bottom:8px;display:block;"></i>
+                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Banco de Horas</span>
+                        <span style="font-size:22px;font-weight:800;color:#10b981;">— h</span>
+                    </div>
+                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:22px;color:#ef4444;margin-bottom:8px;display:block;"></i>
+                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Atrasos</span>
+                        <span style="font-size:22px;font-weight:800;color:#ef4444;">— min</span>
+                    </div>
+                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
+                        <i class="fas fa-plus-circle" style="font-size:22px;color:#0891b2;margin-bottom:8px;display:block;"></i>
+                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Horas Extras</span>
+                        <span style="font-size:22px;font-weight:800;color:#0891b2;">— h</span>
+                    </div>
+                </div>
+
+                <!-- Espelho de ponto em preview -->
+                <div class="card-full" style="opacity:0.4;pointer-events:none;">
+                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-alt"></i> Espelho de Ponto — Disponível em Breve</h3>
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <i class="fas fa-hourglass-half" style="font-size:28px;margin-bottom:12px;display:block;"></i>
+                        Aguardando implementação do scraper de ponto.
+                    </div>
+                </div>
+
             </section>
         </main>
     </div>

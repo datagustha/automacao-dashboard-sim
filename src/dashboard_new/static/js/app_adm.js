@@ -123,6 +123,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logoutAdm);
     }
+
+    // Inicialização do controle de horários/ponto da equipe (ADM)
+    if (typeof carregarPontoAdm === 'function') {
+        carregarPontoAdm();
+    }
 });
 
 // ================================================================
@@ -225,7 +230,9 @@ async function carregarDadosAdm() {
             preencherOperadores(data.data);
 
             // Preenche tabelas das páginas Pagamentos e Operadores
-            renderizarPagamentosAdm(data.data);
+            if (typeof carregarPagamentosAdm === 'function') {
+                carregarPagamentosAdm();
+            }
             renderizarOperadoresAdm(data.data);
         } else {
             console.error('Erro ao carregar dados ADM:', data.message);
@@ -282,7 +289,6 @@ function limparFiltrosTodosAdm() {
     const filtroAno = document.getElementById('filtro-ano-adm');
     const filtroBanco = document.getElementById('filtro-banco-adm');
     const filtroAtiv = document.getElementById('filtro-atividade-adm');
-    const busca = document.getElementById('busca-operador-adm');
     const sel = document.getElementById('filtro-operador-adm');
     const inicio = document.getElementById('filtro-data-inicio-adm');
     const fim = document.getElementById('filtro-data-fim-adm');
@@ -294,12 +300,25 @@ function limparFiltrosTodosAdm() {
     if (filtroAno) filtroAno.value = hoje.getFullYear();
     if (filtroBanco) filtroBanco.value = 'TODOS';
     if (filtroAtiv) filtroAtiv.value = 'ATIVO';
-    if (busca) busca.value = '';
     if (sel) sel.value = 'TODOS';
     if (inicio) inicio.value = '';
     if (fim) fim.value = '';
     if (contrato) contrato.value = '';
     if (faixa) faixa.value = 'todas';
+
+    // Reseta os checkboxes do multiselect de faixas
+    const chkFaixaTodas = document.getElementById('chk-faixa-todas');
+    if (chkFaixaTodas) chkFaixaTodas.checked = true;
+    document.querySelectorAll('.chk-faixa-item').forEach(chk => chk.checked = false);
+    const labelFaixas = document.getElementById('label-faixas-selecionadas');
+    if (labelFaixas) labelFaixas.textContent = 'Todas as faixas';
+
+    // Reseta os checkboxes do multiselect de operadores
+    const chkOperadorTodos = document.getElementById('chk-operador-todos');
+    if (chkOperadorTodos) chkOperadorTodos.checked = true;
+    document.querySelectorAll('.chk-operador-item').forEach(chk => chk.checked = false);
+    const labelOperadores = document.getElementById('label-operadores-selecionados');
+    if (labelOperadores) labelOperadores.textContent = 'Todos os Operadores';
 
     const badge = document.getElementById('badge-filtros-ativos-adm');
     if (badge) badge.style.display = 'none';
@@ -465,67 +484,187 @@ function calcularTempoCasa(admissao) {
 // OPERADORES DROPDOWN
 // ================================================================
 
+// Cache global persistente para operadores
+if (!window._cacheOperadoresCompletos) {
+    window._cacheOperadoresCompletos = {
+        SEMEAR: new Set(),
+        AGORACRED: new Set()
+    };
+}
+
 function preencherOperadores(dados) {
-    const select = document.getElementById('filtro-operador-adm');
-    const datalist = document.getElementById('datalist-operadores-global');
-    if (!select) return;
+    const container = document.getElementById('options-operadores-container');
+    const inputHidden = document.getElementById('filtro-operador-adm');
+    const labelSelected = document.getElementById('label-operadores-selecionados');
+    if (!container) return;
+
+    // Se o filtro de operador estiver no padrão (TODOS), limpa o cache para que a mudança
+    // do filtro de atividade (Ativo/Inativo) recrie a lista corretamente com base no payload da API.
+    const operadorFiltroAtivo = inputHidden ? inputHidden.value : 'TODOS';
+    if (operadorFiltroAtivo === 'TODOS') {
+        window._cacheOperadoresCompletos.SEMEAR.clear();
+        window._cacheOperadoresCompletos.AGORACRED.clear();
+    }
+
+    // Alimenta o cache com os operadores que vieram no payload atual
+    if (dados.semear?.operadores) {
+        dados.semear.operadores.forEach(op => {
+            if (op.login) window._cacheOperadoresCompletos.SEMEAR.add(op.login);
+        });
+    }
+    if (dados.agoracred?.operadores) {
+        dados.agoracred.operadores.forEach(op => {
+            if (op.login) window._cacheOperadoresCompletos.AGORACRED.add(op.login);
+        });
+    }
 
     // Obtém o banco selecionado no filtro do Dashboard
     const bancoSelecionado = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
 
-    // Salva valor selecionado atual
-    const valorAtual = select.value;
-
-    // Limpa opções (mantém a primeira)
-    select.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
-    if (datalist) datalist.innerHTML = '<option value="TODOS">Todos os Operadores</option>';
+    // Salva quais estavam previamente selecionados para persistir a seleção do usuário
+    const valoresPreviamenteSelecionados = inputHidden && inputHidden.value !== 'TODOS'
+        ? inputHidden.value.split(',')
+        : [];
 
     const todosOperadores = [];
 
-    // Lê apenas os operadores do banco selecionado
-    const opsSemear = (bancoSelecionado === 'TODOS' || bancoSelecionado === 'SEMEAR') ? (dados.semear?.operadores || []) : [];
-    const opsAgoracred = (bancoSelecionado === 'TODOS' || bancoSelecionado === 'AGORACRED') ? (dados.agoracred?.operadores || []) : [];
-
-    opsSemear.forEach(op => {
-        if (op.login) {
+    // Constrói a lista a partir do cache persistente para que a lista não encolha
+    if (bancoSelecionado === 'TODOS' || bancoSelecionado === 'SEMEAR') {
+        window._cacheOperadoresCompletos.SEMEAR.forEach(login => {
             todosOperadores.push({
-                login: op.login,
-                nome: op.login,
+                login: login,
+                nome: login,
                 banco: 'SEMEAR'
             });
-        }
-    });
+        });
+    }
 
-    opsAgoracred.forEach(op => {
-        if (op.login) {
+    if (bancoSelecionado === 'TODOS' || bancoSelecionado === 'AGORACRED') {
+        window._cacheOperadoresCompletos.AGORACRED.forEach(login => {
             todosOperadores.push({
-                login: op.login,
-                nome: op.login,
+                login: login,
+                nome: login,
                 banco: 'AGORACRED'
             });
-        }
-    });
+        });
+    }
 
     // Ordena por nome
     todosOperadores.sort((a, b) => a.nome.localeCompare(b.nome));
 
-    todosOperadores.forEach(op => {
-        const option = document.createElement('option');
-        option.value = op.login;
-        option.textContent = `${op.nome}`; // Remove o sufixo redundante (BANCO) para evitar info duplicada
-        if (op.login === valorAtual) option.selected = true;
-        select.appendChild(option);
+    // Se a lista estiver vazia
+    if (todosOperadores.length === 0) {
+        container.innerHTML = '<div style="padding:8px;text-align:center;color:#9ca3af;font-size:11px;">Nenhum operador encontrado</div>';
+        return;
+    }
 
-        if (datalist) {
-            const dOpt = document.createElement('option');
-            dOpt.value = op.login;
-            dOpt.textContent = `${op.nome}`; // Mostra apenas o nome do operador no datalist
-            datalist.appendChild(dOpt);
-        }
-    });
+    container.innerHTML = todosOperadores.map(op => {
+        const checked = valoresPreviamenteSelecionados.includes(op.login) ? 'checked' : '';
+        const corBanco = op.banco === 'SEMEAR' ? '#7e3d97' : '#10b981';
+        return `
+            <label style="display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;color:#374151;cursor:pointer;width:100%;box-sizing:border-box;margin:0;">
+                <input type="checkbox" class="chk-operador-item" value="${op.login}" ${checked} onchange="atualizarSelecaoOperadores()">
+                <span style="white-space:nowrap;">${op.nome}</span>
+                <span style="font-size:9px;background:${corBanco}20;color:${corBanco};padding:1px 6px;border-radius:10px;font-weight:600;margin-left:auto;white-space:nowrap;">${op.banco}</span>
+            </label>
+        `;
+    }).join('');
 
-    console.log('[ADM] Dropdown de operadores preenchido com', todosOperadores.length, 'operadores');
+    // Sincroniza a label e o input oculto sem disparar nova recarga (evita loop infinito)
+    atualizarSelecaoOperadores(true);
 }
+
+/**
+ * Gerencia o comportamento quando a opção "Todos os Operadores" é marcada/desmarcada.
+ * Se marcada, desmarca todos os operadores específicos.
+ *
+ * @param {HTMLInputElement} chkTodos - O checkbox "Todos os Operadores"
+ */
+function toggleTodosOperadores(chkTodos) {
+    const checkboxes = document.querySelectorAll('.chk-operador-item');
+    if (chkTodos.checked) {
+        // Desmarca todas as opções individuais
+        checkboxes.forEach(chk => {
+            chk.checked = false;
+        });
+    }
+    atualizarSelecaoOperadores();
+}
+
+/**
+ * Atualiza o estado da seleção múltipla de operadores.
+ * Coleta os logins selecionados, atualiza o campo oculto que é lido pelo app_adm.js,
+ * ajusta o rótulo do botão para refletir as seleções e dispara a recarga de dados do painel.
+ *
+ * @param {boolean} evitarRecarga - Se true, não dispara a chamada de API de recarga de dados
+ */
+function atualizarSelecaoOperadores(evitarRecarga = false) {
+    const chkTodos = document.getElementById('chk-operador-todos');
+    const chkItems = document.querySelectorAll('.chk-operador-item');
+    const inputHidden = document.getElementById('filtro-operador-adm');
+    const labelSelected = document.getElementById('label-operadores-selecionados');
+    
+    const selecionados = [];
+    chkItems.forEach(chk => {
+        if (chk.checked) selecionados.push(chk.value);
+    });
+    
+    if (selecionados.length > 0) {
+        // Se há opções individuais marcadas, desmarca o checkbox "Todos"
+        if (chkTodos) chkTodos.checked = false;
+        
+        // Junta os logins por vírgula para passar como parâmetro na API
+        const valorFiltro = selecionados.join(',');
+        if (inputHidden) inputHidden.value = valorFiltro;
+        
+        // Atualiza a label do botão
+        if (labelSelected) {
+            if (selecionados.length <= 2) {
+                labelSelected.textContent = selecionados.join(', ');
+            } else {
+                labelSelected.textContent = `${selecionados.length} selecionados`;
+            }
+        }
+    } else {
+        // Se nada específico estiver marcado, marca o "Todos os Operadores" como fallback
+        if (chkTodos) chkTodos.checked = true;
+        if (inputHidden) inputHidden.value = 'TODOS';
+        if (labelSelected) labelSelected.textContent = 'Todos os Operadores';
+    }
+    
+    // Atualiza a visualização no badge de filtros ativos
+    const badgFiltros = document.getElementById('badge-filtros-ativos-adm');
+    const contratoVal = document.getElementById('filtro-contrato-adm')?.value || '';
+    const faixaVal = document.getElementById('filtro-faixa-adm')?.value || 'todas';
+    const operadorVal = inputHidden ? inputHidden.value : 'TODOS';
+    
+    if (badgFiltros) {
+        if (contratoVal || faixaVal !== 'todas' || operadorVal !== 'TODOS') {
+            badgFiltros.style.display = 'inline-block';
+        } else {
+            badgFiltros.style.display = 'none';
+        }
+    }
+    
+    // Dispara a chamada API de recarga
+    if (!evitarRecarga && typeof carregarDadosAdm === 'function') {
+        carregarDadosAdm();
+    }
+}
+
+// Event listener global para fechar o dropdown ao clicar fora do componente de operadores
+document.addEventListener('click', function(event) {
+    const container = document.getElementById('multiselect-operador-adm');
+    const content = document.getElementById('dropdown-operadores-content');
+    if (container && content && !container.contains(event.target)) {
+        content.style.display = 'none';
+    }
+});
+
+// Registra funções no escopo global/window
+window.preencherOperadores        = preencherOperadores;
+window.toggleTodosOperadores       = toggleTodosOperadores;
+window.atualizarSelecaoOperadores  = atualizarSelecaoOperadores;
 
 
 // Funções globais de busca inteligente com autocomplete para os filtros de todas as páginas
@@ -795,20 +934,14 @@ function navegar(pagina) {
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) pageTitle.textContent = titulos[pagina] || pagina;
 
-    // Sincroniza operador filtrado ao ir para a página de pagamentos
+    // Atualiza dados específicos de cada aba ao navegar
     if (pagina === 'pagamentos') {
-        const operadorGlobal = document.getElementById('filtro-operador-adm')?.value || 'TODOS';
-        const buscaGlobal = document.getElementById('busca-operador-adm')?.value || '';
-        
-        const filtroPagOperador = document.getElementById('filtro-pag-operador-adm');
-        const buscaPagOperador = document.getElementById('busca-pag-operador-adm');
-
-        if (filtroPagOperador) {
-            filtroPagOperador.value = operadorGlobal;
-            if (buscaPagOperador) {
-                buscaPagOperador.value = (operadorGlobal === 'TODOS') ? '' : (buscaGlobal || operadorGlobal);
-            }
+        if (typeof carregarPagamentosAdm === 'function') {
             carregarPagamentosAdm();
+        }
+    } else if (pagina === 'operadores') {
+        if (typeof carregarDadosAdm === 'function') {
+            carregarDadosAdm();
         }
     }
 }
@@ -939,8 +1072,8 @@ function renderizarTmaAdm(lista) {
                 <td style="text-align:center;padding:8px 10px;">${op.clientes || 0}</td>
                 <td style="text-align:center;padding:8px 10px;font-size:12px;">${op.reacionamento || '-'}</td>
                 <td style="text-align:center;padding:8px 10px;font-family:monospace;">${op.tempo_falado || '-'}</td>
-                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${op.primeiro_acionamento || '-'}</td>
-                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${op.ultimo_acionamento || '-'}</td>
+                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${_fmtAcion(op.primeiro_acionamento)}</td>
+                <td style="text-align:center;padding:8px 10px;font-size:11px;color:var(--text-muted);">${_fmtAcion(op.ultimo_acionamento)}</td>
             </tr>
         `;
     }).join('');
@@ -1818,3 +1951,34 @@ function limparFiltroOperadorDashboardAdm() {
 window.selecionarOperadorPerfAdm = selecionarOperadorPerfAdm;
 window.filtrarBancoDashboardAdm = filtrarBancoDashboardAdm;
 window.limparFiltroOperadorDashboardAdm = limparFiltroOperadorDashboardAdm;
+
+/**
+ * Formata datas de acionamento do formato americano (YYYY-MM-DD HH:MM:SS) para o formato brasileiro (DD/MM/YYYY HH:MM).
+ * Se o valor for vazio, nulo ou inválido, retorna '—'.
+ */
+function _fmtAcion(valor) {
+    if (!valor || valor === '-' || valor === 'nan') return '—';
+    try {
+        // Se a data já estiver no formato brasileiro, retorna direto
+        if (valor.includes('/') && !valor.includes('-')) return valor;
+        
+        // Tenta fazer o split da data e hora
+        const partesEspaco = valor.split(' ');
+        const dataParte = partesEspaco[0];
+        const horaParte = partesEspaco[1] || '';
+        
+        const partesData = dataParte.split('-');
+        if (partesData.length !== 3) return valor;
+        
+        const dataFmt = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
+        if (horaParte) {
+            const partesHora = horaParte.split(':');
+            const horaFmt = `${partesHora[0]}:${partesHora[1]}`;
+            return `${dataFmt} ${horaFmt}`;
+        }
+        return dataFmt;
+    } catch (e) {
+        return valor;
+    }
+}
+window._fmtAcion = _fmtAcion;

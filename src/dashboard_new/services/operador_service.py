@@ -24,6 +24,25 @@ from src.services.analytics_service import (
     buscar_meta_do_mes
 )
 from datetime import datetime, date
+from typing import Optional
+
+# ================================================================
+# HELPERS DE DATA COMPARTILHADOS
+# ================================================================
+
+def _pagamento_no_mes(pagamento: dict, a: int, m: int) -> bool:
+    """Verifica se um pagamento pertence ao mês/ano especificado."""
+    data = pagamento.get('dtPgto')
+    if not data:
+        return False
+    try:
+        if isinstance(data, datetime):
+            return data.year == a and data.month == m
+        data_str = str(data)[:10]
+        data_obj = datetime.strptime(data_str, '%Y-%m-%d')
+        return data_obj.year == a and data_obj.month == m
+    except Exception:
+        return False
 
 
 def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
@@ -65,19 +84,6 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
         ano_ant = ano - 1
         mes_ant = 12
 
-    # Função interna para verificar data
-    def _pagamento_no_mes(pagamento: dict, a: int, m: int) -> bool:
-        data = pagamento.get('dtPgto')
-        if not data:
-            return False
-        try:
-            if isinstance(data, datetime):
-                return data.year == a and data.month == m
-            data_str = str(data)[:10]
-            data_obj = datetime.strptime(data_str, '%Y-%m-%d')
-            return data_obj.year == a and data_obj.month == m
-        except Exception:
-            return False
 
     # Filtrar pagamentos
     pagamentos_mes = [p for p in pagamentos if _pagamento_no_mes(p, ano, mes)]
@@ -85,15 +91,6 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
     
     indicadores = calcular_indicadores_operador(pagamentos_mes, banco)
     indicadores_ant = calcular_indicadores_operador(pagamentos_ant, banco)
-    
-    performance = calcular_performance_operador(
-        pagamentos=pagamentos,
-        metas=metas,
-        ano=ano,
-        mes=mes,
-        login=login,
-        banco=banco
-    )
     
     tempo_casa = calcular_tempo_de_casa(operador.get('admissao'))
     
@@ -133,19 +130,50 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None):
             op_pagamentos_mes = [p for p in op_pagamentos_mes if p.get('faseAtraso') != "Fora da fase"]
 
         op_fat = sum(float(p.get('valorTotal', 0.0) or 0.0) for p in op_pagamentos_mes)
-        faturamento_operadores.append({'login': op_login, 'faturamento': op_fat})
+        # Guarda pagamentos_mes junto com o faturamento para calcular max_data_banco posteriormente
+        faturamento_operadores.append({'login': op_login, 'faturamento': op_fat, 'pagamentos_mes': op_pagamentos_mes})
 
     # Ordena faturamentos em ordem decrescente
     faturamento_operadores.sort(key=lambda x: x['faturamento'], reverse=True)
 
     posicao_ranking = 1
+    # Acumula a data máxima de pagamento do banco inteiro (não do operador individual)
+    # Usada no banner "Baixas até dia X" na visão de performance do operador
+    max_data_banco: Optional[datetime] = None
+
     for idx, item in enumerate(faturamento_operadores):
         if item['login'] == login:
             posicao_ranking = idx + 1
-            break
+        # Coleta a data máxima de todos os operadores do banco
+        for p in (item.get('pagamentos_mes') or []):
+            dt_val = p.get('dtPgto')
+            if not dt_val:
+                continue
+            try:
+                dt_obj = datetime.strptime(str(dt_val)[:10], '%Y-%m-%d') if not isinstance(dt_val, datetime) else dt_val
+                if max_data_banco is None or dt_obj > max_data_banco:
+                    max_data_banco = dt_obj
+            except Exception:
+                pass
+
+    # Formata a data máxima do banco para exibição no banner
+    ultima_baixa_banco = max_data_banco.strftime('%d/%m/%Y') if max_data_banco else None
+
+    # Agora sim calcula a performance baseada na data máxima de baixa do banco
+    performance = calcular_performance_operador(
+        pagamentos=pagamentos,
+        metas=metas,
+        ano=ano,
+        mes=mes,
+        login=login,
+        banco=banco,
+        data_referencia_banco=max_data_banco
+    )
 
     performance['ranking'] = f"{posicao_ranking}º"
     performance['turno'] = operador.get('turno', '-')
+    # Injeta a data máxima do banco na performance para uso no banner do frontend
+    performance['ultima_baixa_banco'] = ultima_baixa_banco
 
     # --- CÁLCULO DE RESULTADO MÊS A MÊS ---
     resultado_mes_a_mes = []
@@ -237,14 +265,48 @@ def montar_performance_operador(operador: dict, ano: int, mes: int):
     
     if pagamentos and not isinstance(pagamentos[0], dict):
         pagamentos = [p.__dict__ for p in pagamentos]
-    
+        
+    # --- CÁLCULO DE DATA MÁXIMA DO BANCO INTEIRO ---
+    # Necessário para que a performance individual do operador reflita a
+    # divisão do faturamento acumulado pela data máxima global de baixas do banco
+    todos_operadores = buscar_todos_operadores_por_banco(banco) or []
+    max_data_banco: Optional[datetime] = None
+
+    for op in todos_operadores:
+        if banco == 'SEMEAR':
+            op_pagamentos = Buscar_pagamento_semear(op) or []
+        else:
+            op_pagamentos = Buscar_pagamento_agoracred(op) or []
+
+        if op_pagamentos and not isinstance(op_pagamentos[0], dict):
+            op_pagamentos = [p.__dict__ for p in op_pagamentos]
+
+        # Filtra pagamentos do mês
+        op_pagamentos_mes = [p for p in op_pagamentos if _pagamento_no_mes(p, ano, mes)]
+        
+        # Filtra fora da fase para o Semear
+        if banco == 'SEMEAR':
+            op_pagamentos_mes = [p for p in op_pagamentos_mes if p.get('faseAtraso') != "Fora da fase"]
+
+        for p in op_pagamentos_mes:
+            dt_val = p.get('dtPgto')
+            if not dt_val:
+                continue
+            try:
+                dt_obj = datetime.strptime(str(dt_val)[:10], '%Y-%m-%d') if not isinstance(dt_val, datetime) else dt_val
+                if max_data_banco is None or dt_obj > max_data_banco:
+                    max_data_banco = dt_obj
+            except Exception:
+                pass
+
     performance = calcular_performance_operador(
         pagamentos=pagamentos,
         metas=metas,
         ano=ano,
         mes=mes,
         login=login,
-        banco=banco
+        banco=banco,
+        data_referencia_banco=max_data_banco
     )
     
     performance_diaria = calcular_meta_diaria_por_dia(
@@ -254,6 +316,9 @@ def montar_performance_operador(operador: dict, ano: int, mes: int):
         mes=mes,
         banco=banco
     )
+    
+    # Injeta a data máxima formatada na performance
+    performance['ultima_baixa_banco'] = max_data_banco.strftime('%d/%m/%Y') if max_data_banco else None
     
     return {
         'performance': performance,

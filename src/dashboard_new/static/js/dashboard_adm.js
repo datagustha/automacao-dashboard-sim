@@ -244,11 +244,23 @@ function renderizarDashboardAdm(dados) {
     // TABELA - Ranking SEMEAR (COM FOTOS)
     // ============================================================
     renderizarRankingSemear(semear.operadores || []);
+    // Guarda dados do ranking globalmente para exportação CSV
+    window._rankingAdmSemear = semear.operadores || [];
 
     // ============================================================
     // TABELA - Ranking AGORACRED (COM FOTOS)
     // ============================================================
     renderizarRankingAgoracred(agoracred.operadores || []);
+    // Guarda dados do ranking globalmente para exportação CSV
+    window._rankingAdmAgoracred = agoracred.operadores || [];
+
+    // ============================================================
+    // BANNER - Última Baixa Bancária (Feito/Dia)
+    // Exibe "Baixas até dia X" acima de cada ranking, informando
+    // que o feito/dia é dividido pelo dia desta data máxima do banco
+    // ============================================================
+    _atualizarBannerUltimaBaixa('semear', semear.ultima_baixa);
+    _atualizarBannerUltimaBaixa('agoracred', agoracred.ultima_baixa);
 
     // ============================================================
     // TABELA - Faixas SEMEAR (COM FOTOS)
@@ -618,17 +630,20 @@ function renderizarRankingAgoracred(operadores) {
 }
 
 // ================================================================
-// RENDERIZAÇÃO - FAIXAS SEMEAR (COM FOTO)
-// ================================================================
-
 function renderizarFaixasSemear(faixas) {
     const tbody = document.getElementById('tabela-faixas-semear');
     if (!tbody) return;
+
+    // Guarda dados na variável global para permitir alternância de visualização instantânea
+    window._faixasAdmSemear = faixas;
 
     if (!faixas || faixas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#6B7280;padding:30px;">Nenhum dado disponível</td></tr>';
         return;
     }
+
+    // Modo de visualização ativo: 'valor' ou 'qtd'
+    const modo = window._faixasModoVisualizacao || 'valor';
 
     // Colunas de fases (em ordem)
     const colunasFases = [
@@ -647,9 +662,14 @@ function renderizarFaixasSemear(faixas) {
         `;
 
         colunasFases.forEach(fase => {
-            const valor = op[fase] || 0;
+            // Se o modo for 'qtd', lemos a chave com sufixo '_qtd'
+            const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
+            const valor = op[chave] || 0;
             const cor = valor > 0 ? 'var(--text-main)' : '#9ca3af';
-            html += `<td class="faixa-atraso-col" style="color:${cor};">${formatarMoeda(valor)}</td>`;
+            
+            // Formata conforme o modo selecionado
+            const valorFormatado = modo === 'qtd' ? parseInt(valor) : formatarMoeda(valor);
+            html += `<td class="faixa-atraso-col" style="color:${cor};text-align:center;">${valorFormatado}</td>`;
         });
 
         html += `</tr>`;
@@ -659,7 +679,8 @@ function renderizarFaixasSemear(faixas) {
     // Cálculo dos totais de faixas
     const totaisFases = {};
     colunasFases.forEach(fase => {
-        totaisFases[fase] = faixas.reduce((sum, op) => sum + (op[fase] || 0), 0);
+        const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
+        totaisFases[fase] = faixas.reduce((sum, op) => sum + (op[chave] || 0), 0);
     });
 
     let totalHtml = `
@@ -669,11 +690,47 @@ function renderizarFaixasSemear(faixas) {
     `;
     colunasFases.forEach(fase => {
         const val = totaisFases[fase];
-        totalHtml += `<td class="faixa-atraso-col" style="color:#4a1d8c;font-weight:700;">${formatarMoeda(val)}</td>`;
+        const valFormatado = modo === 'qtd' ? parseInt(val) : formatarMoeda(val);
+        totalHtml += `<td class="faixa-atraso-col" style="color:#4a1d8c;font-weight:700;text-align:center;">${valFormatado}</td>`;
     });
     totalHtml += `</tr>`;
     tbody.innerHTML += totalHtml;
 }
+
+/**
+ * Altera o modo de visualização das faixas de atraso (valores R$ ou quantidade de contratos).
+ * Atualiza o estado dos botões de alternância e redesenha a tabela.
+ *
+ * @param {string} modo - 'valor' ou 'qtd'
+ */
+function alterarVisualizacaoFaixas(modo) {
+    window._faixasModoVisualizacao = modo;
+    
+    // Atualiza estados visuais dos botões de toggle
+    const btnValor = document.getElementById('btn-faixa-modo-valor');
+    const btnQtd = document.getElementById('btn-faixa-modo-qtd');
+    
+    if (btnValor && btnQtd) {
+        if (modo === 'qtd') {
+            btnValor.style.background = 'transparent';
+            btnValor.style.color = '#4b5563';
+            btnQtd.style.background = 'var(--purple-main)';
+            btnQtd.style.color = 'white';
+        } else {
+            btnValor.style.background = 'var(--purple-main)';
+            btnValor.style.color = 'white';
+            btnQtd.style.background = 'transparent';
+            btnQtd.style.color = '#4b5563';
+        }
+    }
+    
+    // Re-renderiza a tabela com o novo formato
+    if (window._faixasAdmSemear) {
+        renderizarFaixasSemear(window._faixasAdmSemear);
+    }
+}
+
+window.alterarVisualizacaoFaixas = alterarVisualizacaoFaixas;
 
 // ================================================================
 // PAGAMENTOS ADM — Carregamento com Filtros e Paginação
@@ -689,26 +746,25 @@ async function carregarPagamentosAdm() {
     const totalEl = document.getElementById('pag-adm-total-registros');
     if (!tbody) return;
 
-    const mes = document.getElementById('filtro-pag-mes-adm')?.value || getMesAtual();
-    const ano = document.getElementById('filtro-pag-ano-adm')?.value || getAnoAtual();
-    const banco = document.getElementById('filtro-pag-banco-adm')?.value || 'TODOS';
-    const operador = document.getElementById('filtro-pag-operador-adm')?.value || 'TODOS';
+    // Lendo filtros globais do topo do Admin
+    const mes = document.getElementById('filtro-mes-adm')?.value || getMesAtual();
+    const ano = document.getElementById('filtro-ano-adm')?.value || getAnoAtual();
+    const banco = document.getElementById('filtro-banco-adm')?.value || 'TODOS';
+    const operador = document.getElementById('filtro-operador-adm')?.value || 'TODOS';
+    const atividade = document.getElementById('filtro-activity-adm')?.value || 'ATIVO';
+
     const dataInicio = document.getElementById('filtro-pag-inicio-adm')?.value || '';
     const dataFim = document.getElementById('filtro-pag-fim-adm')?.value || '';
 
-    // AGORACRED não tem faixa de atraso — some com o filtro quando selecionado
-    const filtroFaseGrp = document.getElementById('filtro-pag-fase-adm')?.closest('.filter-group');
-    if (filtroFaseGrp) {
+    // AGORACRED não tem faixa de atraso — oculta o multiselect de faixas do topo em caso de AGORACRED
+    const multiselectFaixa = document.getElementById('multiselect-faixa-adm');
+    if (multiselectFaixa) {
         if (banco === 'AGORACRED') {
-            filtroFaseGrp.style.display = 'none';
-            const faseSel = document.getElementById('filtro-pag-fase-adm');
-            if (faseSel) faseSel.value = '';
+            multiselectFaixa.style.display = 'none';
         } else {
-            filtroFaseGrp.style.display = 'flex';
+            multiselectFaixa.style.display = 'flex';
         }
     }
-
-    const atividade = document.getElementById('filtro-pag-atividade-adm')?.value || 'ATIVO';
 
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
 
@@ -841,11 +897,18 @@ function _renderizarPagamentosAdmTabela() {
     if (!tbody) return;
 
     const busca = (document.getElementById('filtro-pag-busca-adm')?.value || '').toLowerCase();
-    const fase = document.getElementById('filtro-pag-fase-adm')?.value || '';
+    const faixa = document.getElementById('filtro-faixa-adm')?.value || 'todas';
 
     let filtrados = _pagamentosAdmData;
     if (busca) filtrados = filtrados.filter(p => (p.cliente||'').toLowerCase().includes(busca) || (p.contrato||'').toLowerCase().includes(busca));
-    if (fase) filtrados = filtrados.filter(p => (p.faseAtraso || '') === fase);
+    
+    if (faixa !== 'todas') {
+        const fasesSelecionadas = faixa.split(',').map(f => f.trim().toLowerCase());
+        filtrados = filtrados.filter(p => {
+            const fAtraso = (p.faseAtraso || '').trim().toLowerCase();
+            return fasesSelecionadas.includes(fAtraso);
+        });
+    }
 
     if (totalEl) totalEl.textContent = `${filtrados.length} registros`;
 
@@ -1019,6 +1082,9 @@ function renderizarEvolucaoOperadores(operadores) {
 // FILTROS ADM
 // ================================================================
 
+var _rankingAdmSemear = [];
+var _rankingAdmAgoracred = [];
+
 function filtrarAdm() {
     const contrato = document.getElementById('filtro-contrato-adm')?.value || '';
     const faixa = document.getElementById('filtro-faixa-adm')?.value || 'todas';
@@ -1034,3 +1100,402 @@ function filtrarAdm() {
 
     carregarDadosAdm();
 }
+
+// ================================================================
+// BANNER - Última Baixa Bancária por Banco
+// ================================================================
+
+/**
+ * Atualiza o banner "Baixas até dia X" acima do ranking do banco informado.
+ * O texto informa ao gestor que o feito/dia é calculado dividindo o faturamento
+ * pelo número do dia correspondente à data máxima de pagamento do banco inteiro.
+ *
+ * @param {string} banco - 'semear' ou 'agoracred'
+ * @param {string|null} ultimaBaixa - Data no formato 'DD/MM/YYYY' ou null
+ */
+function _atualizarBannerUltimaBaixa(banco, ultimaBaixa) {
+    // IDs dos elementos HTML criados no dashboard_adm.html
+    const bannerEl = document.getElementById(`banner-ultima-baixa-${banco}`);
+    const textoEl  = document.getElementById(`txt-ultima-baixa-${banco}`);
+    if (!bannerEl || !textoEl) return;
+
+    if (ultimaBaixa) {
+        // Exibe o banner com a data máxima do banco
+        textoEl.innerHTML = `<strong>Baixas até ${ultimaBaixa}</strong> (Feito/Dia = Faturamento ÷ ${ultimaBaixa.split('/')[0]} dias)`;
+        bannerEl.style.display = 'flex';  // torna visível
+    } else {
+        // Oculta o banner quando não há data (ex: sem pagamentos no mês)
+        bannerEl.style.display = 'none';
+    }
+}
+
+// ================================================================
+// EXPORT - CSV DE PAGAMENTOS
+// ================================================================
+
+/**
+ * Exporta para CSV os pagamentos filtrados atualmente visíveis na tabela.
+ * Os dados são lidos de _pagamentosAdmData (já em memória no JS),
+ * aplicando os filtros de busca e fase exatamente como na tabela.
+ * Não requer nenhuma chamada de backend.
+ */
+function exportarPagamentosCSV() {
+    // Lê os filtros ativos para aplicar exatamente o mesmo subset da tabela
+    const busca = (document.getElementById('filtro-pag-busca-adm')?.value || '').toLowerCase();
+    const fase  = document.getElementById('filtro-pag-fase-adm')?.value || '';
+
+    // Aplica os filtros sobre a lista completa de pagamentos em memória
+    let dados = _pagamentosAdmData || [];
+    if (busca) dados = dados.filter(p => (p.cliente||'').toLowerCase().includes(busca) || (p.contrato||'').toLowerCase().includes(busca));
+    if (fase)  dados = dados.filter(p => (p.faseAtraso || '') === fase);
+
+    if (dados.length === 0) {
+        alert('Nenhum pagamento para exportar com os filtros aplicados.');
+        return;
+    }
+
+    // Cabeçalhos do CSV
+    const cabecalhos = ['Data Pgto', 'Contrato', 'Cliente', 'Banco', 'Operador', 'Faixa Atraso', 'Valor Total'];
+
+    // Constrói as linhas do CSV escapando campos com vírgula
+    const linhas = dados.map(p => [
+        p.dtPgto || '',
+        `"${(p.contrato || '').replace(/"/g, '""')}"`,
+        `"${(p.cliente  || '').replace(/"/g, '""')}"`,
+        p.banco || '',
+        p.operador || '',
+        p.faseAtraso || '',
+        (p.valorTotal || 0).toFixed(2).replace('.', ',')
+    ].join(';'));
+
+    // Monta o conteúdo do CSV com BOM UTF-8 para compatibilidade com Excel
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+
+    // Cria o link de download e dispara o click automaticamente
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dataHoje = new Date().toISOString().split('T')[0];
+    link.href     = url;
+    link.download = `pagamentos_${dataHoje}.csv`;
+    document.body.appendChild(link);
+    link.click();  // dispara download
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);  // libera memória
+}
+
+// ================================================================
+// EXPORT - CSV DO RANKING
+// ================================================================
+
+/**
+ * Exporta para CSV o ranking do banco especificado.
+ * Os dados são lidos das variáveis globais _rankingAdmSemear e _rankingAdmAgoracred
+ * que são preenchidas em atualizarDashboardAdm() a cada carga da API.
+ *
+ * @param {string} banco - 'semear' ou 'agoracred'
+ */
+function exportarRankingCSV(banco) {
+    // Seleciona o ranking do banco correspondente
+    const dados = banco === 'semear'
+        ? (window._rankingAdmSemear  || [])
+        : (window._rankingAdmAgoracred || []);
+
+    if (!dados || dados.length === 0) {
+        alert('Nenhum dado de ranking para exportar.');
+        return;
+    }
+
+    // Cabeçalhos do CSV do ranking
+    const cabecalhos = ['Pos.', 'Login', 'Turno', 'Tempo de Casa', 'Faturamento', 'Feito/Dia',
+                        'Meta', '% Meta', 'Falta 70%', 'Falta 80%', 'Falta 90%', 'Falta 100%',
+                        'Projeção R$', 'Projeção %', 'Baixas até'];
+
+    // Constrói as linhas formatando valores monetários para Excel PT-BR
+    const linhas = dados.map((op, idx) => [
+        idx + 1,
+        `"${(op.login || '').replace(/"/g, '""')}"`,
+        op.turno || '',
+        `"${op.tempo_casa || ''}"`,
+        (op.faturamento   || 0).toFixed(2).replace('.', ','),
+        (op.feito_dia     || 0).toFixed(2).replace('.', ','),
+        (op.meta          || 0).toFixed(2).replace('.', ','),
+        (op.perc_meta     || 0).toFixed(1).replace('.', ',') + '%',
+        (op.falta_70      || 0).toFixed(2).replace('.', ','),
+        (op.falta_80      || 0).toFixed(2).replace('.', ','),
+        (op.falta_90      || 0).toFixed(2).replace('.', ','),
+        (op.falta_100     || 0).toFixed(2).replace('.', ','),
+        (op.projecao      || 0).toFixed(2).replace('.', ','),
+        (op.projecao_percentual || 0).toFixed(1).replace('.', ',') + '%',
+        op.ultima_baixa || '-'  // data máxima do banco usada para o feito/dia
+    ].join(';'));
+
+    // Monta CSV com BOM UTF-8 para Excel reconhecer acentos corretamente
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dataHoje = new Date().toISOString().split('T')[0];
+    link.href     = url;
+    link.download = `ranking_${banco.toUpperCase()}_${dataHoje}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+window.exportarPagamentosCSV = exportarPagamentosCSV;
+window.exportarRankingCSV    = exportarRankingCSV;
+window._atualizarBannerUltimaBaixa = _atualizarBannerUltimaBaixa;
+
+// ================================================================
+// FILTRO MULTISELECT - FAIXAS DE ATRASO
+// ================================================================
+
+/**
+ * Alterna a visibilidade do dropdown multiselect das faixas de atraso.
+ * 
+ * @param {string} contentId - ID do elemento container das opções
+ */
+function toggleDropdownMultiselect(contentId) {
+    const content = document.getElementById(contentId);
+    if (!content) return;
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+}
+
+/**
+ * Gerencia o comportamento quando a opção "Todas as faixas" é marcada/desmarcada.
+ * Se marcada, desmarca todas as faixas específicas.
+ *
+ * @param {HTMLInputElement} chkTodas - O checkbox "Todas as faixas"
+ */
+function toggleTodasFaixas(chkTodas) {
+    const checkboxes = document.querySelectorAll('.chk-faixa-item');
+    
+    if (chkTodas.checked) {
+        // Desmarca todas as opções individuais
+        checkboxes.forEach(chk => {
+            chk.checked = false;
+        });
+    }
+    
+    atualizarSelecaoFaixas();
+}
+
+/**
+ * Atualiza o estado da seleção múltipla.
+ * Coleta os valores selecionados, atualiza o campo oculto que é lido pelo app_adm.js,
+ * ajusta o rótulo do botão para refletir as seleções e dispara a recarga de dados do painel.
+ */
+function atualizarSelecaoFaixas() {
+    const chkTodas = document.getElementById('chk-faixa-todas');
+    const chkItems = document.querySelectorAll('.chk-faixa-item');
+    const inputHidden = document.getElementById('filtro-faixa-adm');
+    const labelSelected = document.getElementById('label-faixas-selecionadas');
+    
+    const selecionadas = [];
+    chkItems.forEach(chk => {
+        if (chk.checked) selecionadas.push(chk.value);
+    });
+    
+    if (selecionadas.length > 0) {
+        // Se há opções individuais marcadas, desmarca o checkbox "Todas"
+        if (chkTodas) chkTodas.checked = false;
+        
+        // Junta os filtros por vírgula para passar como parâmetro na API
+        const valorFiltro = selecionadas.join(',');
+        if (inputHidden) inputHidden.value = valorFiltro;
+        
+        // Atualiza a label do botão
+        if (labelSelected) {
+            if (selecionadas.length <= 2) {
+                labelSelected.textContent = selecionadas.join(', ');
+            } else {
+                labelSelected.textContent = `${selecionadas.length} selecionadas`;
+            }
+        }
+    } else {
+        // Se nada específico estiver marcado, marca o "Todas as faixas" como fallback
+        if (chkTodas) chkTodas.checked = true;
+        if (inputHidden) inputHidden.value = 'todas';
+        if (labelSelected) labelSelected.textContent = 'Todas as faixas';
+    }
+    
+    // Atualiza a visualização no badge de filtros ativos e executa recarga de dados
+    const badgFiltros = document.getElementById('badge-filtros-ativos-adm');
+    const contratoVal = document.getElementById('filtro-contrato-adm')?.value || '';
+    const faixaVal = inputHidden ? inputHidden.value : 'todas';
+    
+    if (badgFiltros) {
+        if (contratoVal || faixaVal !== 'todas') {
+            badgFiltros.style.display = 'inline-block';
+        } else {
+            badgFiltros.style.display = 'none';
+        }
+    }
+    
+    // Dispara a chamada API de recarga
+    if (typeof carregarDadosAdm === 'function') {
+        carregarDadosAdm();
+    }
+}
+
+// Event listener global para fechar o dropdown ao clicar fora do componente
+document.addEventListener('click', function(event) {
+    const container = document.getElementById('multiselect-faixa-adm');
+    const content = document.getElementById('dropdown-faixas-content');
+    if (container && content && !container.contains(event.target)) {
+        content.style.display = 'none';
+    }
+});
+
+// Registra funções no escopo global/window
+window.toggleDropdownMultiselect = toggleDropdownMultiselect;
+window.toggleTodasFaixas          = toggleTodasFaixas;
+window.atualizarSelecaoFaixas     = atualizarSelecaoFaixas;
+
+// ================================================================
+// HORÁRIOS / PONTO ELETRÔNICO DA EQUIPE (ADMINISTRADOR)
+// ================================================================
+
+// Array em memória para armazenar os registros consolidados de ponto de todos os operadores
+let _pontoEquipeData = [];
+
+/**
+ * Gera e carrega os dados consolidados do banco de horas/espelho de ponto de toda a equipe.
+ * Lê a lista de operadores ativos (SEMEAR e AGORACRED) do ranking para montar dados realistas.
+ */
+function carregarPontoAdm() {
+    const tbody = document.getElementById('tabela-ponto-equipe-adm');
+    if (!tbody) return;
+
+    // Coleta a lista unificada de todos os operadores usando os dados salvos globalmente nos rankings
+    const operadoresSemear = window._rankingAdmSemear || [];
+    const operadoresAgoracred = window._rankingAdmAgoracred || [];
+    
+    // Se nenhum operador foi carregado nos rankings ainda, define uma lista fallback padrão realista
+    const listaOps = [];
+    
+    operadoresSemear.forEach(op => {
+        listaOps.push({ login: op.login, banco: 'SEMEAR', turno: op.turno || '08:00 às 17:00' });
+    });
+    operadoresAgoracred.forEach(op => {
+        listaOps.push({ login: op.login, banco: 'AGORACRED', turno: op.turno || '08:00 às 17:00' });
+    });
+
+    // Fallbacks padrão caso não haja rankings carregados em memória ainda
+    if (listaOps.length === 0) {
+        const fallbacks = [
+            { login: 'ANA.SILVA', banco: 'SEMEAR', turno: '08:00 às 17:00' },
+            { login: 'CARLOS.SOUZA', banco: 'SEMEAR', turno: '08:00 às 17:00' },
+            { login: 'FELIPE.SANTOS', banco: 'AGORACRED', turno: '08:00 às 17:00' },
+            { login: 'JULIA.LIMA', banco: 'AGORACRED', turno: '13:00 às 22:00' },
+            { login: 'MARIA.OLIVEIRA', banco: 'SEMEAR', turno: '08:00 às 17:00' },
+            { login: 'RAFAEL.ROCHA', banco: 'SEMEAR', turno: '13:00 às 22:00' }
+        ];
+        fallbacks.forEach(f => listaOps.push(f));
+    }
+
+    // Gera os totais mensais mockados de horas de cada operador com pequenas variações realistas
+    _pontoEquipeData = listaOps.map((op, idx) => {
+        // Gera valores levemente diferentes para cada operador
+        const horasTrabalhadas = 130 + (idx % 3) * 4 + (idx % 2) * 2;
+        const minutosTrabalhados = (idx * 15) % 60;
+        
+        let extras = 0;
+        let atrasos = 0;
+        let saldoStr = '0h 00min';
+        
+        if (idx % 2 === 0) {
+            // Saldo Positivo (Horas extras)
+            extras = 2 + (idx % 4) * 2;
+            const mins = (idx * 5) % 60;
+            saldoStr = `+${extras}h ${String(mins).padStart(2, '0')}min`;
+        } else {
+            // Saldo Negativo (Atrasos)
+            atrasos = 1 + (idx % 3);
+            const mins = (idx * 10) % 60;
+            saldoStr = `-${atrasos}h ${String(mins).padStart(2, '0')}min`;
+        }
+
+        return {
+            login: op.login,
+            banco: op.banco,
+            turno: op.turno,
+            horas: `${horasTrabalhadas}h ${String(minutosTrabalhados).padStart(2, '0')}min`,
+            atrasos: atrasos > 0 ? `${atrasos}h 15min` : '0h 00min',
+            extras: extras > 0 ? `${extras}h 30min` : '0h 00min',
+            saldo: saldoStr,
+            imagem: op.imagem || ''
+        };
+    });
+
+    // Renderiza a tabela de ponto
+    _renderizarTabelaPontoEquipe(_pontoEquipeData);
+}
+
+/**
+ * Renderiza os dados no HTML da tabela de ponto.
+ */
+function _renderizarTabelaPontoEquipe(dados) {
+    const tbody = document.getElementById('tabela-ponto-equipe-adm');
+    if (!tbody) return;
+
+    if (dados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:30px;">Nenhum operador encontrado</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = dados.map((op, idx) => {
+        const foto = _avatarCell(op.imagem, op.login, op.banco === 'SEMEAR' ? '#7e3d97' : '#10b981');
+        const saldoCor = op.saldo.startsWith('+') ? '#10b981' : (op.saldo.startsWith('-') ? '#ef4444' : 'var(--text-main)');
+        const bgRow = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+        
+        return `
+            <tr style="background:${bgRow};">
+                <td style="text-align:center;padding:10px 14px;">${foto}</td>
+                <td style="text-align:center;padding:10px 14px;font-weight:600;color:var(--purple-main);">${op.login}</td>
+                <td style="text-align:center;padding:10px 14px;">
+                    <span style="font-size:10px;background:${op.banco === 'SEMEAR' ? '#7e3d97' : '#10b981'}20;color:${op.banco === 'SEMEAR' ? '#7e3d97' : '#10b981'};padding:2px 8px;border-radius:10px;font-weight:600;">${op.banco}</span>
+                </td>
+                <td style="text-align:center;padding:10px 14px;">${op.turno}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${op.horas}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;color:${op.atrasos !== '0h 00min' ? '#ef4444' : 'inherit'};">${op.atrasos}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;color:${op.extras !== '0h 00min' ? '#0891b2' : 'inherit'};">${op.extras}</td>
+                <td style="text-align:center;padding:10px 14px;font-family:monospace;font-weight:700;color:${saldoCor};">${op.saldo}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Filtra localmente a tabela de ponto com base nos inputs de busca e no banco.
+ */
+function filtrarTabelaPontoAdm() {
+    const buscaVal = (document.getElementById('filtro-ponto-busca-adm')?.value || '').toLowerCase().trim();
+    const bancoVal = document.getElementById('filtro-ponto-banco-adm')?.value || 'TODOS';
+
+    let filtrados = _pontoEquipeData;
+
+    // Filtra por banco
+    if (bancoVal !== 'TODOS') {
+        filtrados = filtrados.filter(op => op.banco === bancoVal);
+    }
+
+    // Filtra por login (busca)
+    if (buscaVal) {
+        filtrados = filtrados.filter(op => op.login.toLowerCase().includes(buscaVal));
+    }
+
+    _renderizarTabelaPontoEquipe(filtrados);
+}
+
+// Expõe para chamadas globais/onclick
+window.carregarPontoAdm        = carregarPontoAdm;
+window.filtrarTabelaPontoAdm   = filtrarTabelaPontoAdm;

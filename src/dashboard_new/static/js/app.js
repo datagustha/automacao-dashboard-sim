@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.operadorLogado = sessionData;
     operadorLogado = window.operadorLogado;
     atualizarUsuario(operadorLogado);
+
+    // Exibe o multiselect de faixas se o operador for SEMEAR
+    const multiselectFaixaContainerOp = document.getElementById('multiselect-faixa-op-container');
+    if (multiselectFaixaContainerOp && operadorLogado?.banco === 'SEMEAR') {
+        multiselectFaixaContainerOp.style.display = 'block';
+    }
     
     // Configura mês e ano atual
     const mesAtual = getMesAtual();
@@ -102,6 +108,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const logoutBtn = document.querySelector('.btn-logout');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
+    }
+
+    // Inicialização do relógio e dados de ponto/horários
+    if (typeof inicializarRelogioPonto === 'function') {
+        inicializarRelogioPonto();
+    }
+    if (typeof renderizarPontoOperador === 'function') {
+        renderizarPontoOperador();
     }
 });
 
@@ -184,6 +198,7 @@ async function carregarDados() {
 
             // Atualiza pagamentos completos
             if (data.data.ultimos_pagamentos) {
+                window._pagamentosOperadorData = data.data.ultimos_pagamentos;
                 renderizarPagamentosCompletos(data.data.ultimos_pagamentos);
             }
         } else {
@@ -380,6 +395,34 @@ function toggleSidebar() {
 // ================================================================
 
 function filtrarDados() {
+    const mes = document.getElementById('filtro-mes')?.value;
+    const ano = document.getElementById('filtro-ano')?.value;
+
+    // Sincroniza inputs ocultos das outras abas para que a recarga de dados utilize o mesmo mês/ano
+    const pMes = document.getElementById('filtro-pagamento-mes');
+    const pAno = document.getElementById('filtro-pagamento-ano');
+    const oMes = document.getElementById('op-perf-mes');
+    const oAno = document.getElementById('op-perf-ano');
+
+    if (pMes && mes) pMes.value = mes;
+    if (pAno && ano) pAno.value = ano;
+    if (oMes && mes) oMes.value = mes;
+    if (oAno && ano) oAno.value = ano;
+
+    // Ao mudar o período (mês ou ano), reseta o filtro de faixas de atraso do operador
+    const chkTodos = document.getElementById('chk-faixa-todas-op');
+    if (chkTodos) {
+        chkTodos.checked = true;
+        const checkboxes = document.querySelectorAll('.chk-faixa-item-op');
+        checkboxes.forEach(chk => {
+            chk.checked = false;
+        });
+        const inputHidden = document.getElementById('filtro-faixa-op');
+        if (inputHidden) inputHidden.value = 'todas';
+        const labelSelected = document.getElementById('label-faixas-selecionadas-op');
+        if (labelSelected) labelSelected.textContent = 'Todas as faixas';
+    }
+
     carregarDados();
     const activePage = document.querySelector('.sidebar-nav li.active')?.getAttribute('data-page');
     if (activePage === 'operadores') {

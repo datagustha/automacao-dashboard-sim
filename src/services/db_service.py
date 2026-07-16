@@ -337,6 +337,15 @@ def Buscar_pagamento_semear(dados_operador: dict):
             # Converte a lista de objetos para lista de dicionários
             lista_pagamentos = []
             for p in pagamentos:
+                # ================================================================
+                # REGRA DE NEGÓCIO SEMEAR: somente dias de atraso >= 10
+                # Pagamentos com atraso abaixo de 10 dias não são comissionados
+                # e não devem entrar em nenhum cálculo de faturamento ou quantidade
+                # AGORACRED NÃO tem esta regra — o filtro é apenas aqui no SEMEAR
+                # ================================================================
+                if p.atraso is not None and p.atraso < 10:
+                    continue  # descarta pagamento fora da regra de comissionamento
+
                 lista_pagamentos.append({
                     "cliente": p.cliente,
                     "fase": p.fase,
@@ -810,15 +819,18 @@ def buscar_tma_operador(login: str, banco: str, anoatual: int = None, mesnum: in
 
         # Mapeia campos do CSV para nomes canônicos esperados pelo frontend
         return {
-            'tma':                str(row.get('tempoMedio', '00:00:00')),
-            'tempo_falado':       _seg_para_hmin(row.get('tempoTotalSegundos', 0)),
-            'acionamentos':       int(float(row.get('qtdeAcionamentos', 0))),
-            'ultimo_acionamento': str(row.get('ultimoAcionamento', '-')),
-            'reacionamento':      str(round(float(row.get('taxaAcionamentoCliente', 1.0)), 2)),
-            'clientes':           int(float(row.get('qtdeClientes', 0))),
+            'tma':                  str(row.get('tempoMedio', '00:00:00')),
+            'tempo_falado':         _seg_para_hmin(row.get('tempoTotalSegundos', 0)),
+            'acionamentos':         int(float(row.get('qtdeAcionamentos', 0))),
+            # Primeiro acionamento: horário do primeiro acionamento do operador no dia
+            # Coluna primeiroAcionamento gerada pelo data_processor.py (linha 242)
+            'primeiro_acionamento': str(row.get('primeiroAcionamento', '-')),
+            'ultimo_acionamento':   str(row.get('ultimoAcionamento', '-')),
+            'reacionamento':        str(round(float(row.get('taxaAcionamentoCliente', 1.0)), 2)),
+            'clientes':             int(float(row.get('qtdeClientes', 0))),
             # Campos extras para referência
-            'contratos':          int(float(row.get('qtdeContratos', 0))),
-            'amplitude_horas':    float(row.get('amplitudeAtividadeHoras', 0)),
+            'contratos':            int(float(row.get('qtdeContratos', 0))),
+            'amplitude_horas':      float(row.get('amplitudeAtividadeHoras', 0)),
         }
 
     except Exception as e:
