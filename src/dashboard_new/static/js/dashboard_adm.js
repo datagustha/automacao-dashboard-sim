@@ -827,24 +827,8 @@ async function carregarPagamentosAdm() {
             // Preenche dropdown de operadores na página de pagamentos
             _preencherOperadoresPagAdm(data.operadores || []);
 
-            // Resumo rápido
-            if (resumoEl) {
-                const totalFat = _pagamentosAdmData.reduce((s, p) => s + (p.valorTotal || 0), 0);
-                resumoEl.innerHTML = `
-                    <div style="background:linear-gradient(135deg,#7e3d97,#a855f7);color:white;border-radius:12px;padding:12px 20px;flex:1;">
-                        <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Total Faturamento</div>
-                        <div style="font-size:22px;font-weight:700;">${formatarMoeda(totalFat)}</div>
-                    </div>
-                    <div style="background:linear-gradient(135deg,#0891b2,#22d3ee);color:white;border-radius:12px;padding:12px 20px;flex:1;">
-                        <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Qtd. Pagamentos</div>
-                        <div style="font-size:22px;font-weight:700;">${_pagamentosAdmData.length}</div>
-                    </div>
-                    <div style="background:linear-gradient(135deg,#10B981,#34d399);color:white;border-radius:12px;padding:12px 20px;flex:1;">
-                        <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Ticket Médio</div>
-                        <div style="font-size:22px;font-weight:700;">${_pagamentosAdmData.length > 0 ? formatarMoeda(totalFat / _pagamentosAdmData.length) : 'R$ 0,00'}</div>
-                    </div>
-                `;
-            }
+            // Resumo rápido — calculado com base nos dados brutos (atualiza ao filtrar)
+            _atualizarResumoPagAdm(_pagamentosAdmData);
 
             _renderizarPagamentosAdmTabela();
         } else {
@@ -890,6 +874,28 @@ function filtrarTabelaPagamentosAdm() {
     _renderizarPagamentosAdmTabela();
 }
 
+function _atualizarResumoPagAdm(dados) {
+    const resumoEl = document.getElementById('pag-adm-resumo');
+    if (!resumoEl) return;
+    const totalFat = dados.reduce((s, p) => s + (p.valorTotal || 0), 0);
+    const qtd = dados.length;
+    const ticket = qtd > 0 ? totalFat / qtd : 0;
+    resumoEl.innerHTML = `
+        <div style="background:linear-gradient(135deg,#7e3d97,#a855f7);color:white;border-radius:12px;padding:12px 20px;flex:1;">
+            <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Total Faturamento</div>
+            <div style="font-size:22px;font-weight:700;">${formatarMoeda(totalFat)}</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#0891b2,#22d3ee);color:white;border-radius:12px;padding:12px 20px;flex:1;">
+            <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Qtd. Pagamentos</div>
+            <div style="font-size:22px;font-weight:700;">${qtd}</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#10B981,#34d399);color:white;border-radius:12px;padding:12px 20px;flex:1;">
+            <div style="font-size:11px;opacity:0.8;text-transform:uppercase;margin-bottom:4px;">Ticket Médio</div>
+            <div style="font-size:22px;font-weight:700;">${formatarMoeda(ticket)}</div>
+        </div>
+    `;
+}
+
 function _renderizarPagamentosAdmTabela() {
     const tbody = document.getElementById('tabela-pagamentos-adm-individual');
     const totalEl = document.getElementById('pag-adm-total-registros');
@@ -910,6 +916,9 @@ function _renderizarPagamentosAdmTabela() {
         });
     }
 
+    // Atualiza o resumo com os dados filtrados
+    _atualizarResumoPagAdm(filtrados);
+
     if (totalEl) totalEl.textContent = `${filtrados.length} registros`;
 
     const total = filtrados.length;
@@ -919,10 +928,14 @@ function _renderizarPagamentosAdmTabela() {
     const pagina = filtrados.slice(inicio, inicio + _pagAdmPerPage);
 
     if (pagina.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:30px;">Nenhum pagamento encontrado com os filtros aplicados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:30px;">Nenhum pagamento encontrado com os filtros aplicados.</td></tr>';
     } else {
         tbody.innerHTML = pagina.map(p => {
             const bancoCor = (p.banco || '') === 'SEMEAR' ? '#7e3d97' : '#10B981';
+            const isAgoracred = p.banco === 'AGORACRED';
+            const atrasoVal = isAgoracred ? '—' : (p.atraso !== null && p.atraso !== undefined ? p.atraso + 'd' : '-');
+            const maiorAtrasoVal = isAgoracred ? '—' : (p.maiorAtraso !== null && p.maiorAtraso !== undefined ? p.maiorAtraso + 'd' : '-');
+            const maiorAtrasoColor = !isAgoracred && p.maiorAtraso >= 360 ? '#dc2626' : (!isAgoracred && p.maiorAtraso >= 90 ? '#d97706' : 'var(--text-main)');
             return `
                 <tr>
                     <td style="padding:8px 10px;text-align:center;font-size:12px;white-space:nowrap;">${formatarData(p.dtPgto) || '-'}</td>
@@ -932,7 +945,9 @@ function _renderizarPagamentosAdmTabela() {
                         <span style="background:${bancoCor};color:white;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;">${p.banco || '-'}</span>
                     </td>
                     <td style="padding:8px 10px;text-align:center;font-size:12px;">${p.operador || p.login || '-'}</td>
-                    <td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);">${(p.banco === 'AGORACRED') ? '—' : (p.faseAtraso || '-')}</td>
+                    <td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--text-muted);">${isAgoracred ? '—' : (p.faseAtraso || '-')}</td>
+                    <td style="padding:8px 10px;text-align:center;font-size:12px;color:var(--text-muted);">${atrasoVal}</td>
+                    <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:600;color:${maiorAtrasoColor};">${maiorAtrasoVal}</td>
                     <td style="padding:8px 10px;text-align:center;font-weight:700;">${formatarMoeda(p.valorTotal || 0)}</td>
                 </tr>
             `;
@@ -965,6 +980,7 @@ function _pagAdmIr(p) {
 window.carregarPagamentosAdm = carregarPagamentosAdm;
 window.filtrarTabelaPagamentosAdm = filtrarTabelaPagamentosAdm;
 window._pagAdmIr = _pagAdmIr;
+window._atualizarResumoPagAdm = _atualizarResumoPagAdm;
 
 
 // ================================================================
