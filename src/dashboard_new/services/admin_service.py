@@ -809,6 +809,8 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
                     'banco': b,
                     'operador': login,
                     'faseAtraso': p.get('faseAtraso', '-'),
+                    'atraso': p.get('atraso'),
+                    'maiorAtraso': p.get('maiorAtraso'),
                     'valorTotal': float(p.get('valorTotal', 0.0) or 0.0)
                 })
 
