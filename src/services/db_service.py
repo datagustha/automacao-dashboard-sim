@@ -338,12 +338,12 @@ def Buscar_pagamento_semear(dados_operador: dict):
             lista_pagamentos = []
             for p in pagamentos:
                 # ================================================================
-                # REGRA DE NEGÓCIO SEMEAR: somente dias de atraso >= 10
-                # Pagamentos com atraso abaixo de 10 dias não são comissionados
-                # e não devem entrar em nenhum cálculo de faturamento ou quantidade
+                # REGRA DE NEGÓCIO SEMEAR: somente contratos com maiorAtraso >= 10
+                # Contratos cujo maior atraso entre todas as parcelas seja < 10 dias
+                # não são comissionados e não devem entrar em nenhum cálculo.
                 # AGORACRED NÃO tem esta regra — o filtro é apenas aqui no SEMEAR
                 # ================================================================
-                if p.atraso is not None and p.atraso < 10:
+                if p.maiorAtraso is not None and p.maiorAtraso < 10:
                     continue  # descarta pagamento fora da regra de comissionamento
 
                 lista_pagamentos.append({
