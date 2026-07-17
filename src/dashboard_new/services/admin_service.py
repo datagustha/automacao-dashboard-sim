@@ -664,6 +664,7 @@ def montar_dashboard_adm(
     total_fat = fat_semear + fat_agoracred
     total_ops_ant = ops_semear_ant + ops_agoracred_ant
     ticket_medio_grupo = total_fat / total_ops if total_ops > 0 else 0.0
+    ticket_medio_anterior_grupo = (fat_semear_ant + fat_agoracred_ant) / total_ops_ant if total_ops_ant > 0 else 0.0
 
     # 9. Histórico de 12 meses consolidado por banco (para Resultado Mês a Mês)
     historico_semear = montar_historico_mensal_banco(operadores_semear, 'SEMEAR', ano)
@@ -709,6 +710,7 @@ def montar_dashboard_adm(
         'total_operacoes': total_ops,
         'operacoes_anterior': total_ops_ant,
         'ticket_medio': ticket_medio_grupo,
+        'ticket_medio_anterior': ticket_medio_anterior_grupo,
         'evolucao_operadores': evolucao_operadores
     }
 

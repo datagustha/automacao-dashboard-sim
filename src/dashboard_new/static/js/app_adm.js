@@ -489,6 +489,10 @@ function preencherOperadores(dados) {
     const labelSelected = document.getElementById('label-operadores-selecionados');
     if (!container) return;
 
+    // Limpa o campo de busca do segmentador ao reconstruir a lista
+    const inputPesquisa = document.getElementById('pesquisa-operador-input');
+    if (inputPesquisa) inputPesquisa.value = '';
+
     // Se o filtro de operador estiver no padrão (TODOS), limpa o cache para que a mudança
     // do filtro de atividade (Ativo/Inativo) recrie a lista corretamente com base no payload da API.
     const operadorFiltroAtivo = inputHidden ? inputHidden.value : 'TODOS';
@@ -563,6 +567,30 @@ function preencherOperadores(dados) {
 
     // Sincroniza a label e o input oculto sem disparar nova recarga (evita loop infinito)
     atualizarSelecaoOperadores(true);
+}
+
+/**
+ * Filtra dinamicamente a lista de operadores exibida no segmentador de acordo com o termo digitado.
+ *
+ * @param {string} termo - O termo de busca digitado pelo usuário
+ */
+function filtrarOperadoresDropdown(termo) {
+    const termoLower = termo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const container = document.getElementById('options-operadores-container');
+    if (!container) return;
+    
+    const labels = container.querySelectorAll('label');
+    labels.forEach(label => {
+        const span = label.querySelector('span');
+        const text = span ? span.textContent : (label.textContent || '');
+        const textLower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        if (textLower.includes(termoLower)) {
+            label.style.setProperty('display', 'flex', 'important');
+        } else {
+            label.style.setProperty('display', 'none', 'important');
+        }
+    });
 }
 
 /**
