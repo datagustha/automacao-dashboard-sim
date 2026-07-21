@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     operadorAdmLogado = sessionData;
+    window.operadorAdmLogado = operadorAdmLogado; // Expõe globalmente para dashboard_adm.js
     atualizarUsuarioAdm(operadorAdmLogado);
 
     // Configura mês e ano atual
@@ -332,6 +333,40 @@ function limparFiltrosTodosAdm() {
     const bannerDash = document.getElementById('banner-operador-selecionado-dashboard-adm');
     if (bannerDash) bannerDash.style.display = 'none';
 
+    // Limpa também o filtro de datas
+    const badgeData = document.getElementById('badge-data-range-adm');
+    if (badgeData) { badgeData.textContent = ''; badgeData.style.display = 'none'; }
+    const ei = document.getElementById('filtro-data-inicio-adm');
+    const ef = document.getElementById('filtro-data-fim-adm');
+    if (ei) ei.value = '';
+    if (ef) ef.value = '';
+
+    carregarDadosAdm();
+}
+
+function aplicarFiltroDatasAdm() {
+    const inicio = document.getElementById('filtro-data-inicio-adm')?.value;
+    const fim = document.getElementById('filtro-data-fim-adm')?.value;
+    const badge = document.getElementById('badge-data-range-adm');
+    if (!inicio && !fim) {
+        alert('Selecione ao menos uma data para filtrar.');
+        return;
+    }
+    if (badge) {
+        const fmt = v => v ? v.split('-').reverse().join('/') : '';
+        badge.textContent = `📅 ${fmt(inicio) || '...'} → ${fmt(fim) || '...'}`;
+        badge.style.display = 'inline-block';
+    }
+    carregarDadosAdm();
+}
+
+function limparFiltroDatasAdm() {
+    const ei = document.getElementById('filtro-data-inicio-adm');
+    const ef = document.getElementById('filtro-data-fim-adm');
+    const badge = document.getElementById('badge-data-range-adm');
+    if (ei) ei.value = '';
+    if (ef) ef.value = '';
+    if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
     carregarDadosAdm();
 }
 

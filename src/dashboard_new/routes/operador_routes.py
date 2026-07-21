@@ -98,8 +98,11 @@ def api_resumo(login):
         ano = request.args.get('ano', datetime.now().year, type=int)
         mes = request.args.get('mes', datetime.now().month, type=int)
         faixa = request.args.get('faixa', 'todas')
+        data_inicio = request.args.get('data_inicio', None)
+        data_fim = request.args.get('data_fim', None)
         
-        resultado = montar_dashboard_operador(operador, ano, mes, faixa=faixa)
+        resultado = montar_dashboard_operador(operador, ano, mes, faixa=faixa, data_inicio=data_inicio, data_fim=data_fim)
+
         
         if resultado:
             return jsonify({'success': True, 'data': resultado})

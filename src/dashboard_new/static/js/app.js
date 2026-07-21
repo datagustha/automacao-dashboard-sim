@@ -180,10 +180,16 @@ async function carregarDados() {
         
         const mes = document.getElementById('filtro-mes')?.value || getMesAtual();
         const ano = document.getElementById('filtro-ano')?.value || getAnoAtual();
+        const dataInicio = document.getElementById('filtro-data-inicio')?.value || '';
+        const dataFim = document.getElementById('filtro-data-fim')?.value || '';
         
         showLoading();
         
-        const response = await fetch(`${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`);
+        let url = `${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`;
+        if (dataInicio) url += `&data_inicio=${dataInicio}`;
+        if (dataFim) url += `&data_fim=${dataFim}`;
+        
+        const response = await fetch(url);
         const data = await response.json();
         
         hideLoading();
@@ -459,6 +465,36 @@ function filtrarDados() {
     if (activePage === 'operadores') {
         carregarPerformanceOp();
     }
+}
+
+// ================================================================
+// FILTRO DE DATAS (Operador)
+// ================================================================
+
+function aplicarFiltroDatas() {
+    const inicio = document.getElementById('filtro-data-inicio')?.value;
+    const fim = document.getElementById('filtro-data-fim')?.value;
+    const badge = document.getElementById('badge-data-range');
+    if (!inicio && !fim) {
+        alert('Selecione ao menos uma data para filtrar.');
+        return;
+    }
+    if (badge) {
+        const fmt = v => v ? v.split('-').reverse().join('/') : '';
+        badge.textContent = `📅 ${fmt(inicio) || '...'} → ${fmt(fim) || '...'}`;
+        badge.style.display = 'inline-block';
+    }
+    carregarDados();
+}
+
+function limparFiltroDatas() {
+    const ei = document.getElementById('filtro-data-inicio');
+    const ef = document.getElementById('filtro-data-fim');
+    const badge = document.getElementById('badge-data-range');
+    if (ei) ei.value = '';
+    if (ef) ef.value = '';
+    if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+    carregarDados();
 }
 
 // ================================================================

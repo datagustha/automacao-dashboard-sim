@@ -1531,8 +1531,8 @@ async function carregarOperadoresDropdownPontoAdm() {
         });
 
         // Adiciona o próprio admin caso não esteja na lista
-        const loginAdmin = window.operadorAdmLogado?.login || '2552GUSTHAVO';
-        const nomeAdmin = window.operadorAdmLogado?.nome || 'LUIZ GUSTHAVO DA SILVA COSTA BARBOSA';
+        const loginAdmin = window.operadorAdmLogado?.login || '';
+        const nomeAdmin = window.operadorAdmLogado?.nome || 'Administrador';
         if (!mapaOps.has(loginAdmin.toLowerCase())) {
             mapaOps.set(loginAdmin.toLowerCase(), { login: loginAdmin, nome: nomeAdmin });
         }
@@ -1578,8 +1578,8 @@ function _renderizarListaOperadoresPonto(lista) {
     const ulEl = document.getElementById('adm-ponto-op-lista');
     if (!ulEl) return;
     const loginAtual = document.getElementById('adm-filtro-operador-ponto')?.value || '';
-    const loginAdmin = window.operadorAdmLogado?.login || '2552GUSTHAVO';
-    const nomeAdmin = window.operadorAdmLogado?.nome || 'LUIZ GUSTHAVO DA SILVA COSTA BARBOSA';
+    const loginAdmin = window.operadorAdmLogado?.login || '';
+    const nomeAdmin = window.operadorAdmLogado?.nome || 'Administrador';
 
     const itemReset = `<li onclick="selecionarOperadorPonto('${loginAdmin}', '${nomeAdmin.replace(/'/g, "\\'")}')"
         style="padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--purple-main); background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
@@ -1690,7 +1690,7 @@ async function carregarPontoAdm(loginAlvo, skipPopularDropdown = false) {
         return;
     }
 
-    const login = loginAlvo || inputOculto?.value || window.operadorAdmLogado?.login || '2552GUSTHAVO';
+    const login = loginAlvo || inputOculto?.value || window.operadorAdmLogado?.login || '';
 
     try {
         const response = await fetch(`/api/horarios/${login}`);

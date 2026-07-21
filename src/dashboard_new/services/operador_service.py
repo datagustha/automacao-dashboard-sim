@@ -45,7 +45,30 @@ def _pagamento_no_mes(pagamento: dict, a: int, m: int) -> bool:
         return False
 
 
-def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None, faixa: str = 'todas'):
+def _pagamento_no_range(pagamento: dict, data_inicio: Optional[str], data_fim: Optional[str]) -> bool:
+    """Verifica se um pagamento está dentro do intervalo de datas fornecido."""
+    if not data_inicio and not data_fim:
+        return True
+    data = pagamento.get('dtPgto')
+    if not data:
+        return False
+    try:
+        data_str = str(data)[:10]
+        data_obj = datetime.strptime(data_str, '%Y-%m-%d').date()
+        if data_inicio:
+            inicio = datetime.strptime(data_inicio[:10], '%Y-%m-%d').date()
+            if data_obj < inicio:
+                return False
+        if data_fim:
+            fim = datetime.strptime(data_fim[:10], '%Y-%m-%d').date()
+            if data_obj > fim:
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None, faixa: str = 'todas', data_inicio: Optional[str] = None, data_fim: Optional[str] = None):
     """
     Monta o dashboard completo do operador.
     """
@@ -95,6 +118,9 @@ def montar_dashboard_operador(operador: dict, ano: int = None, mes: int = None, 
 
     # Filtrar pagamentos
     pagamentos_mes = [p for p in pagamentos if _pagamento_no_mes(p, ano, mes)]
+    # Aplica filtro de intervalo de datas (se fornecido, substitui o filtro de mês)
+    if data_inicio or data_fim:
+        pagamentos_mes = [p for p in pagamentos_mes if _pagamento_no_range(p, data_inicio, data_fim)]
     pagamentos_ant = [p for p in pagamentos if _pagamento_no_mes(p, ano_ant, mes_ant)]
     
     indicadores = calcular_indicadores_operador(pagamentos_mes, banco)
