@@ -484,7 +484,13 @@ function aplicarFiltroDatas() {
         badge.textContent = `📅 ${fmt(inicio) || '...'} → ${fmt(fim) || '...'}`;
         badge.style.display = 'inline-block';
     }
-    carregarDados();
+    // Sincroniza com os inputs locais da página de Pagamentos
+    const elPagInicio = document.getElementById('filtro-pagamento-inicio');
+    const elPagFim = document.getElementById('filtro-pagamento-fim');
+    if (elPagInicio) elPagInicio.value = inicio || '';
+    if (elPagFim) elPagFim.value = fim || '';
+    // Atualiza tabela e KPIs imediatamente (sem ir ao servidor)
+    if (typeof aplicarFiltroPagamentos === 'function') aplicarFiltroPagamentos();
 }
 
 function limparFiltroDatas() {
@@ -494,7 +500,13 @@ function limparFiltroDatas() {
     if (ei) ei.value = '';
     if (ef) ef.value = '';
     if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
-    carregarDados();
+    // Limpa também os inputs locais da página de Pagamentos
+    const elPagInicio = document.getElementById('filtro-pagamento-inicio');
+    const elPagFim = document.getElementById('filtro-pagamento-fim');
+    if (elPagInicio) elPagInicio.value = '';
+    if (elPagFim) elPagFim.value = '';
+    // Restaura KPIs e tabela
+    if (typeof aplicarFiltroPagamentos === 'function') aplicarFiltroPagamentos();
 }
 
 // ================================================================

@@ -357,7 +357,17 @@ function aplicarFiltroDatasAdm() {
         badge.textContent = `📅 ${fmt(inicio) || '...'} → ${fmt(fim) || '...'}`;
         badge.style.display = 'inline-block';
     }
-    carregarDadosAdm();
+    // Sincroniza com inputs locais da página de Pagamentos e dispara o carregamento correto
+    const elPagInicio = document.getElementById('filtro-pag-inicio-adm');
+    const elPagFim = document.getElementById('filtro-pag-fim-adm');
+    if (elPagInicio) elPagInicio.value = inicio || '';
+    if (elPagFim) elPagFim.value = fim || '';
+    const paginaAtiva = document.querySelector('.page.active')?.id;
+    if (paginaAtiva === 'page-pagamentos') {
+        if (typeof carregarPagamentosAdm === 'function') carregarPagamentosAdm();
+    } else {
+        carregarDadosAdm();
+    }
 }
 
 function limparFiltroDatasAdm() {
@@ -367,7 +377,17 @@ function limparFiltroDatasAdm() {
     if (ei) ei.value = '';
     if (ef) ef.value = '';
     if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
-    carregarDadosAdm();
+    // Limpa também os inputs locais da página de Pagamentos
+    const elPagInicio = document.getElementById('filtro-pag-inicio-adm');
+    const elPagFim = document.getElementById('filtro-pag-fim-adm');
+    if (elPagInicio) elPagInicio.value = '';
+    if (elPagFim) elPagFim.value = '';
+    const paginaAtiva = document.querySelector('.page.active')?.id;
+    if (paginaAtiva === 'page-pagamentos') {
+        if (typeof carregarPagamentosAdm === 'function') carregarPagamentosAdm();
+    } else {
+        carregarDadosAdm();
+    }
 }
 
 function limparFiltrosPagAdm() {

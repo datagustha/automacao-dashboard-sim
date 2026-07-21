@@ -387,6 +387,22 @@ function renderizarPagamentosCompletos(pagamentos) {
     aplicarFiltroPagamentos();
 }
 
+/**
+ * Atualiza os 3 cards de resumo (Faturamento, Qtd, Ticket) na página de Pagamentos.
+ * @param {Array} lista - Lista de pagamentos filtrados para calcular os totais.
+ */
+function _atualizarResumoPagOp(lista) {
+    const totalFat = lista.reduce((s, p) => s + (parseFloat(p.valorTotal) || 0), 0);
+    const totalQtd = lista.length;
+    const ticket = totalQtd > 0 ? totalFat / totalQtd : 0;
+    const elFat = document.getElementById('pag-op-resumo-faturamento');
+    const elQtd = document.getElementById('pag-op-resumo-qtd');
+    const elTkt = document.getElementById('pag-op-resumo-ticket');
+    if (elFat) elFat.textContent = formatarMoeda(totalFat);
+    if (elQtd) elQtd.textContent = totalQtd;
+    if (elTkt) elTkt.textContent = formatarMoeda(ticket);
+}
+
 let pagamentosCompletosFiltrados = [];
 let pagCompletosPage = 1;
 const pagCompletosPerPage = 50;
@@ -440,6 +456,34 @@ function aplicarFiltroPagamentos() {
     pagamentosCompletosFiltrados = filtrados;
     pagCompletosPage = 1;
     renderizarTabelaPagamentosOpPaginada();
+
+    // Sempre atualiza os cards de resumo da página de Pagamentos
+    _atualizarResumoPagOp(filtrados);
+
+    // Atualiza os cards do Dashboard (kpi-faturamento etc.) se houver filtro de data ativo
+    const temFiltroData = (inicioVal || fimVal);
+    if (temFiltroData) {
+        const totalFat = filtrados.reduce((s, p) => s + (parseFloat(p.valorTotal) || 0), 0);
+        const totalQtd = filtrados.length;
+        const ticket = totalQtd > 0 ? totalFat / totalQtd : 0;
+        const elFat = document.getElementById('kpi-faturamento');
+        const elQtd = document.getElementById('kpi-total-pgtos');
+        const elTkt = document.getElementById('kpi-ticket');
+        if (elFat) elFat.textContent = formatarMoeda(totalFat);
+        if (elQtd) elQtd.textContent = totalQtd;
+        if (elTkt) elTkt.textContent = formatarMoeda(ticket);
+    } else {
+        // Sem filtro de data: restaura os valores originais do servidor
+        if (window.dadosCompletos) {
+            const ind = window.dadosCompletos.indicadores || {};
+            const elFat = document.getElementById('kpi-faturamento');
+            const elQtd = document.getElementById('kpi-total-pgtos');
+            const elTkt = document.getElementById('kpi-ticket');
+            if (elFat) elFat.textContent = formatarMoeda(ind.faturamento_total || 0);
+            if (elQtd) elQtd.textContent = ind.total_pagamentos || 0;
+            if (elTkt) elTkt.textContent = formatarMoeda(ind.ticket_medio || 0);
+        }
+    }
 }
 
 function renderizarTabelaPagamentosOpPaginada() {
