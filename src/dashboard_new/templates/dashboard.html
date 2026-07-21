@@ -512,12 +512,9 @@
                             <option value="> 1800">&gt; 1800</option>
                         </select>
                     </div>
-                    <div class="filter-group">
-                        <i class="fas fa-calendar-range"></i>
-                        <input type="date" id="filtro-pagamento-inicio" onchange="filtrarPagamentos()" placeholder="Início">
-                        <span style="color:var(--text-muted);font-size:12px;">→</span>
-                        <input type="date" id="filtro-pagamento-fim" onchange="filtrarPagamentos()" placeholder="Fim">
-                    </div>
+                    <!-- Inputs de data ocultos — controlados pelo filtro global da barra de filtros acima -->
+                    <input type="date" id="filtro-pagamento-inicio" style="display:none;" onchange="filtrarPagamentos()">
+                    <input type="date" id="filtro-pagamento-fim" style="display:none;" onchange="filtrarPagamentos()">
                 </div>
 
                 <div class="card-full">
