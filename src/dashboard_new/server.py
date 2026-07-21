@@ -8,8 +8,17 @@ Toda lógica está nos arquivos de routes e services.
 
 from flask import Flask, send_from_directory
 from pathlib import Path
+from datetime import timedelta
 import sys
 import os
+
+# Carrega variáveis do .env
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=_env_path)
+except ImportError:
+    pass  # python-dotenv não instalado, usa variáveis de ambiente do sistema
 
 # ================================================================
 # CONFIGURAÇÃO DO SISTEMA - CORRIGIDA
@@ -40,9 +49,26 @@ app = Flask(__name__,
     template_folder='templates'
 )
 
-# Chave secreta para sessões
-app.secret_key = os.urandom(24)
-app.config['PERMANENT_SESSION_LIFETIME'] = 1209600  # 2 semanas (14 dias * 24h * 3600s)
+# Chave secreta — lida do .env para persistir entre reinícios do servidor
+# IMPORTANTE: nunca usar os.urandom() aqui pois invalida sessões a cada restart
+_secret = os.environ.get('SECRET_KEY')
+if not _secret:
+    # Fallback: gera e salva em arquivo local para não variar entre restarts
+    _key_file = Path(__file__).resolve().parent.parent.parent / '.flask_secret_key'
+    if _key_file.exists():
+        _secret = _key_file.read_text().strip()
+    else:
+        import secrets
+        _secret = secrets.token_hex(32)
+        _key_file.write_text(_secret)
+        print(f"[AVISO] SECRET_KEY gerada e salva em {_key_file}")
+
+app.secret_key = _secret
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(weeks=2)
+app.config['SESSION_COOKIE_HTTPONLY'] = True    # Proteção contra JS no cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Compatível com navegação normal
+app.config['SESSION_COOKIE_SECURE'] = False     # False = funciona em HTTP (rede local)
+app.config['SESSION_COOKIE_NAME'] = 'sim_session'  # Nome fixo do cookie
 
 print("[OK] Flask configurado")
 
