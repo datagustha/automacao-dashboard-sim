@@ -1490,28 +1490,327 @@ function _renderizarTabelaPontoEquipe(dados) {
     }).join('');
 }
 
+let _carregandoPontoDropdown = false;
+let _todosOperadoresDropdownPonto = [];
+
 /**
- * Filtra localmente a tabela de ponto com base nos inputs de busca e no banco.
+ * Carrega a lista de operadores no dropdown da tela de horários do Admin.
+ * Respeita o filtro de Banco (SEMEAR/AGORACRED) e o checkbox 'Somente Ativos'.
  */
-function filtrarTabelaPontoAdm() {
-    const buscaVal = (document.getElementById('filtro-ponto-busca-adm')?.value || '').toLowerCase().trim();
-    const bancoVal = document.getElementById('filtro-ponto-banco-adm')?.value || 'TODOS';
+async function carregarOperadoresDropdownPontoAdm() {
+    const selectEl = document.getElementById('adm-filtro-operador-ponto');
+    if (!selectEl) return;
 
-    let filtrados = _pontoEquipeData;
+    if (_carregandoPontoDropdown) return;
+    _carregandoPontoDropdown = true;
 
-    // Filtra por banco
-    if (bancoVal !== 'TODOS') {
-        filtrados = filtrados.filter(op => op.banco === bancoVal);
+    // Lê o banco selecionado (SEMEAR ou AGORACRED)
+    const selectBanco = document.getElementById('adm-filtro-banco-ponto');
+    const bancoSelecionado = selectBanco ? selectBanco.value : 'SEMEAR';
+
+    // Lê o estado do checkbox de somente ativos (padrão: marcado)
+    const checkboxAtivos = document.getElementById('adm-ponto-somente-ativos');
+    const somentAtivos = checkboxAtivos ? checkboxAtivos.checked : true;
+    const qsAtivos = somentAtivos ? '&somente_ativos=true' : '';
+
+    try {
+        const response = await fetch(`/api/operadores?banco=${encodeURIComponent(bancoSelecionado)}${qsAtivos}`);
+        const data = await response.json();
+
+        let operadores = [];
+        if (data.success && data.data) {
+            operadores = data.data;
+        }
+
+        // Remove duplicados por login
+        const mapaOps = new Map();
+        operadores.forEach(op => {
+            if (op.login && !mapaOps.has(op.login.toLowerCase())) {
+                mapaOps.set(op.login.toLowerCase(), op);
+            }
+        });
+
+        // Adiciona o próprio admin caso não esteja na lista
+        const loginAdmin = window.operadorAdmLogado?.login || '2552GUSTHAVO';
+        const nomeAdmin = window.operadorAdmLogado?.nome || 'LUIZ GUSTHAVO DA SILVA COSTA BARBOSA';
+        if (!mapaOps.has(loginAdmin.toLowerCase())) {
+            mapaOps.set(loginAdmin.toLowerCase(), { login: loginAdmin, nome: nomeAdmin });
+        }
+
+        const opsUnicos = Array.from(mapaOps.values());
+        opsUnicos.sort((a, b) => (a.nome || a.login).localeCompare(b.nome || b.login));
+        _todosOperadoresDropdownPonto = opsUnicos;
+
+        // Se o operador atualmente selecionado não pertence ao novo banco filtrado, reseta para o admin
+        const inputOculto = document.getElementById('adm-filtro-operador-ponto');
+        const opAtualNaLista = opsUnicos.some(o => o.login.toLowerCase() === (inputOculto?.value || '').toLowerCase());
+
+        if (inputOculto && (!inputOculto.value || !opAtualNaLista)) {
+            inputOculto.value = loginAdmin;
+        }
+
+        _renderizarListaOperadoresPonto(opsUnicos);
+
+        // Atualiza o texto do botão com o operador padrão
+        _atualizarBotaoOpDropdown(inputOculto?.value || loginAdmin);
+
+        // Fecha painel ao clicar fora
+        document.removeEventListener('mousedown', _fecharDropdownOpFora);
+        document.addEventListener('mousedown', _fecharDropdownOpFora);
+
+        // Carrega os dados do operador selecionado no momento
+        const loginSelecionado = inputOculto?.value || loginAdmin;
+        _carregandoPontoDropdown = false;
+        if (loginSelecionado) {
+            await carregarPontoAdm(loginSelecionado, true);
+        }
+
+    } catch (err) {
+        _carregandoPontoDropdown = false;
+        console.error('Erro ao carregar lista de operadores para dropdown do ponto:', err);
+    }
+}
+
+/**
+ * Renderiza os itens da lista no custom dropdown de operadores.
+ */
+function _renderizarListaOperadoresPonto(lista) {
+    const ulEl = document.getElementById('adm-ponto-op-lista');
+    if (!ulEl) return;
+    const loginAtual = document.getElementById('adm-filtro-operador-ponto')?.value || '';
+    const loginAdmin = window.operadorAdmLogado?.login || '2552GUSTHAVO';
+    const nomeAdmin = window.operadorAdmLogado?.nome || 'LUIZ GUSTHAVO DA SILVA COSTA BARBOSA';
+
+    const itemReset = `<li onclick="selecionarOperadorPonto('${loginAdmin}', '${nomeAdmin.replace(/'/g, "\\'")}')"
+        style="padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--purple-main); background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-user-circle"></i>
+        <span>Restaurar meu perfil (${nomeAdmin.split(' ')[0]})</span>
+    </li>`;
+
+    const itensLista = lista.map(op => {
+        const isSel = op.login.toLowerCase() === loginAtual.toLowerCase();
+        return `<li onclick="selecionarOperadorPonto('${op.login}', '${(op.nome || op.login).replace(/'/g, "\\'")}')"
+                    style="padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: ${isSel ? '700' : '500'};
+                           color: ${isSel ? 'var(--purple-main)' : 'var(--text-main)'};
+                           background: ${isSel ? 'rgba(126,61,151,0.08)' : 'transparent'};
+                           border-left: 3px solid ${isSel ? 'var(--purple-main)' : 'transparent'};
+                           transition: all 0.15s;"
+                    onmouseenter="this.style.background='rgba(126,61,151,0.06)'"
+                    onmouseleave="this.style.background='${isSel ? 'rgba(126,61,151,0.08)' : 'transparent'}'">
+                  ${op.nome || op.login} <span style="color:#94a3b8;font-size:11px;">(${op.login})</span>
+                </li>`;
+    }).join('');
+
+    ulEl.innerHTML = itemReset + (itensLista || '<li style="padding:12px 14px;color:#94a3b8;font-size:13px;">Nenhum operador encontrado</li>');
+}
+
+
+/**
+ * Atualiza o texto do botão do custom dropdown com o nome do operador selecionado.
+ */
+function _atualizarBotaoOpDropdown(login) {
+    const btn = document.getElementById('adm-ponto-op-btn');
+    if (!btn) return;
+    const op = _todosOperadoresDropdownPonto.find(o => o.login.toLowerCase() === login.toLowerCase());
+    const textoBotao = op ? `${op.nome || op.login}` : login;
+    btn.innerHTML = `${textoBotao} <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;">▾</span>`;
+}
+
+/**
+ * Abre/fecha o painel do custom dropdown de operadores.
+ */
+function togglePontoOpDropdown() {
+    const panel = document.getElementById('adm-ponto-op-panel');
+    if (!panel) return;
+    const aberto = panel.style.display !== 'none';
+    if (aberto) {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        // Limpa busca ao abrir
+        const busca = document.getElementById('adm-ponto-op-busca');
+        if (busca) {
+            busca.value = '';
+            _renderizarListaOperadoresPonto(_todosOperadoresDropdownPonto);
+            setTimeout(() => busca.focus(), 50);
+        }
+    }
+}
+
+/**
+ * Fecha o custom dropdown ao clicar fora dele.
+ */
+function _fecharDropdownOpFora(event) {
+    const container = document.getElementById('adm-ponto-op-dropdown');
+    if (container && !container.contains(event.target)) {
+        const panel = document.getElementById('adm-ponto-op-panel');
+        if (panel) panel.style.display = 'none';
+    }
+}
+
+/**
+ * Seleciona um operador no custom dropdown e carrega os dados de ponto.
+ */
+function selecionarOperadorPonto(login, nome) {
+    const inputOculto = document.getElementById('adm-filtro-operador-ponto');
+    if (inputOculto) inputOculto.value = login;
+
+    _atualizarBotaoOpDropdown(login);
+    _renderizarListaOperadoresPonto(_todosOperadoresDropdownPonto);
+
+    // Fecha o painel
+    const panel = document.getElementById('adm-ponto-op-panel');
+    if (panel) panel.style.display = 'none';
+
+    carregarPontoAdm(login, true);
+}
+
+/**
+ * Filtra a lista de operadores no painel à medida que o usuário digita.
+ */
+function filtrarOperadoresPontoPorTexto(termo) {
+    if (!_todosOperadoresDropdownPonto.length) return;
+    const t = (termo || '').trim().toLowerCase();
+    const filtrados = _todosOperadoresDropdownPonto.filter(op => {
+        return (op.nome || '').toLowerCase().includes(t) || (op.login || '').toLowerCase().includes(t);
+    });
+    _renderizarListaOperadoresPonto(filtrados);
+}
+
+
+/**
+ * Carrega os dados de ponto eletrônico de um operador específico para a visão do Admin.
+ */
+async function carregarPontoAdm(loginAlvo, skipPopularDropdown = false) {
+    const inputOculto = document.getElementById('adm-filtro-operador-ponto');
+
+    // Se o dropdown ainda estiver vazio e não foi marcado para pular, popula primeiro
+    if (!skipPopularDropdown && _todosOperadoresDropdownPonto.length === 0) {
+        await carregarOperadoresDropdownPontoAdm();
+        return;
     }
 
-    // Filtra por login (busca)
-    if (buscaVal) {
-        filtrados = filtrados.filter(op => op.login.toLowerCase().includes(buscaVal));
-    }
+    const login = loginAlvo || inputOculto?.value || window.operadorAdmLogado?.login || '2552GUSTHAVO';
 
-    _renderizarTabelaPontoEquipe(filtrados);
+    try {
+        const response = await fetch(`/api/horarios/${login}`);
+        if (response.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        const result = await response.json();
+
+
+        if (!result.success || !result.data) {
+            console.error('Erro ao carregar horarios no admin:', result.message);
+            return;
+        }
+
+        const data = result.data;
+        const ponto = data.ponto || {};
+        const cardD1 = ponto.card_d1 || {};
+        const historico = ponto.historico_mes || [];
+
+        // Atualiza foto do operador no cabeçalho
+        const elFoto = document.getElementById('ponto-adm-foto');
+        const elFotoFallback = document.getElementById('ponto-adm-foto-fallback');
+        if (elFoto) {
+            if (data.imagem) {
+                elFoto.src = data.imagem;
+                elFoto.style.display = 'block';
+                if (elFotoFallback) elFotoFallback.style.display = 'none';
+            } else {
+                elFoto.style.display = 'none';
+                if (elFotoFallback) elFotoFallback.style.display = 'flex';
+            }
+        }
+
+        // Atualiza perfil do topo
+        const elNome = document.getElementById('ponto-adm-nome');
+        const elTempoCasa = document.getElementById('ponto-adm-tempo-casa');
+        const elBanco = document.getElementById('ponto-adm-banco');
+        const elDataRef = document.getElementById('ponto-adm-data-ref');
+        const elAtualizacao = document.getElementById('ponto-adm-ultima-atualizacao');
+
+        if (elNome) elNome.textContent = data.nome || login;
+        if (elTempoCasa) elTempoCasa.textContent = data.tempo_casa || '—';
+        if (elBanco) elBanco.textContent = data.banco || '—';
+        if (elDataRef) elDataRef.textContent = cardD1.data || '—';
+        if (elAtualizacao) {
+            const raw = data.ultima_atualizacao || '';
+            if (raw) {
+                try {
+                    const dt = new Date(raw.replace(' ', 'T'));
+                    elAtualizacao.textContent = dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } catch(e) { elAtualizacao.textContent = raw; }
+            } else {
+                elAtualizacao.textContent = 'Hoje';
+            }
+        }
+
+        // Preenche os cards
+        const elBancoHoras = document.getElementById('card-adm-ponto-banco-horas');
+        const elEnt1 = document.getElementById('card-adm-ponto-ent1');
+        const elSai1 = document.getElementById('card-adm-ponto-sai1');
+        const elEnt2 = document.getElementById('card-adm-ponto-ent2');
+        const elSai2 = document.getElementById('card-adm-ponto-sai2');
+
+        if (elBancoHoras) {
+            const saldo = cardD1.b_saldo || '00:00';
+            const ehNegativo = saldo.startsWith('-');
+            const corSaldo = ehNegativo ? '#ef4444' : '#10b981';
+
+            elBancoHoras.textContent = saldo;
+            elBancoHoras.style.color = corSaldo;
+
+            const cardContainer = document.getElementById('card-adm-banco-container');
+            const cardIcon = document.getElementById('card-adm-banco-icon');
+            if (cardContainer) cardContainer.style.borderTopColor = corSaldo;
+            if (cardIcon) cardIcon.style.color = corSaldo;
+
+            // Atualiza também o saldo do Banco de Horas no cabeçalho do perfil do topo direito
+            const elHeaderSaldo = document.getElementById('headerBancoHorasSaldo');
+            if (elHeaderSaldo) {
+                elHeaderSaldo.innerHTML = `Banco de Horas: <span style="color:${corSaldo};font-weight:800;">${saldo}</span>`;
+            }
+        }
+
+        if (elEnt1) elEnt1.textContent = cardD1.entrada1 || '—';
+        if (elSai1) elSai1.textContent = cardD1.saida1 || '—';
+        if (elEnt2) elEnt2.textContent = cardD1.entrada2 || '—';
+        if (elSai2) elSai2.textContent = cardD1.saida2 || '—';
+
+        // Renderiza a tabela de histórico
+        const tbody = document.getElementById('tabela-ponto-adm');
+        if (!tbody) return;
+
+        if (historico.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Nenhum lançamento encontrado para o mês atual deste operador.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = historico.map((p, idx) => {
+            const bSaldoStr = p.b_saldo || '';
+            const saldoCor = bSaldoStr.startsWith('+') ? '#10b981' : (bSaldoStr.startsWith('-') ? '#ef4444' : 'var(--text-main)');
+            const bgRow = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+            return `
+                <tr style="background:${bgRow}; transition: all 0.2s;">
+                    <td style="text-align:center;font-weight:600;padding:10px 14px;">${p.data || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.entrada1 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.saida1 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.entrada2 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.saida2 || '—'}</td>
+                    <td style="text-align:center;font-weight:700;color:${saldoCor};padding:10px 14px;">${p.b_saldo || '—'}</td>
+                    <td style="text-align:center;font-weight:700;padding:10px 14px;">${p.b_total || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error('Erro ao carregar ponto no admin:', err);
+    }
 }
 
 // Expõe para chamadas globais/onclick
-window.carregarPontoAdm        = carregarPontoAdm;
-window.filtrarTabelaPontoAdm   = filtrarTabelaPontoAdm;
+window.carregarPontoAdm                      = carregarPontoAdm;
+window.carregarOperadoresDropdownPontoAdm    = carregarOperadoresDropdownPontoAdm;

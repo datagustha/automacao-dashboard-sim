@@ -695,16 +695,27 @@ def buscar_metas_por_operador(dados_operador: dict, atividade: str = None):
 # 6. FUNÇÕES PARA O ADM (busca coletiva por banco)
 # ================================================================
 
-def buscar_todos_operadores_por_banco(banco: str) -> list:
-    """BUSCA TODOS OS OPERADORES DE UM BANCO ESPECÍFICO."""
+def buscar_todos_operadores_por_banco(banco: str, somente_ativos: bool = False) -> list:
+    """BUSCA TODOS OS OPERADORES DE UM BANCO ESPECÍFICO.
+
+    Args:
+        banco: Nome do banco ('SEMEAR', 'AGORACRED', 'TODOS').
+        somente_ativos: Se True, exclui operadores com atividade 'Inativo' / 'Desligado'.
+    """
     with Session(engine) as session:
         try:
-            operadores = session.query(analistas).filter(
-                analistas.banco == banco
-            ).all()
-            
+            query = session.query(analistas)
+            if banco and banco.upper() != 'TODOS':
+                query = query.filter(analistas.banco == banco)
+
+            operadores = query.all()
+
             lista = []
             for op in operadores:
+                atividade_norm = (op.atividade or "").strip().lower()
+                if somente_ativos and atividade_norm in ["inativo", "desligado", "demitido"]:
+                    continue
+
                 lista.append({
                     "login": op.loguin,
                     "nome": op.nome_completo,
@@ -712,12 +723,12 @@ def buscar_todos_operadores_por_banco(banco: str) -> list:
                     "turno": op.turno,
                     "imagem": op.imagem,
                     "atividade": op.atividade,
-                    # Converte date para string ISO para garantir serialização no dcc.Store
+                    # Converte date para string ISO para garantir serialização
                     "admissao": str(op.admissao) if op.admissao else None,
                 })
-            
+
             return lista
-            
+
         except Exception as e:
             print(f"[ERRO] Erro ao buscar operadores: {e}")
             return []

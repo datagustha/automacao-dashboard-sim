@@ -1,0 +1,5401 @@
+{
+  "ultima_atualizacao": "2026-07-21 15:45:47",
+  "data_alvo_d1": "20/07/2026",
+  "funcionarios": {
+    "2552ariane": {
+      "nome_secullum": "Ariane Caroline de Andrade Theodoro",
+      "login": "2552ARIANE",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:50",
+        "b_total": "-",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "FÉRIAS",
+        "entrada2": "FÉRIAS",
+        "saida1": "FÉRIAS",
+        "saida2": "FÉRIAS"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:02",
+          "entrada2": "11:20",
+          "saida1": "11:00",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "-00:15",
+          "b_total": "-00:15",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:21",
+          "entrada2": "11:22",
+          "saida1": "11:01",
+          "saida2": "13:27"
+        },
+        {
+          "b_saldo": "-00:15",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:03",
+          "entrada2": "11:21",
+          "saida1": "11:01",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "-00:15",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:53",
+          "entrada2": "11:20",
+          "saida1": "11:00",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "-00:15",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "01:05",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:59",
+          "entrada2": "11:20",
+          "saida1": "11:00",
+          "saida2": "14:24"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:56",
+          "entrada2": "11:21",
+          "saida1": "11:01",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "13:33",
+          "entrada2": "16:23",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:58",
+          "entrada2": "11:22",
+          "saida1": "11:02",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:56",
+          "entrada2": "11:20",
+          "saida1": "11:00",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:50",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        }
+      ]
+    },
+    "_sem_login_BRENDA_CALDAS_PEREIRA_DE_FARIAS": {
+      "nome_secullum": "Brenda Caldas Pereira de Farias",
+      "login": null,
+      "status": "sem_mapeamento",
+      "card_d1": {
+        "b_saldo": "-02:25",
+        "b_total": "00:25",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "13:05",
+        "entrada2": "16:04",
+        "saida1": "15:44",
+        "saida2": "18:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "21/06/2026 - Dom",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "22/06/2026 - Seg",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "23/06/2026 - Ter",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "24/06/2026 - Qua",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "25/06/2026 - Qui",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "26/06/2026 - Sex",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "27/06/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "28/06/2026 - Dom",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "29/06/2026 - Seg",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "30/06/2026 - Ter",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:46",
+          "b_total": "00:46",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "14:06"
+        },
+        {
+          "b_saldo": "01:38",
+          "b_total": "00:52",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:56",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "14:08"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:00 *",
+          "entrada2": "15:56",
+          "saida1": "12:58",
+          "saida2": "16:15"
+        },
+        {
+          "b_saldo": "02:10",
+          "b_total": "00:32",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:31",
+          "saida1": "16:13",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-02:50",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-02:50",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:25",
+          "b_total": "00:25",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "13:05",
+          "entrada2": "16:04",
+          "saida1": "15:44",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-07:25",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552fabricia": {
+      "nome_secullum": "Fabricia Alves Fonseca",
+      "login": "2552FABRICIA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:08",
+        "b_total": "00:30",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:57",
+        "entrada2": "12:12",
+        "saida1": "11:52",
+        "saida2": "13:50"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:07",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:37",
+          "b_total": "00:30",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:58",
+          "entrada2": "12:09",
+          "saida1": "11:48",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "01:07",
+          "b_total": "00:30",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:56",
+          "entrada2": "12:11",
+          "saida1": "11:50",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-03:53",
+          "b_total": "-05:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-03:53",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:49",
+          "b_total": "01:04",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:14",
+          "saida1": "11:53",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "-02:17",
+          "b_total": "00:32",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "12:12",
+          "saida1": "11:51",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "-01:28",
+          "b_total": "00:49",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "12:11",
+          "saida1": "11:51",
+          "saida2": "14:09"
+        },
+        {
+          "b_saldo": "-00:56",
+          "b_total": "00:32",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:13",
+          "saida1": "11:51",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "00:34",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "12:01",
+          "saida1": "11:41",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "07:58",
+          "entrada2": "12:05",
+          "saida1": "11:45",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:08",
+          "b_total": "00:30",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:12",
+          "saida1": "11:52",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "00:08",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "12:13",
+          "saida1": "11:53",
+          "saida2": "13:22"
+        }
+      ]
+    },
+    "2552giovanna": {
+      "nome_secullum": "Giovanna Christyne Lima dos Reis",
+      "login": "2552GIOVANNA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "02:19",
+        "b_total": "00:32",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:57",
+        "entrada2": "11:41",
+        "saida1": "11:21",
+        "saida2": "13:52"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "11:23",
+          "saida1": "11:03",
+          "saida2": "13:27"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:00",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:57",
+          "entrada2": "12:00",
+          "saida1": "11:40",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:06",
+          "b_total": "01:06",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:00",
+          "entrada2": "11:40",
+          "saida1": "11:20",
+          "saida2": "14:26"
+        },
+        {
+          "b_saldo": "01:37",
+          "b_total": "00:31",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:00",
+          "entrada2": "11:44",
+          "saida1": "11:24",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "02:08",
+          "b_total": "00:31",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "11:49",
+          "saida1": "11:29",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "02:41",
+          "b_total": "00:33",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "11:25",
+          "saida1": "11:05",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "03:13",
+          "b_total": "00:32",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:59",
+          "entrada2": "11:22",
+          "saida1": "11:02",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "-01:47",
+          "b_total": "-05:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-01:47",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:42",
+          "b_total": "01:05",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:58",
+          "entrada2": "11:34",
+          "saida1": "11:14",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "00:32",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "11:21",
+          "saida1": "11:01",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "00:40",
+          "b_total": "00:50",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "08:00",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "14:10"
+        },
+        {
+          "b_saldo": "01:15",
+          "b_total": "00:35",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:00",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:55"
+        },
+        {
+          "b_saldo": "01:47",
+          "b_total": "00:32",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "11:26",
+          "saida1": "11:05",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "01:47",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "11:25",
+          "saida1": "11:05",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "01:47",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "02:19",
+          "b_total": "00:32",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "02:52",
+          "b_total": "00:33",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:58",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:53"
+        }
+      ]
+    },
+    "ilca.barros": {
+      "nome_secullum": "Ilca Regina Ferreira De Barros",
+      "login": "ILCA.BARROS",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "05:07",
+        "b_total": "01:05",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "08:06",
+        "entrada2": "15:33",
+        "saida1": "14:32",
+        "saida2": "18:12"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "01:27",
+          "b_total": "01:27",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:10",
+          "entrada2": "16:16",
+          "saida1": "15:16",
+          "saida2": "18:37"
+        },
+        {
+          "b_saldo": "02:24",
+          "b_total": "00:57",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:25",
+          "entrada2": "15:18",
+          "saida1": "14:18",
+          "saida2": "18:22"
+        },
+        {
+          "b_saldo": "03:08",
+          "b_total": "00:44",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:54",
+          "entrada2": "15:55",
+          "saida1": "14:55",
+          "saida2": "17:38"
+        },
+        {
+          "b_saldo": "-00:52",
+          "b_total": "-04:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-00:52",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:18",
+          "b_total": "01:10",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:35",
+          "entrada2": "16:43",
+          "saida1": "15:43",
+          "saida2": "18:45"
+        },
+        {
+          "b_saldo": "01:39",
+          "b_total": "01:21",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:14",
+          "entrada2": "16:21",
+          "saida1": "15:21",
+          "saida2": "18:35"
+        },
+        {
+          "b_saldo": "02:41",
+          "b_total": "01:02",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:11",
+          "entrada2": "14:38",
+          "saida1": "13:38",
+          "saida2": "18:13"
+        },
+        {
+          "b_saldo": "04:11",
+          "b_total": "01:30",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:45",
+          "entrada2": "15:47",
+          "saida1": "14:47",
+          "saida2": "18:15"
+        },
+        {
+          "b_saldo": "05:44",
+          "b_total": "01:33",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:02",
+          "entrada2": "15:38",
+          "saida1": "14:38",
+          "saida2": "18:33"
+        },
+        {
+          "b_saldo": "01:44",
+          "b_total": "-04:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "01:44",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "03:19",
+          "b_total": "01:35",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "08:18",
+          "entrada2": "15:52",
+          "saida1": "14:52",
+          "saida2": "18:53"
+        },
+        {
+          "b_saldo": "04:21",
+          "b_total": "01:02",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:28",
+          "entrada2": "16:10",
+          "saida1": "15:10",
+          "saida2": "18:30"
+        },
+        {
+          "b_saldo": "05:23",
+          "b_total": "01:02",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "08:18",
+          "entrada2": "15:51",
+          "saida1": "14:51",
+          "saida2": "18:20"
+        },
+        {
+          "b_saldo": "06:49",
+          "b_total": "01:26",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:11",
+          "entrada2": "16:03",
+          "saida1": "15:03",
+          "saida2": "18:37"
+        },
+        {
+          "b_saldo": "08:02",
+          "b_total": "01:13",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:30 ¨",
+          "entrada2": "15:05",
+          "saida1": "14:05 *",
+          "saida2": "18:13"
+        },
+        {
+          "b_saldo": "04:02",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "04:02",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "05:07",
+          "b_total": "01:05",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "08:06",
+          "entrada2": "15:33",
+          "saida1": "14:32",
+          "saida2": "18:12"
+        },
+        {
+          "b_saldo": "02:56",
+          "b_total": "-02:11",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "08:10",
+          "entrada2": "15:00",
+          "saida1": "13:59",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552joaoalves": {
+      "nome_secullum": "João Vitor Bento Alves da Silva",
+      "login": "2552JOAOALVES",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:03",
+        "b_total": "-",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "FÉRIAS",
+        "entrada2": "FÉRIAS",
+        "saida1": "FÉRIAS",
+        "saida2": "FÉRIAS"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:57",
+          "entrada2": "12:18",
+          "saida1": "11:58",
+          "saida2": "14:19"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "09:08",
+          "entrada2": "12:02",
+          "saida1": "11:42",
+          "saida2": "14:27"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:58",
+          "entrada2": "12:41",
+          "saida1": "12:21",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:54",
+          "entrada2": "11:22",
+          "saida1": "11:02",
+          "saida2": "13:22"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "09:01",
+          "entrada2": "12:18",
+          "saida1": "11:56",
+          "saida2": "14:28"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "09:10",
+          "entrada2": "12:21",
+          "saida1": "12:01",
+          "saida2": "14:30"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:57",
+          "entrada2": "12:24",
+          "saida1": "12:04",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:57",
+          "entrada2": "12:05",
+          "saida1": "11:45",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:57",
+          "entrada2": "12:05",
+          "saida1": "11:44",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:03",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        }
+      ]
+    },
+    "2552juliana": {
+      "nome_secullum": "Juliana Marques Da Silva",
+      "login": "2552JULIANA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-05:10",
+        "b_total": "00:24",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "13:04",
+        "entrada2": "16:43",
+        "saida1": "16:21",
+        "saida2": "18:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:21",
+          "b_total": "00:10",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "13:20",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:21",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "13:31",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:21",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "13:25",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-04:39",
+          "b_total": "-05:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-04:39",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-04:09",
+          "b_total": "00:30",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:25",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:47",
+          "b_total": "00:22",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "13:08",
+          "entrada2": "16:44",
+          "saida1": "16:24",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:17",
+          "b_total": "00:30",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "13:00",
+          "entrada2": "16:46",
+          "saida1": "16:26",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:17",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "13:23",
+          "entrada2": "16:45",
+          "saida1": "16:23",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "00:30",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:25",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "12:05",
+          "saida1": "11:45",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:18",
+          "b_total": "00:29",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:46",
+          "saida1": "16:25",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-01:48",
+          "b_total": "00:30",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-01:17",
+          "b_total": "00:31",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "12:59",
+          "entrada2": "16:41",
+          "saida1": "16:21",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-00:47",
+          "b_total": "00:30",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "12:59",
+          "entrada2": "16:42",
+          "saida1": "16:21",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-00:34",
+          "b_total": "00:13",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "13:17",
+          "entrada2": "16:55",
+          "saida1": "16:35",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-05:34",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-05:34",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-05:10",
+          "b_total": "00:24",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "13:04",
+          "entrada2": "16:43",
+          "saida1": "16:21",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-10:10",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "12:58",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "larissa": {
+      "nome_secullum": "Larissa Lima dos Santos",
+      "login": "LARISSA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-02:31",
+        "b_total": "00:59",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:44",
+        "entrada2": "15:19",
+        "saida1": "14:13",
+        "saida2": "17:49"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "-07:43",
+          "b_total": "-00:19",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "09:07",
+          "entrada2": "15:41",
+          "saida1": "14:40",
+          "saida2": "17:49"
+        },
+        {
+          "b_saldo": "-06:27",
+          "b_total": "01:16",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "07:22",
+          "entrada2": "15:22",
+          "saida1": "14:22",
+          "saida2": "17:38"
+        },
+        {
+          "b_saldo": "-05:57",
+          "b_total": "00:30",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "06:58",
+          "entrada2": "13:15",
+          "saida1": "12:14",
+          "saida2": "16:29"
+        },
+        {
+          "b_saldo": "-05:57",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "10:54",
+          "entrada2": "-",
+          "saida1": "14:54 *",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-05:57",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-05:57",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "09:20",
+          "entrada2": "16:20",
+          "saida1": "15:20",
+          "saida2": "18:22"
+        },
+        {
+          "b_saldo": "-05:57",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:27",
+          "entrada2": "15:51",
+          "saida1": "14:51",
+          "saida2": "17:30"
+        },
+        {
+          "b_saldo": "-05:27",
+          "b_total": "00:30",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:33",
+          "entrada2": "14:41",
+          "saida1": "13:40",
+          "saida2": "18:04"
+        },
+        {
+          "b_saldo": "-05:00",
+          "b_total": "00:27",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:38",
+          "entrada2": "15:34",
+          "saida1": "14:36",
+          "saida2": "18:03"
+        },
+        {
+          "b_saldo": "-05:13",
+          "b_total": "-00:13",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:20",
+          "entrada2": "15:39",
+          "saida1": "14:37",
+          "saida2": "17:09"
+        },
+        {
+          "b_saldo": "-05:13",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "08:00 *",
+          "entrada2": "-",
+          "saida1": "12:03",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-05:13",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-03:41",
+          "b_total": "01:32",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "06:58",
+          "entrada2": "15:16",
+          "saida1": "14:15",
+          "saida2": "17:31"
+        },
+        {
+          "b_saldo": "-02:55",
+          "b_total": "00:46",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:35",
+          "entrada2": "16:13",
+          "saida1": "15:03",
+          "saida2": "18:31"
+        },
+        {
+          "b_saldo": "-00:58",
+          "b_total": "01:57",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:43",
+          "entrada2": "15:54",
+          "saida1": "14:54",
+          "saida2": "18:40"
+        },
+        {
+          "b_saldo": "-00:20",
+          "b_total": "00:38",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:23",
+          "entrada2": "15:31",
+          "saida1": "14:25",
+          "saida2": "18:07"
+        },
+        {
+          "b_saldo": "00:30",
+          "b_total": "00:50",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "08:00 *",
+          "entrada2": "15:49",
+          "saida1": "14:48",
+          "saida2": "17:51"
+        },
+        {
+          "b_saldo": "-03:30",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-03:30",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:31",
+          "b_total": "00:59",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:44",
+          "entrada2": "15:19",
+          "saida1": "14:13",
+          "saida2": "17:49"
+        },
+        {
+          "b_saldo": "-04:42",
+          "b_total": "-02:11",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "08:35",
+          "entrada2": "15:28",
+          "saida1": "14:24",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552livia": {
+      "nome_secullum": "Lívia Cristina Faria Braga",
+      "login": "2552LIVIA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-14:35",
+        "b_total": "00:35",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "12:55",
+        "entrada2": "16:20",
+        "saida1": "16:00",
+        "saida2": "18:50"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:58",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:03",
+          "entrada2": "11:47",
+          "saida1": "11:27",
+          "saida2": "13:27"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:56",
+          "entrada2": "11:45",
+          "saida1": "11:25",
+          "saida2": "13:22"
+        },
+        {
+          "b_saldo": "-05:00",
+          "b_total": "-05:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-05:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-03:55",
+          "b_total": "01:05",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:55",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "-03:24",
+          "b_total": "00:31",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:55",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-02:53",
+          "b_total": "00:31",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:56",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-02:26",
+          "b_total": "00:27",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:06",
+          "entrada2": "11:45",
+          "saida1": "11:25",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "-01:55",
+          "b_total": "00:31",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:55",
+          "entrada2": "11:44",
+          "saida1": "11:24",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-01:55",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "08:04",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "-01:55",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-01:17",
+          "b_total": "00:38",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "12:55",
+          "entrada2": "17:08",
+          "saida1": "16:48",
+          "saida2": "18:53"
+        },
+        {
+          "b_saldo": "-00:42",
+          "b_total": "00:35",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "12:56",
+          "entrada2": "16:20",
+          "saida1": "16:00",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-05:42",
+          "b_total": "-05:00",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-10:42",
+          "b_total": "-05:00",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-10:10",
+          "b_total": "00:32",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "-15:10",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-15:10",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-14:35",
+          "b_total": "00:35",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "12:55",
+          "entrada2": "16:20",
+          "saida1": "16:00",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-19:35",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "12:55",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552gusthavo": {
+      "nome_secullum": "Luiz Gusthavo da Silva Costa Barbosa",
+      "login": "2552GUSTHAVO",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "06:50",
+        "b_total": "01:18",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:19",
+        "entrada2": "15:20",
+        "saida1": "14:20",
+        "saida2": "17:37"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "03:17",
+          "b_total": "01:33",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:16",
+          "entrada2": "15:43",
+          "saida1": "14:43",
+          "saida2": "17:49"
+        },
+        {
+          "b_saldo": "04:28",
+          "b_total": "01:11",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "07:27",
+          "entrada2": "15:35",
+          "saida1": "14:35",
+          "saida2": "17:38"
+        },
+        {
+          "b_saldo": "04:28",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:40",
+          "entrada2": "13:06",
+          "saida1": "12:06",
+          "saida2": "16:43"
+        },
+        {
+          "b_saldo": "00:28",
+          "b_total": "-04:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "00:28",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:46",
+          "b_total": "01:18",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:21",
+          "entrada2": "16:20",
+          "saida1": "15:20",
+          "saida2": "17:39"
+        },
+        {
+          "b_saldo": "02:58",
+          "b_total": "01:12",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:22",
+          "entrada2": "15:54",
+          "saida1": "14:54",
+          "saida2": "17:34"
+        },
+        {
+          "b_saldo": "04:40",
+          "b_total": "01:42",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:24",
+          "entrada2": "15:10",
+          "saida1": "14:10",
+          "saida2": "18:06"
+        },
+        {
+          "b_saldo": "06:18",
+          "b_total": "01:38",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:27",
+          "entrada2": "15:34",
+          "saida1": "14:36",
+          "saida2": "18:03"
+        },
+        {
+          "b_saldo": "07:18",
+          "b_total": "01:00",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:14",
+          "entrada2": "15:51",
+          "saida1": "14:51",
+          "saida2": "17:14"
+        },
+        {
+          "b_saldo": "03:18",
+          "b_total": "-04:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "03:18",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "04:00",
+          "b_total": "00:42",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:12",
+          "entrada2": "15:41",
+          "saida1": "14:41",
+          "saida2": "16:54"
+        },
+        {
+          "b_saldo": "05:53",
+          "b_total": "01:53",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:17",
+          "entrada2": "15:32",
+          "saida1": "14:27",
+          "saida2": "18:15"
+        },
+        {
+          "b_saldo": "07:43",
+          "b_total": "01:50",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:12",
+          "entrada2": "15:54",
+          "saida1": "14:54",
+          "saida2": "18:02"
+        },
+        {
+          "b_saldo": "09:02",
+          "b_total": "01:19",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:18",
+          "entrada2": "16:03",
+          "saida1": "15:03",
+          "saida2": "17:37"
+        },
+        {
+          "b_saldo": "09:32",
+          "b_total": "00:30",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:30 ¨",
+          "entrada2": "15:55",
+          "saida1": "14:48",
+          "saida2": "16:57"
+        },
+        {
+          "b_saldo": "05:32",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "05:32",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "06:50",
+          "b_total": "01:18",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:19",
+          "entrada2": "15:20",
+          "saida1": "14:20",
+          "saida2": "17:37"
+        },
+        {
+          "b_saldo": "06:13",
+          "b_total": "-00:37",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:20",
+          "entrada2": "-",
+          "saida1": "14:43",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552mbruno": {
+      "nome_secullum": "Marcos Bruno Farias de Carvalho",
+      "login": "2552MBRUNO",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "01:09",
+        "b_total": "00:21",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "08:09",
+        "entrada2": "12:43",
+        "saida1": "12:23",
+        "saida2": "13:50"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:06",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:58",
+          "entrada2": "12:49",
+          "saida1": "12:29",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "00:06",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:00",
+          "entrada2": "12:42",
+          "saida1": "12:22",
+          "saida2": "13:27"
+        },
+        {
+          "b_saldo": "00:06",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:00",
+          "entrada2": "12:52",
+          "saida1": "12:32",
+          "saida2": "13:22"
+        },
+        {
+          "b_saldo": "00:06",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "08:03",
+          "entrada2": "12:47",
+          "saida1": "12:27",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "00:06",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:07",
+          "b_total": "01:01",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:04",
+          "entrada2": "12:42",
+          "saida1": "12:22",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "01:37",
+          "b_total": "00:30",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:02",
+          "entrada2": "12:40",
+          "saida1": "12:20",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "02:06",
+          "b_total": "00:29",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:02",
+          "entrada2": "12:44",
+          "saida1": "12:24",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "02:30",
+          "b_total": "00:24",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:07",
+          "entrada2": "12:45",
+          "saida1": "12:25",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "02:45",
+          "b_total": "00:15",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:17",
+          "entrada2": "12:42",
+          "saida1": "12:22",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "-02:15",
+          "b_total": "-05:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-02:15",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-01:20",
+          "b_total": "00:55",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "08:09",
+          "entrada2": "12:41",
+          "saida1": "12:21",
+          "saida2": "14:24"
+        },
+        {
+          "b_saldo": "-00:50",
+          "b_total": "00:30",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:01",
+          "entrada2": "12:43",
+          "saida1": "12:23",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "00:50",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "08:00",
+          "entrada2": "12:42",
+          "saida1": "12:22",
+          "saida2": "14:10"
+        },
+        {
+          "b_saldo": "00:33",
+          "b_total": "00:33",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:02",
+          "entrada2": "12:43",
+          "saida1": "12:23",
+          "saida2": "13:55"
+        },
+        {
+          "b_saldo": "01:04",
+          "b_total": "00:31",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "12:02",
+          "saida1": "11:42",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "00:48",
+          "b_total": "-00:16",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "08:16",
+          "entrada2": "12:30",
+          "saida1": "12:10",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "00:48",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:09",
+          "b_total": "00:21",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "08:09",
+          "entrada2": "12:43",
+          "saida1": "12:23",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "01:35",
+          "b_total": "00:26",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "08:05",
+          "entrada2": "12:46",
+          "saida1": "12:26",
+          "saida2": "13:51"
+        }
+      ]
+    },
+    "2552marcusvini": {
+      "nome_secullum": "Marcus Vinícius Aquino Parreira da Silva",
+      "login": "2552MARCUSVINI",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-05:14",
+        "b_total": "00:33",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "12:57",
+        "entrada2": "16:21",
+        "saida1": "16:01",
+        "saida2": "18:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "13:29",
+          "entrada2": "17:04",
+          "saida1": "16:44",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "13:28",
+          "entrada2": "17:06",
+          "saida1": "16:45",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "13:22",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-05:00",
+          "b_total": "-05:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-05:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-04:31",
+          "b_total": "00:29",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "13:01",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-04:01",
+          "b_total": "00:30",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-03:32",
+          "b_total": "00:29",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "13:01",
+          "entrada2": "16:23",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:19",
+          "b_total": "00:13",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "13:17",
+          "entrada2": "16:22",
+          "saida1": "16:01",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:19",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:19",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:19",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:49",
+          "b_total": "00:30",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:23",
+          "saida1": "16:01",
+          "saida2": "18:53"
+        },
+        {
+          "b_saldo": "-02:19",
+          "b_total": "00:30",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-01:47",
+          "b_total": "00:32",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "12:58",
+          "entrada2": "16:20",
+          "saida1": "16:00",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-01:17",
+          "b_total": "00:30",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "13:00",
+          "entrada2": "16:21",
+          "saida1": "16:00",
+          "saida2": "18:50 *"
+        },
+        {
+          "b_saldo": "-00:47",
+          "b_total": "00:30",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:33",
+          "saida1": "16:13",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-05:47",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-05:47",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-05:14",
+          "b_total": "00:33",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "12:57",
+          "entrada2": "16:21",
+          "saida1": "16:01",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-10:14",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "12:57",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552matheus": {
+      "nome_secullum": "Matheus Matos Medeiros",
+      "login": "2552MATHEUS",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-00:32",
+        "b_total": "-",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "09:12",
+        "entrada2": "13:03",
+        "saida1": "12:42",
+        "saida2": "15:30"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "09:11",
+          "entrada2": "13:20",
+          "saida1": "12:57",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-00:10",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "09:19",
+          "entrada2": "13:06",
+          "saida1": "12:44",
+          "saida2": "15:31"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "09:08",
+          "entrada2": "13:17",
+          "saida1": "12:57",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "08:04",
+          "entrada2": "12:22",
+          "saida1": "12:02",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "09:09",
+          "entrada2": "13:01",
+          "saida1": "12:41",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-00:12",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "09:19",
+          "entrada2": "13:09",
+          "saida1": "12:46",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "09:11",
+          "entrada2": "13:07",
+          "saida1": "12:42",
+          "saida2": "15:32"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "09:13",
+          "entrada2": "13:19",
+          "saida1": "12:53",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "09:11",
+          "entrada2": "13:07",
+          "saida1": "12:43",
+          "saida2": "15:31"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "09:10",
+          "entrada2": "13:04",
+          "saida1": "12:43",
+          "saida2": "15:32"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "09:14",
+          "entrada2": "13:06",
+          "saida1": "12:43",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "-",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "09:06",
+          "entrada2": "13:07",
+          "saida1": "12:46",
+          "saida2": "15:31"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-00:10",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "09:17",
+          "entrada2": "13:05",
+          "saida1": "12:42",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:30 ¨",
+          "entrada2": "12:56",
+          "saida1": "12:33",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "09:12",
+          "entrada2": "13:03",
+          "saida1": "12:42",
+          "saida2": "15:30"
+        },
+        {
+          "b_saldo": "-00:32",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "09:10",
+          "entrada2": "13:02",
+          "saida1": "12:42",
+          "saida2": "15:30"
+        }
+      ]
+    },
+    "_sem_login_MONICA_DA_SILVA_PESSOA": {
+      "nome_secullum": "Mônica da Silva Pessoa",
+      "login": null,
+      "status": "sem_mapeamento",
+      "card_d1": {
+        "b_saldo": "07:04",
+        "b_total": "01:49",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "06:26",
+        "entrada2": "14:11",
+        "saida1": "13:01",
+        "saida2": "17:26"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "08:47",
+          "b_total": "-",
+          "data": "21/06/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "09:17",
+          "b_total": "00:30",
+          "data": "22/06/2026 - Seg",
+          "entrada1": "06:47",
+          "entrada2": "14:51",
+          "saida1": "13:06",
+          "saida2": "16:29"
+        },
+        {
+          "b_saldo": "09:54",
+          "b_total": "00:37",
+          "data": "23/06/2026 - Ter",
+          "entrada1": "06:48",
+          "entrada2": "14:02",
+          "saida1": "13:02",
+          "saida2": "16:25"
+        },
+        {
+          "b_saldo": "09:54",
+          "b_total": "-",
+          "data": "24/06/2026 - Qua",
+          "entrada1": "Feriado",
+          "entrada2": "Feriado",
+          "saida1": "Feriado",
+          "saida2": "Feriado"
+        },
+        {
+          "b_saldo": "09:54",
+          "b_total": "-",
+          "data": "25/06/2026 - Qui",
+          "entrada1": "08:27",
+          "entrada2": "14:02",
+          "saida1": "13:02",
+          "saida2": "17:30"
+        },
+        {
+          "b_saldo": "10:28",
+          "b_total": "00:34",
+          "data": "26/06/2026 - Sex",
+          "entrada1": "06:45",
+          "entrada2": "14:08",
+          "saida1": "13:01",
+          "saida2": "16:27"
+        },
+        {
+          "b_saldo": "06:28",
+          "b_total": "-04:00",
+          "data": "27/06/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "06:28",
+          "b_total": "-",
+          "data": "28/06/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "03:51",
+          "b_total": "-02:37",
+          "data": "29/06/2026 - Seg",
+          "entrada1": "06:37",
+          "entrada2": "-",
+          "saida1": "12:00",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "05:22",
+          "b_total": "01:31",
+          "data": "30/06/2026 - Ter",
+          "entrada1": "06:52",
+          "entrada2": "14:08",
+          "saida1": "13:07",
+          "saida2": "17:24"
+        },
+        {
+          "b_saldo": "06:04",
+          "b_total": "00:42",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "06:45",
+          "entrada2": "14:34",
+          "saida1": "13:33",
+          "saida2": "16:28"
+        },
+        {
+          "b_saldo": "07:28",
+          "b_total": "01:24",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "06:45",
+          "entrada2": "14:18",
+          "saida1": "13:06",
+          "saida2": "17:21"
+        },
+        {
+          "b_saldo": "07:28",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:11",
+          "entrada2": "14:24",
+          "saida1": "13:18",
+          "saida2": "16:21"
+        },
+        {
+          "b_saldo": "03:28",
+          "b_total": "-04:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "03:28",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "03:53",
+          "b_total": "00:25",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:11",
+          "entrada2": "14:57",
+          "saida1": "13:57",
+          "saida2": "16:36"
+        },
+        {
+          "b_saldo": "05:19",
+          "b_total": "01:26",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "06:39",
+          "entrada2": "14:11",
+          "saida1": "13:07",
+          "saida2": "17:09"
+        },
+        {
+          "b_saldo": "06:08",
+          "b_total": "00:49",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "06:34",
+          "entrada2": "14:03",
+          "saida1": "13:03",
+          "saida2": "16:23"
+        },
+        {
+          "b_saldo": "07:27",
+          "b_total": "01:19",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "06:41",
+          "entrada2": "14:04",
+          "saida1": "13:00",
+          "saida2": "17:04"
+        },
+        {
+          "b_saldo": "08:19",
+          "b_total": "00:52",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "06:32",
+          "entrada2": "14:06",
+          "saida1": "13:01",
+          "saida2": "16:30"
+        },
+        {
+          "b_saldo": "04:19",
+          "b_total": "-04:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "04:19",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "05:03",
+          "b_total": "00:44",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "06:34",
+          "entrada2": "14:09",
+          "saida1": "13:07",
+          "saida2": "16:20"
+        },
+        {
+          "b_saldo": "06:19",
+          "b_total": "01:16",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "06:36",
+          "entrada2": "14:08",
+          "saida1": "13:05",
+          "saida2": "17:05"
+        },
+        {
+          "b_saldo": "07:13",
+          "b_total": "00:54",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "06:32",
+          "entrada2": "13:32",
+          "saida1": "12:06",
+          "saida2": "16:26"
+        },
+        {
+          "b_saldo": "08:17",
+          "b_total": "01:04",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "06:54",
+          "entrada2": "13:53",
+          "saida1": "12:34",
+          "saida2": "17:17"
+        },
+        {
+          "b_saldo": "09:15",
+          "b_total": "00:58",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:30 ¨",
+          "entrada2": "13:06",
+          "saida1": "12:06",
+          "saida2": "16:24"
+        },
+        {
+          "b_saldo": "05:15",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "05:15",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "07:04",
+          "b_total": "01:49",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "06:26",
+          "entrada2": "14:11",
+          "saida1": "13:01",
+          "saida2": "17:26"
+        },
+        {
+          "b_saldo": "-00:56",
+          "b_total": "-08:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552myrella": {
+      "nome_secullum": "Myrella dos Santos Silva",
+      "login": "2552MYRELLA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "03:26",
+        "b_total": "00:34",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:57",
+        "entrada2": "11:43",
+        "saida1": "11:23",
+        "saida2": "13:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:00 *",
+          "entrada2": "11:20 *",
+          "saida1": "11:00 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:00 *",
+          "entrada2": "11:23",
+          "saida1": "11:03",
+          "saida2": "13:28"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:57",
+          "entrada2": "11:22",
+          "saida1": "11:01",
+          "saida2": "13:22"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:55",
+          "entrada2": "11:21",
+          "saida1": "11:00",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:40",
+          "b_total": "00:40",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:53",
+          "entrada2": "11:20",
+          "saida1": "11:00",
+          "saida2": "14:26"
+        },
+        {
+          "b_saldo": "01:27",
+          "b_total": "00:47",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:53",
+          "entrada2": "11:23",
+          "saida1": "11:03",
+          "saida2": "14:00"
+        },
+        {
+          "b_saldo": "02:06",
+          "b_total": "00:39",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:55",
+          "entrada2": "11:22",
+          "saida1": "11:02",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "02:46",
+          "b_total": "00:40",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:53",
+          "entrada2": "11:20",
+          "saida1": "11:02",
+          "saida2": "14:04"
+        },
+        {
+          "b_saldo": "03:27",
+          "b_total": "00:41",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:55",
+          "entrada2": "11:23",
+          "saida1": "11:04",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "-00:53",
+          "b_total": "-04:20",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-00:53",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:18",
+          "b_total": "01:11",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:58",
+          "entrada2": "11:33",
+          "saida1": "11:13",
+          "saida2": "14:29"
+        },
+        {
+          "b_saldo": "00:49",
+          "b_total": "00:31",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:01",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:52"
+        },
+        {
+          "b_saldo": "01:43",
+          "b_total": "00:54",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:58",
+          "entrada2": "11:50",
+          "saida1": "11:31",
+          "saida2": "14:11"
+        },
+        {
+          "b_saldo": "02:22",
+          "b_total": "00:39",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:55",
+          "entrada2": "11:23",
+          "saida1": "11:03",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "02:52",
+          "b_total": "00:30",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "02:52",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "12:00",
+          "saida1": "11:41",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "02:52",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "03:26",
+          "b_total": "00:34",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "03:59",
+          "b_total": "00:33",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:58",
+          "entrada2": "11:42",
+          "saida1": "11:21",
+          "saida2": "13:52"
+        }
+      ]
+    },
+    "2552myriam": {
+      "nome_secullum": "Myriam Antunes De Oliveira Souza",
+      "login": "2552MYRIAM",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:45",
+        "b_total": "00:34",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:55",
+        "entrada2": "11:32",
+        "saida1": "11:11",
+        "saida2": "13:50"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "13:28",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "13:28",
+          "entrada2": "16:23",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "13:22",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "11:21",
+          "saida1": "11:01",
+          "saida2": "13:19"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:30",
+          "b_total": "00:30",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "01:00",
+          "b_total": "00:30",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "01:33",
+          "b_total": "00:33",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:58",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "02:03",
+          "b_total": "00:30",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:01",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "02:33",
+          "b_total": "00:30",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:22",
+          "saida1": "16:02",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-02:27",
+          "b_total": "-05:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-02:27",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-01:52",
+          "b_total": "00:35",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "12:55",
+          "entrada2": "16:21",
+          "saida1": "16:01",
+          "saida2": "18:53"
+        },
+        {
+          "b_saldo": "-01:52",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "08:28",
+          "entrada2": "11:47",
+          "saida1": "11:27",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "-01:00",
+          "b_total": "00:52",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:56",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "14:08"
+        },
+        {
+          "b_saldo": "-00:22",
+          "b_total": "00:38",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:56",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "00:11",
+          "b_total": "00:33",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:30 ¨",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "00:11",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "11:40",
+          "saida1": "11:20",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "00:11",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:45",
+          "b_total": "00:34",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:55",
+          "entrada2": "11:32",
+          "saida1": "11:11",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "01:20",
+          "b_total": "00:35",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:55",
+          "entrada2": "11:41",
+          "saida1": "11:21",
+          "saida2": "13:50"
+        }
+      ]
+    },
+    "2552nicolas": {
+      "nome_secullum": "Nicolas Augusto Rodrigues Silva de Jesus",
+      "login": "2552NICOLAS",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "12:58",
+        "b_total": "16:38",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "12:58",
+        "entrada2": "16:59",
+        "saida1": "16:38",
+        "saida2": "18:50"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:00 *",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "11:36",
+          "b_total": "11:54",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "11:36",
+          "entrada2": "13:50",
+          "saida1": "11:54",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "12:55",
+          "b_total": "16:41",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "12:55",
+          "entrada2": "17:01",
+          "saida1": "16:41",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "12:57",
+          "b_total": "16:38",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "12:57",
+          "entrada2": "16:58",
+          "saida1": "16:38",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "12:55",
+          "b_total": "16:35",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "12:55",
+          "entrada2": "16:55",
+          "saida1": "16:35",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "12:58",
+          "b_total": "16:38",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "12:58",
+          "entrada2": "16:59",
+          "saida1": "16:38",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "12:58",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "12:58",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "_sem_login_PRISCYLA_DE_VASCONCELOS_MORAIS": {
+      "nome_secullum": "Priscyla De Vasconcelos Morais",
+      "login": null,
+      "status": "sem_mapeamento",
+      "card_d1": {
+        "b_saldo": "02:21",
+        "b_total": "01:22",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:54",
+        "entrada2": "15:22",
+        "saida1": "14:22",
+        "saida2": "18:16"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "21/06/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "22/06/2026 - Seg",
+          "entrada1": "08:06",
+          "entrada2": "15:29",
+          "saida1": "14:29",
+          "saida2": "18:38"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "23/06/2026 - Ter",
+          "entrada1": "08:02",
+          "entrada2": "13:24",
+          "saida1": "12:24",
+          "saida2": "18:21"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "24/06/2026 - Qua",
+          "entrada1": "06:49",
+          "entrada2": "15:03",
+          "saida1": "14:03",
+          "saida2": "16:42"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "25/06/2026 - Qui",
+          "entrada1": "08:11",
+          "entrada2": "15:00",
+          "saida1": "14:00",
+          "saida2": "18:40"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "26/06/2026 - Sex",
+          "entrada1": "09:19",
+          "entrada2": "16:15",
+          "saida1": "15:15",
+          "saida2": "18:11"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "27/06/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "28/06/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "29/06/2026 - Seg",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-",
+          "b_total": "-",
+          "data": "30/06/2026 - Ter",
+          "entrada1": "07:51",
+          "entrada2": "15:20",
+          "saida1": "14:20",
+          "saida2": "17:46"
+        },
+        {
+          "b_saldo": "01:45",
+          "b_total": "01:45",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:37",
+          "entrada2": "16:42",
+          "saida1": "15:42",
+          "saida2": "19:22"
+        },
+        {
+          "b_saldo": "01:21",
+          "b_total": "-00:24",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:39",
+          "entrada2": "15:26",
+          "saida1": "14:26",
+          "saida2": "17:15"
+        },
+        {
+          "b_saldo": "02:44",
+          "b_total": "01:23",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:48",
+          "entrada2": "15:10",
+          "saida1": "14:10",
+          "saida2": "18:11"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-04:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:44",
+          "b_total": "02:00",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:46",
+          "entrada2": "15:15",
+          "saida1": "14:15",
+          "saida2": "18:46"
+        },
+        {
+          "b_saldo": "02:06",
+          "b_total": "01:22",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:45",
+          "entrada2": "14:51",
+          "saida1": "13:51",
+          "saida2": "18:07"
+        },
+        {
+          "b_saldo": "03:34",
+          "b_total": "01:28",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:52",
+          "entrada2": "15:10",
+          "saida1": "14:10",
+          "saida2": "18:20"
+        },
+        {
+          "b_saldo": "04:47",
+          "b_total": "01:13",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:20",
+          "entrada2": "14:30",
+          "saida1": "13:30",
+          "saida2": "18:33"
+        },
+        {
+          "b_saldo": "04:59",
+          "b_total": "00:12",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:29 ¨",
+          "entrada2": "16:01",
+          "saida1": "15:00",
+          "saida2": "17:22"
+        },
+        {
+          "b_saldo": "00:59",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "00:59",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "02:21",
+          "b_total": "01:22",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:54",
+          "entrada2": "15:22",
+          "saida1": "14:22",
+          "saida2": "18:16"
+        },
+        {
+          "b_saldo": "-00:24",
+          "b_total": "-02:45",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:45",
+          "entrada2": "14:00",
+          "saida1": "13:00",
+          "saida2": "-"
+        }
+      ]
+    },
+    "rafael.carneiro": {
+      "nome_secullum": "Rafael De Souza Pereira Carneiro",
+      "login": "RAFAEL.CARNEIRO",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:12",
+        "b_total": "-01:43",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:43 *",
+        "entrada2": "15:00 *",
+        "saida1": "14:00 *",
+        "saida2": "-"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "01:36",
+          "b_total": "01:36",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:03 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:39 *"
+        },
+        {
+          "b_saldo": "03:33",
+          "b_total": "01:57",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "07:02 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:59 *"
+        },
+        {
+          "b_saldo": "04:58",
+          "b_total": "01:25",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:00 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:25 *"
+        },
+        {
+          "b_saldo": "00:58",
+          "b_total": "-04:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "00:58",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "02:23",
+          "b_total": "01:25",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:00 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:25 *"
+        },
+        {
+          "b_saldo": "04:03",
+          "b_total": "01:40",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:01 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:41 *"
+        },
+        {
+          "b_saldo": "02:02",
+          "b_total": "-02:01",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:01 *",
+          "entrada2": "-",
+          "saida1": "13:01 *",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "03:20",
+          "b_total": "01:18",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:00 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:18 *"
+        },
+        {
+          "b_saldo": "03:34",
+          "b_total": "00:14",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "08:07 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:21 *"
+        },
+        {
+          "b_saldo": "-00:26",
+          "b_total": "-04:00",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-00:26",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:20",
+          "b_total": "01:46",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:45 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "18:31 *"
+        },
+        {
+          "b_saldo": "03:18",
+          "b_total": "01:58",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:50 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "18:48 *"
+        },
+        {
+          "b_saldo": "05:10",
+          "b_total": "01:52",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:03 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:55 *"
+        },
+        {
+          "b_saldo": "04:58",
+          "b_total": "-00:12",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:02 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "15:50 *"
+        },
+        {
+          "b_saldo": "05:55",
+          "b_total": "00:57",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "07:03 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "17:02 *"
+        },
+        {
+          "b_saldo": "01:55",
+          "b_total": "-04:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "01:55",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:12",
+          "b_total": "-01:43",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:43 *",
+          "entrada2": "15:00 *",
+          "saida1": "14:00 *",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-07:48",
+          "b_total": "-08:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552rayannajardim": {
+      "nome_secullum": "Rayanna Emily Oliveira Jardim",
+      "login": "2552RAYANNAJARDIM",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-00:14",
+        "b_total": "00:24",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "13:04",
+        "entrada2": "16:43",
+        "saida1": "16:21",
+        "saida2": "18:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "FALTA",
+          "entrada2": "FALTA",
+          "saida1": "FALTA",
+          "saida2": "FALTA"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "FALTA",
+          "entrada2": "FALTA",
+          "saida1": "FALTA",
+          "saida2": "FALTA"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "FALTA",
+          "entrada2": "FALTA",
+          "saida1": "FALTA",
+          "saida2": "FALTA"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "FALTA",
+          "entrada2": "FALTA",
+          "saida1": "FALTA",
+          "saida2": "FALTA"
+        },
+        {
+          "b_saldo": "00:22",
+          "b_total": "00:22",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "13:08",
+          "entrada2": "16:44",
+          "saida1": "16:24",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "00:52",
+          "b_total": "00:30",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "13:00",
+          "entrada2": "16:46",
+          "saida1": "16:26",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "01:20",
+          "b_total": "00:28",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:23",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "01:50",
+          "b_total": "00:30",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:25",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "01:50",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "12:05",
+          "saida1": "11:45",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "01:50",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "02:20",
+          "b_total": "00:30",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:46",
+          "saida1": "16:26",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "02:50",
+          "b_total": "00:30",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "13:00",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "03:21",
+          "b_total": "00:31",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "12:59",
+          "entrada2": "17:02",
+          "saida1": "16:42",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "03:52",
+          "b_total": "00:31",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "12:59",
+          "entrada2": "17:03",
+          "saida1": "16:43",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "04:22",
+          "b_total": "00:30",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:55",
+          "saida1": "16:35",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-00:38",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-00:38",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:14",
+          "b_total": "00:24",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "13:04",
+          "entrada2": "16:43",
+          "saida1": "16:21",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-05:14",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "13:44",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552richard": {
+      "nome_secullum": "Richard Jhonata Da Silva Santos",
+      "login": "2552RICHARD",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-07:49",
+        "b_total": "00:25",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "13:04",
+        "entrada2": "16:43",
+        "saida1": "16:22",
+        "saida2": "18:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:10",
+          "b_total": "00:10",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "13:20",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-00:14",
+          "b_total": "-00:24",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "13:54",
+          "entrada2": "16:42",
+          "saida1": "16:22",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-00:03",
+          "b_total": "00:11",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "13:20",
+          "entrada2": "16:42",
+          "saida1": "16:23",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-05:03",
+          "b_total": "-05:00",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-05:03",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-04:34",
+          "b_total": "00:29",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "13:00",
+          "entrada2": "16:43",
+          "saida1": "16:22",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-04:05",
+          "b_total": "00:29",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "13:01",
+          "entrada2": "16:44",
+          "saida1": "16:24",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-03:35",
+          "b_total": "00:30",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "13:00",
+          "entrada2": "16:46",
+          "saida1": "16:26",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:07",
+          "b_total": "00:28",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:23",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-02:37",
+          "b_total": "00:30",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:45",
+          "saida1": "16:25",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-01:07",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "09:08",
+          "entrada2": "11:22",
+          "saida1": "11:02",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:44",
+          "b_total": "-",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "AT MÉD",
+          "entrada2": "AT MÉD",
+          "saida1": "AT MÉD",
+          "saida2": "AT MÉD"
+        },
+        {
+          "b_saldo": "-03:14",
+          "b_total": "00:30",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "13:00",
+          "entrada2": "16:33",
+          "saida1": "16:13",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-08:14",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-08:14",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-07:49",
+          "b_total": "00:25",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "13:04",
+          "entrada2": "16:43",
+          "saida1": "16:22",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-12:49",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "13:02",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552roseli": {
+      "nome_secullum": "Roseli Batista Dos Santos",
+      "login": "2552ROSELI",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:26",
+        "b_total": "-",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:57",
+        "entrada2": "12:24",
+        "saida1": "12:04",
+        "saida2": "14:20"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "07:55",
+          "entrada2": "12:28",
+          "saida1": "12:08",
+          "saida2": "14:23"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:24",
+          "saida1": "12:04",
+          "saida2": "14:24"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "07:56",
+          "entrada2": "12:30",
+          "saida1": "12:10",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "07:55",
+          "entrada2": "12:28",
+          "saida1": "12:08",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "00:15",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:24",
+          "saida1": "12:04",
+          "saida2": "14:35"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "12:27",
+          "saida1": "12:06",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "12:23",
+          "saida1": "12:03",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:26",
+          "saida1": "12:06",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:57",
+          "entrada2": "12:26",
+          "saida1": "12:06",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "00:15",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "00:11",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:27",
+          "saida1": "12:06",
+          "saida2": "14:32"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "12:25",
+          "saida1": "12:05",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "12:28",
+          "saida1": "12:08",
+          "saida2": "14:22"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:25",
+          "saida1": "12:05",
+          "saida2": "14:21"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "12:20",
+          "saida1": "12:00",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "H.OFF",
+          "entrada2": "H.OFF",
+          "saida1": "H.OFF",
+          "saida2": "H.OFF"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:24",
+          "saida1": "12:04",
+          "saida2": "14:20"
+        },
+        {
+          "b_saldo": "00:26",
+          "b_total": "-",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "12:26",
+          "saida1": "12:06",
+          "saida2": "14:23"
+        }
+      ]
+    },
+    "2552samuel": {
+      "nome_secullum": "Samuel de Castro Ferreira",
+      "login": "2552SAMUEL",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "01:46",
+        "b_total": "00:33",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "12:58",
+        "entrada2": "16:32",
+        "saida1": "16:13",
+        "saida2": "18:52"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "08:00 *",
+          "entrada2": "11:40 *",
+          "saida1": "11:20 *",
+          "saida2": "13:20 *"
+        },
+        {
+          "b_saldo": "00:00",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:30",
+          "b_total": "00:30",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "08:00 *",
+          "entrada2": "11:42",
+          "saida1": "11:22",
+          "saida2": "14:25"
+        },
+        {
+          "b_saldo": "01:01",
+          "b_total": "00:31",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:02",
+          "entrada2": "11:44",
+          "saida1": "11:24",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "01:34",
+          "b_total": "00:33",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:01",
+          "entrada2": "11:46",
+          "saida1": "11:26",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "02:14",
+          "b_total": "00:40",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:55",
+          "entrada2": "11:43",
+          "saida1": "11:23",
+          "saida2": "14:08"
+        },
+        {
+          "b_saldo": "02:51",
+          "b_total": "00:37",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:57",
+          "entrada2": "11:42",
+          "saida1": "11:23",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "-01:29",
+          "b_total": "-04:20",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "COMP BH",
+          "entrada2": "COMP BH",
+          "saida1": "COMP BH",
+          "saida2": "COMP BH"
+        },
+        {
+          "b_saldo": "-01:29",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-00:19",
+          "b_total": "01:10",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:56",
+          "entrada2": "11:45",
+          "saida1": "11:25",
+          "saida2": "14:26"
+        },
+        {
+          "b_saldo": "-00:04",
+          "b_total": "00:15",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "13:02",
+          "entrada2": "16:58",
+          "saida1": "16:40",
+          "saida2": "18:35"
+        },
+        {
+          "b_saldo": "00:12",
+          "b_total": "00:16",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "12:58",
+          "entrada2": "16:40",
+          "saida1": "16:20",
+          "saida2": "18:34"
+        },
+        {
+          "b_saldo": "00:42",
+          "b_total": "00:30",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "12:33",
+          "entrada2": "16:22",
+          "saida1": "16:03",
+          "saida2": "18:23"
+        },
+        {
+          "b_saldo": "01:13",
+          "b_total": "00:31",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "12:33",
+          "entrada2": "17:29",
+          "saida1": "17:10",
+          "saida2": "18:23"
+        },
+        {
+          "b_saldo": "01:13",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "07:58",
+          "entrada2": "11:46",
+          "saida1": "11:27",
+          "saida2": "13:20"
+        },
+        {
+          "b_saldo": "01:13",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "01:46",
+          "b_total": "00:33",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "12:58",
+          "entrada2": "16:32",
+          "saida1": "16:13",
+          "saida2": "18:52"
+        },
+        {
+          "b_saldo": "-03:14",
+          "b_total": "-05:00",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "12:30",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        }
+      ]
+    },
+    "2552urszulla": {
+      "nome_secullum": "Urszulla Barna da Silva",
+      "login": "2552URSZULLA",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "00:21",
+        "b_total": "00:31",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:57",
+        "entrada2": "12:11",
+        "saida1": "11:51",
+        "saida2": "13:51"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:10",
+          "b_total": "-",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "FÉRIAS",
+          "entrada2": "FÉRIAS",
+          "saida1": "FÉRIAS",
+          "saida2": "FÉRIAS"
+        },
+        {
+          "b_saldo": "00:44",
+          "b_total": "00:34",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:05",
+          "saida1": "11:45",
+          "saida2": "13:54"
+        },
+        {
+          "b_saldo": "01:16",
+          "b_total": "00:32",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:57",
+          "entrada2": "12:05",
+          "saida1": "11:44",
+          "saida2": "13:53"
+        },
+        {
+          "b_saldo": "01:16",
+          "b_total": "-",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "07:56",
+          "entrada2": "11:46",
+          "saida1": "11:26",
+          "saida2": "13:21"
+        },
+        {
+          "b_saldo": "01:16",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "02:20",
+          "b_total": "01:04",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "11:57",
+          "saida1": "11:37",
+          "saida2": "14:24"
+        },
+        {
+          "b_saldo": "02:50",
+          "b_total": "00:30",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:57",
+          "entrada2": "11:53",
+          "saida1": "11:33",
+          "saida2": "13:50"
+        },
+        {
+          "b_saldo": "03:41",
+          "b_total": "00:51",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "07:57",
+          "entrada2": "12:11",
+          "saida1": "11:51",
+          "saida2": "14:11"
+        },
+        {
+          "b_saldo": "04:16",
+          "b_total": "00:35",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "07:57",
+          "entrada2": "12:09",
+          "saida1": "11:49",
+          "saida2": "13:55"
+        },
+        {
+          "b_saldo": "04:50",
+          "b_total": "00:34",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "12:11",
+          "saida1": "11:51",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-05:00",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "-",
+          "entrada2": "-",
+          "saida1": "-",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-00:10",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "00:21",
+          "b_total": "00:31",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:57",
+          "entrada2": "12:11",
+          "saida1": "11:51",
+          "saida2": "13:51"
+        },
+        {
+          "b_saldo": "00:52",
+          "b_total": "00:31",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:58",
+          "entrada2": "12:16",
+          "saida1": "11:56",
+          "saida2": "13:51"
+        }
+      ]
+    },
+    "2552vivian": {
+      "nome_secullum": "Vivian De Souza Cardoso",
+      "login": "2552VIVIAN",
+      "status": "ok",
+      "card_d1": {
+        "b_saldo": "-04:05",
+        "b_total": "-01:18",
+        "data": "20/07/2026 - Seg",
+        "entrada1": "07:51",
+        "entrada2": "-",
+        "saida1": "14:33",
+        "saida2": "-"
+      },
+      "historico_mes": [
+        {
+          "b_saldo": "-01:36",
+          "b_total": "-01:36",
+          "data": "01/07/2026 - Qua",
+          "entrada1": "08:02",
+          "entrada2": "-",
+          "saida1": "14:24",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-00:07",
+          "b_total": "01:29",
+          "data": "02/07/2026 - Qui",
+          "entrada1": "08:14",
+          "entrada2": "14:51",
+          "saida1": "13:44",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-01:37",
+          "b_total": "-01:30",
+          "data": "03/07/2026 - Sex",
+          "entrada1": "08:03",
+          "entrada2": "-",
+          "saida1": "14:30",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:37",
+          "b_total": "-",
+          "data": "04/07/2026 - Sáb",
+          "entrada1": "Feriado",
+          "entrada2": "Feriado",
+          "saida1": "Feriado",
+          "saida2": "Feriado"
+        },
+        {
+          "b_saldo": "-01:37",
+          "b_total": "-",
+          "data": "05/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-03:02",
+          "b_total": "-01:25",
+          "data": "06/07/2026 - Seg",
+          "entrada1": "07:50",
+          "entrada2": "-",
+          "saida1": "14:25",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:11",
+          "b_total": "01:51",
+          "data": "07/07/2026 - Ter",
+          "entrada1": "08:01",
+          "entrada2": "14:49",
+          "saida1": "13:49",
+          "saida2": "18:51"
+        },
+        {
+          "b_saldo": "-02:51",
+          "b_total": "-01:40",
+          "data": "08/07/2026 - Qua",
+          "entrada1": "08:05",
+          "entrada2": "-",
+          "saida1": "14:20",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:01",
+          "b_total": "01:50",
+          "data": "09/07/2026 - Qui",
+          "entrada1": "08:03",
+          "entrada2": "14:50",
+          "saida1": "13:50",
+          "saida2": "15:21 ¨"
+        },
+        {
+          "b_saldo": "-01:01",
+          "b_total": "-",
+          "data": "10/07/2026 - Sex",
+          "entrada1": "07:56",
+          "entrada2": "12:01",
+          "saida1": "10:53 ¨",
+          "saida2": "13:32"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-00:15",
+          "data": "11/07/2026 - Sáb",
+          "entrada1": "08:23",
+          "entrada2": "-",
+          "saida1": "12:08",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "12/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "13/07/2026 - Seg",
+          "entrada1": "FALTA",
+          "entrada2": "FALTA",
+          "saida1": "FALTA",
+          "saida2": "FALTA"
+        },
+        {
+          "b_saldo": "-01:16",
+          "b_total": "-",
+          "data": "14/07/2026 - Ter",
+          "entrada1": "07:56",
+          "entrada2": "14:45",
+          "saida1": "13:45",
+          "saida2": "16:56"
+        },
+        {
+          "b_saldo": "-02:56",
+          "b_total": "-01:40",
+          "data": "15/07/2026 - Qua",
+          "entrada1": "08:02",
+          "entrada2": "-",
+          "saida1": "14:20",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-01:06",
+          "b_total": "01:50",
+          "data": "16/07/2026 - Qui",
+          "entrada1": "08:00",
+          "entrada2": "14:53",
+          "saida1": "13:53",
+          "saida2": "18:50"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "-01:41",
+          "data": "17/07/2026 - Sex",
+          "entrada1": "09:31 ¨",
+          "entrada2": "-",
+          "saida1": "14:19",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "-",
+          "data": "18/07/2026 - Sáb",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-02:47",
+          "b_total": "-",
+          "data": "19/07/2026 - Dom",
+          "entrada1": "FOLGA",
+          "entrada2": "FOLGA",
+          "saida1": "FOLGA",
+          "saida2": "FOLGA"
+        },
+        {
+          "b_saldo": "-04:05",
+          "b_total": "-01:18",
+          "data": "20/07/2026 - Seg",
+          "entrada1": "07:51",
+          "entrada2": "-",
+          "saida1": "14:33",
+          "saida2": "-"
+        },
+        {
+          "b_saldo": "-06:09",
+          "b_total": "-02:04",
+          "data": "21/07/2026 - Ter",
+          "entrada1": "07:55",
+          "entrada2": "14:56",
+          "saida1": "13:56",
+          "saida2": "-"
+        }
+      ]
+    }
+  }
+}

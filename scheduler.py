@@ -39,6 +39,11 @@ from src.main import main
 # do projeto. É ela que orquestra todo o fluxo:
 # scraping → processamento → banco de dados.
 
+from src.services.ponto_scraper_service import executar_scraping_completo_ponto
+# Importa a função principal do scraper de ponto eletrônico (Secullum RH).
+# Ela roda o Selenium headless, coleta os horários de todos os funcionários
+# do mês atual até D-1 e salva o cache em data/ponto_cache.json.
+
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DE LOG
@@ -98,6 +103,36 @@ def job():
 
 
 # ─────────────────────────────────────────────
+# JOB: SCRAPER DE PONTO ELETRÔNICO
+# ─────────────────────────────────────────────
+
+def job_ponto():
+    """
+    Função chamada diariamente para executar o scraper de ponto.
+    Ela acessa o Secullum RH via Selenium em modo headless,
+    coleta as marcações do mês atual de todos os funcionários
+    até o dia D-1 (com regra de final de semana → sexta-feira)
+    e atualiza o arquivo data/ponto_cache.json para leitura
+    instantânea no Dashboard pelos operadores e pelo admin.
+    """
+    log.info("[PONTO] Iniciando scraper de ponto eletronico (Secullum RH)...")
+    try:
+        # Executa o scraping em modo headless (sem janela visível) — ideal para VPS
+        sucesso = executar_scraping_completo_ponto(headless=True)
+
+        # Registra o resultado no log
+        if sucesso:
+            log.info("[PONTO] Scraper de ponto finalizado com sucesso. Cache atualizado.")
+        else:
+            log.warning("[PONTO] Scraper de ponto encerrou com falha. Verifique o log acima.")
+
+    except Exception as e:
+        # O try/except garante que uma falha no scraper de ponto
+        # não derruba o scheduler nem afeta os outros jobs
+        log.error(f"[PONTO] Erro inesperado durante execucao do scraper de ponto: {e}", exc_info=True)
+
+
+# ─────────────────────────────────────────────
 # PONTO DE ENTRADA — INICIA O SCHEDULER
 # ─────────────────────────────────────────────
 
@@ -112,16 +147,23 @@ if __name__ == "__main__":
     # Isso garante que os horários batem com o horário brasileiro
     # independente de onde a VPS estiver hospedada.
 
+    # ── Job principal de pagamentos ──────────────────────────────
     scheduler.add_job(job, CronTrigger(hour="8,11,16", minute=0))
-    # Em vez de 8, 11, 16
-    # scheduler.add_job(job, 'cron', hour=11, minute=58)  # Vai rodar 11:40
-    # Registra o job para rodar às 8h00, 11h00 e 16h00 todo dia.
+    # Roda às 8h00, 11h00 e 16h00 todo dia.
     # hour="8,11,16" → vírgula separa múltiplos horários
     # minute=0       → no minuto zero de cada hora
-    # Para testar a cada 2 minutos usaríamos:
-    # CronTrigger(minute="*/2")
 
-    log.info("Scheduler rodando - 8h, 11h e 16h (Brasilia)")
+    # ── Job de ponto eletrônico (Secullum RH) ────────────────────
+    scheduler.add_job(job_ponto, CronTrigger(hour="7", minute=30))
+    # Roda às 07h30 todo dia para ter os dados de D-1 prontos
+    # antes da equipe entrar, garantindo que o Dashboard já carrega
+    # com os cartões de ponto e banco de horas atualizados.
+    # Se quiser rodar também depois do almoço, adicione:
+    # scheduler.add_job(job_ponto, CronTrigger(hour="13", minute=0))
+
+    log.info("Scheduler rodando:")
+    log.info("  - Pagamentos: 8h, 11h e 16h (Brasilia)")
+    log.info("  - Ponto Eletronico: 7h30 (Brasilia)")
 
     try:
         scheduler.start()

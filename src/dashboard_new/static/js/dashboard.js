@@ -1403,37 +1403,117 @@ function inicializarRelogioPonto() {
  * Gera e renderiza a tabela de espelho de ponto eletrônico para o operador.
  * Utiliza o turno dele (obtido da sessão) para gerar entradas/saídas realistas.
  */
-function renderizarPontoOperador() {
-    const tbody = document.getElementById('tabela-ponto-operador');
-    const turnoEl = document.getElementById('turno-operador-ponto');
-    if (!tbody) return;
+async function renderizarPontoOperador() {
+    const login = window.operadorLogado?.login;
+    if (!login) return;
 
-    // Obtém o turno
-    const turno = window.operadorLogado?.turno || '08:00 às 17:00 (1h)';
-    if (turnoEl) turnoEl.textContent = turno;
+    try {
+        const response = await fetch(`/api/horarios/${login}`);
+        const result = await response.json();
 
-    // Gera dados se o array em memória estiver vazio
-    if (_pontosMockados.length === 0) {
-        _gerarPontosMêsAtual(turno);
+        if (!result.success || !result.data) {
+            console.error('Erro ao carregar horarios do operador:', result.message);
+            return;
+        }
+
+        const data = result.data;
+        const ponto = data.ponto || {};
+        const cardD1 = ponto.card_d1 || {};
+        const historico = ponto.historico_mes || [];
+
+        // Preenche o perfil no topo — foto + nome + metadados
+        const elFoto = document.getElementById('ponto-op-foto');
+        const elFotoFallback = document.getElementById('ponto-op-foto-fallback');
+        if (elFoto) {
+            if (data.imagem) {
+                elFoto.src = data.imagem;
+                elFoto.style.display = 'block';
+                if (elFotoFallback) elFotoFallback.style.display = 'none';
+            } else {
+                elFoto.style.display = 'none';
+                if (elFotoFallback) elFotoFallback.style.display = 'flex';
+            }
+        }
+
+        const elNome = document.getElementById('ponto-op-nome');
+        const elTempoCasa = document.getElementById('ponto-op-tempo-casa');
+        const elBanco = document.getElementById('ponto-op-banco');
+        const elDataRef = document.getElementById('ponto-op-data-ref');
+        const elAtualizacao = document.getElementById('ponto-op-ultima-atualizacao');
+
+        if (elNome) elNome.textContent = data.nome || login;
+        if (elTempoCasa) elTempoCasa.textContent = data.tempo_casa || '—';
+        if (elBanco) elBanco.textContent = data.banco || '—';
+        if (elDataRef) elDataRef.textContent = cardD1.data || '—';
+        if (elAtualizacao) {
+            const raw = data.ultima_atualizacao || '';
+            if (raw) {
+                try {
+                    const dt = new Date(raw.replace(' ', 'T'));
+                    elAtualizacao.textContent = dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } catch(e) { elAtualizacao.textContent = raw; }
+            } else {
+                elAtualizacao.textContent = 'Hoje';
+            }
+        }
+
+        // Preenche os cards
+        const elBancoHoras = document.getElementById('card-ponto-banco-horas');
+        const elEnt1 = document.getElementById('card-ponto-ent1');
+        const elSai1 = document.getElementById('card-ponto-sai1');
+        const elEnt2 = document.getElementById('card-ponto-ent2');
+        const elSai2 = document.getElementById('card-ponto-sai2');
+
+        if (elBancoHoras) {
+            const saldo = cardD1.b_saldo || '00:00';
+            const ehNegativo = saldo.startsWith('-');
+            const corSaldo = ehNegativo ? '#ef4444' : '#10b981';
+
+            elBancoHoras.textContent = saldo;
+            elBancoHoras.style.color = corSaldo;
+
+            // Atualiza o saldo do Banco de Horas no cabeçalho do perfil (topo direito)
+            const elHeaderSaldo = document.getElementById('headerBancoHorasSaldo');
+            if (elHeaderSaldo) {
+                elHeaderSaldo.innerHTML = `Banco de Horas: <span style="color:${corSaldo};font-weight:800;">${saldo}</span>`;
+            }
+        }
+        if (elEnt1) elEnt1.textContent = cardD1.entrada1 || '—';
+        if (elSai1) elSai1.textContent = cardD1.saida1 || '—';
+        if (elEnt2) elEnt2.textContent = cardD1.entrada2 || '—';
+        if (elSai2) elSai2.textContent = cardD1.saida2 || '—';
+
+        // Renderiza a tabela de histórico
+        const tbody = document.getElementById('tabela-ponto-operador');
+        if (!tbody) return;
+
+        if (historico.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Nenhum lançamento encontrado para o mês atual.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = historico.map((p, idx) => {
+            const bSaldoStr = p.b_saldo || '';
+            const saldoCor = bSaldoStr.startsWith('+') ? '#10b981' : (bSaldoStr.startsWith('-') ? '#ef4444' : 'var(--text-main)');
+            const bgRow = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+            return `
+                <tr style="background:${bgRow}; transition: all 0.2s;">
+                    <td style="text-align:center;font-weight:600;padding:10px 14px;">${p.data || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.entrada1 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.saida1 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.entrada2 || '—'}</td>
+                    <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.saida2 || '—'}</td>
+                    <td style="text-align:center;font-weight:700;color:${saldoCor};padding:10px 14px;">${p.b_saldo || '—'}</td>
+                    <td style="text-align:center;font-weight:700;padding:10px 14px;">${p.b_total || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error('Erro ao renderizar ponto do operador:', err);
     }
-
-    // Renderiza na tabela
-    tbody.innerHTML = _pontosMockados.map((p, idx) => {
-        const saldoCor = p.saldo.startsWith('+') ? '#10b981' : (p.saldo.startsWith('-') ? '#ef4444' : 'var(--text-main)');
-        const bgRow = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
-        return `
-            <tr style="background:${bgRow}; transition: all 0.2s;">
-                <td style="text-align:center;font-weight:600;padding:10px 14px;">${p.data}</td>
-                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.ent1 || '—'}</td>
-                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.sai1 || '—'}</td>
-                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.ent2 || '—'}</td>
-                <td style="text-align:center;padding:10px 14px;font-family:monospace;">${p.sai2 || '—'}</td>
-                <td style="text-align:center;font-weight:700;padding:10px 14px;">${p.total || '—'}</td>
-                <td style="text-align:center;font-weight:700;color:${saldoCor};padding:10px 14px;">${p.saldo || '—'}</td>
-            </tr>
-        `;
-    }).join('');
 }
+
 
 /**
  * Gera os pontos diários do mês até a data de hoje de forma realista.

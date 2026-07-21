@@ -178,7 +178,13 @@ async function carregarDadosAdm() {
         if (dataFim) url += `&data_fim=${dataFim}`;
 
         const response = await fetch(url);
+        if (response.status === 401) {
+            console.warn('[ADM] Sessão expirada ou não autorizada. Redirecionando para login...');
+            window.location.href = '/login';
+            return;
+        }
         const data = await response.json();
+
 
         // Esconde loading
         if (overlay) overlay.style.display = 'none';
@@ -418,6 +424,25 @@ function atualizarUsuarioAdm(operador) {
     if (headerRole) headerRole.textContent = 'Administrador';
     if (headerTempo) headerTempo.textContent = tempoCasa;
 
+    // Busca o saldo do banco de horas do usuário logado para exibir no topo direito
+    const userLogin = operador.login || operador.loguin;
+    if (userLogin) {
+        fetch(`/api/horarios/${userLogin}`)
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data && res.data.ponto && res.data.ponto.card_d1) {
+                    const saldo = res.data.ponto.card_d1.b_saldo || '00:00';
+                    const cor = saldo.startsWith('-') ? '#ef4444' : '#10b981';
+                    const elSaldoHeader = document.getElementById('headerBancoHorasSaldo');
+                    if (elSaldoHeader) {
+                        elSaldoHeader.innerHTML = `Banco de Horas: <span style="color:${cor};font-weight:800;">${saldo}</span>`;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
+
     if (imagemUrl && headerImg) {
         headerImg.src = imagemUrl;
         headerImg.style.display = 'block';
@@ -427,6 +452,7 @@ function atualizarUsuarioAdm(operador) {
         headerText.style.display = 'flex';
         if (headerImg) headerImg.style.display = 'none';
     }
+
 
     // Atualiza tempo de casa no sidebar (se tiver elemento)
     const tempoElement = document.getElementById('userTempoCasa');
@@ -958,7 +984,16 @@ function navegar(pagina) {
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) pageTitle.textContent = titulos[pagina] || pagina;
 
-    // Se estiver na aba Operadores, oculta o multiselect de operadores do topo global
+    // Se estiver na aba Operadores ou Horários, oculta elementos do topo global
+    const topFiltersBar = document.querySelector('.filters-bar.filters-adm');
+    if (topFiltersBar) {
+        if (pagina === 'horarios') {
+            topFiltersBar.style.display = 'none';
+        } else {
+            topFiltersBar.style.display = 'flex';
+        }
+    }
+
     const topOperadorMultiselect = document.getElementById('multiselect-operador-adm');
     if (topOperadorMultiselect) {
         if (pagina === 'operadores') {
@@ -977,8 +1012,13 @@ function navegar(pagina) {
         if (typeof carregarDadosAdm === 'function') {
             carregarDadosAdm();
         }
+    } else if (pagina === 'horarios') {
+        if (typeof carregarPontoAdm === 'function') {
+            carregarPontoAdm();
+        }
     }
 }
+
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');

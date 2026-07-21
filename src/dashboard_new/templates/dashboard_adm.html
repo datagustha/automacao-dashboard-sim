@@ -121,7 +121,9 @@
                             <span style="display:block;font-size:11px;color:var(--text-muted);" id="headerAvatarRole">Administrador</span>
                             <span style="display:block;font-size:10px;color:var(--text-muted);" id="headerAvatarTempo"></span>
                             <span style="display:block;font-size:10px;color:var(--text-muted);font-weight:600;" id="headerUltimoRecebimento"></span>
+                            <span style="display:block;font-size:11px;font-weight:700;margin-top:2px;" id="headerBancoHorasSaldo"></span>
                         </div>
+
                     </div>
                 </div>
             </header>
@@ -985,53 +987,171 @@
             <!-- ==================================== -->
             <!-- HORÁRIOS / PONTO ELETRÔNICO (ADM)    -->
             <!-- ==================================== -->
+            <!-- ==================================== -->
+            <!-- HORÁRIOS / PONTO ELETRÔNICO (ADM)    -->
+            <!-- ==================================== -->
             <section id="page-horarios" class="page">
 
-                <!-- Banner Em Breve -->
-                <div style="text-align:center;padding:32px 20px 24px;">
-                    <div style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(126,61,151,0.1),rgba(168,85,247,0.06));border:1px solid rgba(126,61,151,0.2);border-radius:16px;padding:12px 24px;margin-bottom:12px;">
-                        <i class="fas fa-tools" style="color:var(--purple-main);font-size:18px;"></i>
-                        <span style="font-weight:700;color:var(--purple-main);font-size:15px;">Em breve será implementado</span>
+                <!-- Barra de Controle do Administrador (Seleção de Operador) -->
+                <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(126, 61, 151, 0.1); display: flex; align-items: center; justify-content: center; color: var(--purple-main); font-size: 18px;">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Gestão de Ponto Eletrônico</h3>
+                            <span style="font-size: 12px; color: var(--text-muted);">Selecione um operador para visualizar os horários e o saldo do banco</span>
+                        </div>
                     </div>
-                    <p style="color:var(--text-muted);font-size:13px;margin:0;">
-                        O controle de ponto eletrônico está sendo desenvolvido. Cada colaborador poderá consultar seu próprio banco de horas pessoal.
-                    </p>
+
+                    <!-- Dropdown de Seleção de Banco, Ativos e Operador no Admin -->
+                    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                        <!-- Dropdown Banco -->
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <label for="adm-filtro-banco-ponto" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Banco:</label>
+                            <select id="adm-filtro-banco-ponto" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--text-main); outline: none; cursor: pointer;" onchange="carregarOperadoresDropdownPontoAdm()">
+                                <option value="SEMEAR" selected>SEMEAR</option>
+                                <option value="AGORACRED">AGORACRED</option>
+                            </select>
+                        </div>
+
+                        <!-- Checkbox Somente Ativos -->
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="adm-ponto-somente-ativos" checked
+                                   style="width: 16px; height: 16px; accent-color: var(--purple-main); cursor: pointer;"
+                                   onchange="carregarOperadoresDropdownPontoAdm()">
+                            Somente Ativos
+                        </label>
+
+                        <!-- Dropdown Operador pesquisável (busca embutida) -->
+                        <div style="display: flex; align-items: center; gap: 6px; position: relative;">
+                            <label style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Operador:</label>
+                            <div id="adm-ponto-op-dropdown" style="position: relative; min-width: 260px;">
+                                <!-- Botão que exibe o selecionado -->
+                                <button type="button" id="adm-ponto-op-btn"
+                                        onclick="togglePontoOpDropdown()"
+                                        style="width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 36px 8px 14px; font-size: 13px; font-weight: 600; color: var(--text-main); outline: none; cursor: pointer; text-align: left; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    Carregando operadores...
+                                    <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none;">▾</span>
+                                </button>
+                                <!-- Painel flutuante com busca e lista -->
+                                <div id="adm-ponto-op-panel" style="display:none; position: absolute; top: calc(100% + 4px); left: 0; width: 340px; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.14); z-index: 9999; overflow: hidden;">
+                                    <div style="padding: 10px 10px 6px 10px; border-bottom: 1px solid #f0f0f0;">
+                                        <input type="text" id="adm-ponto-op-busca"
+                                               placeholder="🔍 Pesquisar por nome ou login..."
+                                               autofocus
+                                               style="width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 10px; font-size: 13px; outline: none; background: #f8fafc;"
+                                               oninput="filtrarOperadoresPontoPorTexto(this.value)">
+                                    </div>
+                                    <ul id="adm-ponto-op-lista" style="list-style:none; margin:0; padding: 6px 0; max-height: 280px; overflow-y: auto;"></ul>
+                                </div>
+                                <!-- Input oculto para manter o valor selecionado -->
+                                <input type="hidden" id="adm-filtro-operador-ponto" value="">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Cards zerados (visual preview) -->
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;opacity:0.45;pointer-events:none;">
-                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
-                        <i class="fas fa-clock" style="font-size:22px;color:var(--purple-main);margin-bottom:8px;display:block;"></i>
-                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Horas no Mês</span>
-                        <span style="font-size:22px;font-weight:800;color:var(--text-main);">— h</span>
+                <!-- Cabeçalho de Perfil do Operador Selecionado -->
+                <div style="background: linear-gradient(135deg, rgba(126, 61, 151, 0.08), rgba(168, 85, 247, 0.04)); border: 1px solid rgba(126, 61, 151, 0.15); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <!-- Foto do operador selecionado -->
+                        <div style="position: relative; flex-shrink: 0;">
+                            <img id="ponto-adm-foto" src="" alt="Foto" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--purple-main); display: none;" onerror="this.style.display='none'; document.getElementById('ponto-adm-foto-fallback').style.display='flex';">
+                            <div id="ponto-adm-foto-fallback" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(126,61,151,0.15); display: flex; align-items: center; justify-content: center; color: var(--purple-main); font-size: 22px; border: 3px solid var(--purple-main);">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                                <h2 id="ponto-adm-nome" style="font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0;">—</h2>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                                <span><i class="fas fa-calendar-check" style="color: var(--purple-main); margin-right: 4px;"></i> Tempo de casa: <strong id="ponto-adm-tempo-casa" style="color: var(--text-main);">—</strong></span>
+                                <span><i class="fas fa-university" style="color: var(--purple-main); margin-right: 4px;"></i> Carteira/Banco: <strong id="ponto-adm-banco" style="color: var(--text-main);">—</strong></span>
+                                <span><i class="fas fa-clock" style="color: var(--purple-main); margin-right: 4px;"></i> Referência D-1: <strong id="ponto-adm-data-ref" style="color: var(--text-main);">—</strong></span>
+                            </div>
+                        </div>
                     </div>
-                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
-                        <i class="fas fa-piggy-bank" style="font-size:22px;color:#10b981;margin-bottom:8px;display:block;"></i>
-                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Banco de Horas</span>
-                        <span style="font-size:22px;font-weight:800;color:#10b981;">— h</span>
-                    </div>
-                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
-                        <i class="fas fa-exclamation-triangle" style="font-size:22px;color:#ef4444;margin-bottom:8px;display:block;"></i>
-                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Atrasos</span>
-                        <span style="font-size:22px;font-weight:800;color:#ef4444;">— min</span>
-                    </div>
-                    <div style="background:#f9fafb;padding:18px;border-radius:12px;border:1px solid #e5e7eb;text-align:center;">
-                        <i class="fas fa-plus-circle" style="font-size:22px;color:#0891b2;margin-bottom:8px;display:block;"></i>
-                        <span style="font-size:11px;color:var(--text-muted);display:block;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Horas Extras</span>
-                        <span style="font-size:22px;font-weight:800;color:#0891b2;">— h</span>
+                    <div style="text-align: right;">
+                        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); display: block;">Última Sincronização</span>
+                        <span id="ponto-adm-ultima-atualizacao" style="font-size: 13px; font-weight: 700; color: var(--purple-main);">—</span>
                     </div>
                 </div>
 
-                <!-- Espelho de ponto em preview -->
-                <div class="card-full" style="opacity:0.4;pointer-events:none;">
-                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-alt"></i> Meu Espelho de Ponto — Disponível em Breve</h3>
-                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
-                        <i class="fas fa-hourglass-half" style="font-size:28px;margin-bottom:12px;display:block;"></i>
-                        Aguardando implementação do scraper de ponto eletrônico.
+                <!-- Grid de Cards de Horários e Banco de Horas (Admin) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    
+                    <!-- Card Banco de Horas -->
+                    <div id="card-adm-banco-container" style="background: #ffffff; padding: 20px 16px; border-radius: 14px; border: 1px solid #e5e7eb; border-top: 4px solid #10b981; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center;">
+                        <i id="card-adm-banco-icon" class="fas fa-piggy-bank" style="font-size: 24px; color: #10b981; margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Banco de Horas (D-1)</span>
+                        <span id="card-adm-ponto-banco-horas" style="font-size: 24px; font-weight: 800; color: #10b981;">—</span>
+                    </div>
+
+
+                    <!-- Card Entrada 1 -->
+                    <div style="background: #ffffff; padding: 20px 16px; border-radius: 14px; border: 1px solid #e5e7eb; border-top: 4px solid var(--purple-main); box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center;">
+                        <i class="fas fa-sign-in-alt" style="font-size: 24px; color: var(--purple-main); margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Entrada 1</span>
+                        <span id="card-adm-ponto-ent1" style="font-size: 22px; font-weight: 800; color: var(--text-main); font-family: monospace;">—</span>
+                    </div>
+
+                    <!-- Card Saída 1 -->
+                    <div style="background: #ffffff; padding: 20px 16px; border-radius: 14px; border: 1px solid #e5e7eb; border-top: 4px solid #f59e0b; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center;">
+                        <i class="fas fa-coffee" style="font-size: 24px; color: #f59e0b; margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Saída 1 (Almoço)</span>
+                        <span id="card-adm-ponto-sai1" style="font-size: 22px; font-weight: 800; color: var(--text-main); font-family: monospace;">—</span>
+                    </div>
+
+                    <!-- Card Entrada 2 -->
+                    <div style="background: #ffffff; padding: 20px 16px; border-radius: 14px; border: 1px solid #e5e7eb; border-top: 4px solid #3b82f6; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center;">
+                        <i class="fas fa-undo" style="font-size: 24px; color: #3b82f6; margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Entrada 2 (Retorno)</span>
+                        <span id="card-adm-ponto-ent2" style="font-size: 22px; font-weight: 800; color: var(--text-main); font-family: monospace;">—</span>
+                    </div>
+
+                    <!-- Card Saída 2 -->
+                    <div style="background: #ffffff; padding: 20px 16px; border-radius: 14px; border: 1px solid #e5e7eb; border-top: 4px solid #ef4444; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center;">
+                        <i class="fas fa-sign-out-alt" style="font-size: 24px; color: #ef4444; margin-bottom: 8px; display: block;"></i>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Saída 2 (Fim)</span>
+                        <span id="card-adm-ponto-sai2" style="font-size: 22px; font-weight: 800; color: var(--text-main); font-family: monospace;">—</span>
+                    </div>
+                </div>
+
+                <!-- Tabela de Histórico de Lançamentos do Mês (Admin) -->
+                <div class="card-full" style="background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+                        <h3 class="panel-title" style="color: var(--purple-main); margin: 0; font-size: 16px; font-weight: 700;">
+                            <i class="fas fa-history" style="margin-right: 8px;"></i> Histórico de Marcações do Mês
+                        </h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">Sincronização via Secullum RH</span>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: var(--text-muted); text-align: center;">
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Data</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Entrada 1</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Saída 1</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Entrada 2</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Saída 2</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">BSaldo</th>
+                                    <th style="padding: 12px 14px; border-bottom: 2px solid #e2e8f0; font-weight: 700;">BTotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-ponto-adm">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">Selecione um operador para visualizar os lançamentos.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
             </section>
+
         </main>
     </div>
 

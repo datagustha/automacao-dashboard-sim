@@ -295,7 +295,25 @@ function atualizarUsuario(operador) {
     if (headerName) headerName.textContent = nome;
     if (headerRole) headerRole.textContent = banco;
     if (headerTempo) headerTempo.textContent = tempoCasa;
-    
+
+    // Busca o saldo do Banco de Horas do operador para o topo direito
+    const userLogin = operador.login || operador.loguin;
+    if (userLogin) {
+        fetch(`/api/horarios/${userLogin}`)
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data && res.data.ponto && res.data.ponto.card_d1) {
+                    const saldo = res.data.ponto.card_d1.b_saldo || '00:00';
+                    const cor = saldo.startsWith('-') ? '#ef4444' : '#10b981';
+                    const elSaldoHeader = document.getElementById('headerBancoHorasSaldo');
+                    if (elSaldoHeader) {
+                        elSaldoHeader.innerHTML = `Banco de Horas: <span style="color:${cor};font-weight:800;">${saldo}</span>`;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
     if (imagemUrl && headerImg) {
         headerImg.src = imagemUrl;
         headerImg.style.display = 'block';
@@ -305,6 +323,7 @@ function atualizarUsuario(operador) {
         headerText.style.display = 'flex';
         if (headerImg) headerImg.style.display = 'none';
     }
+
 
     // Ocultar filtro de Fase de Atraso na tela de Pagamentos se for AGORACRED
     const filtroFaseGrp = document.getElementById('filtro-pagamento-fase')?.closest('.filter-group');
@@ -377,6 +396,7 @@ function navegar(pagina) {
             const titulos = {
                 pagamentos: 'Pagamentos',
                 clientes: 'Clientes',
+                horarios: 'Horários / Ponto Eletrônico',
                 performance: 'Performance',
                 metas: 'Metas',
                 campanhas: 'Campanhas'
@@ -384,7 +404,18 @@ function navegar(pagina) {
             pageTitle.textContent = titulos[pagina] || pagina;
         }
     }
+
+    if (pagina === 'horarios' && typeof renderizarPontoOperador === 'function') {
+        renderizarPontoOperador();
+    }
+
+    // Esconde a barra de filtros na página de horários (sempre puxa mês atual)
+    const filtersBar = document.querySelector('.filters-bar');
+    if (filtersBar) {
+        filtersBar.style.display = pagina === 'horarios' ? 'none' : '';
+    }
 }
+
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
