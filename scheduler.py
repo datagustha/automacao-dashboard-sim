@@ -154,16 +154,18 @@ if __name__ == "__main__":
     # minute=0       → no minuto zero de cada hora
 
     # ── Job de ponto eletrônico (Secullum RH) ────────────────────
-    scheduler.add_job(job_ponto, CronTrigger(hour="7", minute=30))
-    # Roda às 07h30 todo dia para ter os dados de D-1 prontos
-    # antes da equipe entrar, garantindo que o Dashboard já carrega
-    # com os cartões de ponto e banco de horas atualizados.
-    # Se quiser rodar também depois do almoço, adicione:
-    # scheduler.add_job(job_ponto, CronTrigger(hour="13", minute=0))
+    # Roda 5x ao dia para manter o Dashboard sempre atualizado:
+    #   08:30 → Primeira atualização da manhã (dados de D-1 prontos)
+    #   10:00 → Atualização do meio da manhã
+    #   14:00 → Após o almoço
+    #   16:00 → Meio da tarde
+    #   18:00 → Final do expediente
+    scheduler.add_job(job_ponto, CronTrigger(hour="8", minute=30))
+    scheduler.add_job(job_ponto, CronTrigger(hour="10,14,16,18", minute=0))
 
     log.info("Scheduler rodando:")
     log.info("  - Pagamentos: 8h, 11h e 16h (Brasilia)")
-    log.info("  - Ponto Eletronico: 7h30 (Brasilia)")
+    log.info("  - Ponto Eletronico: 8h30, 10h, 14h, 16h e 18h (Brasilia)")
 
     try:
         scheduler.start()
