@@ -445,31 +445,50 @@ def avancar_funcionario(navegador):
 
 
 def extrair_tabela_funcionario(navegador):
+    """Extrai TODAS as linhas da tabela de calculos.
+    Usa textContent (funciona em modo headless) e aguarda a tabela estar populada.
+    """
     try:
+        # Aguarda a tabela aparecer
         WebDriverWait(navegador, 15).until(
             EC.presence_of_element_located((By.CLASS_NAME, "tabela-calculos-wrapper"))
         )
-        time.sleep(2)
+        # Aguarda que o tbody tenha pelo menos 1 linha de dado real
+        WebDriverWait(navegador, 10).until(
+            lambda d: len(d.find_elements(
+                By.CSS_SELECTOR, ".tabela-calculos-wrapper tbody tr"
+            )) > 0
+        )
+        time.sleep(2)  # estabilizacao
+
         registros = navegador.execute_script("""
             var linhas = document.querySelectorAll('.tabela-calculos-wrapper tbody tr');
             var resultado = [];
             for(var i=0; i<linhas.length; i++){
                 var tds = linhas[i].querySelectorAll('td');
                 if(tds.length < 10) continue;
-                var data = (tds[2] ? tds[2].innerText.trim() : '');
+                // Usa textContent (funciona em headless, diferente de innerText)
+                function txt(el){ return el ? el.textContent.trim() : ''; }
+                var data = txt(tds[2]);
                 if(!data) continue;
                 resultado.push({
                     data:     data,
-                    entrada1: (tds[3]  ? tds[3].innerText.trim()  : ''),
-                    saida1:   (tds[4]  ? tds[4].innerText.trim()  : ''),
-                    entrada2: (tds[5]  ? tds[5].innerText.trim()  : ''),
-                    saida2:   (tds[6]  ? tds[6].innerText.trim()  : ''),
-                    b_saldo:  (tds[17] ? tds[17].innerText.trim() : ''),
-                    b_total:  (tds[18] ? tds[18].innerText.trim() : '')
+                    entrada1: txt(tds[3]),
+                    saida1:   txt(tds[4]),
+                    entrada2: txt(tds[5]),
+                    saida2:   txt(tds[6]),
+                    entrada3: txt(tds[7]),
+                    saida3:   txt(tds[8]),
+                    normais:  txt(tds[9]),
+                    faltas:   txt(tds[10]),
+                    b_saldo:  txt(tds[17]),
+                    b_total:  txt(tds[18])
                 });
             }
             return resultado;
         """)
+
+        # Normaliza os campos
         for reg in registros:
             for k in reg:
                 if k != "data":
@@ -478,6 +497,8 @@ def extrair_tabela_funcionario(navegador):
                         reg[k] = "-"
                     elif v.startswith("+"):
                         reg[k] = v[1:]
+
+        print(f"[PONTO SCRAPER] Tabela extraida: {len(registros)} linhas.")
         return registros or []
     except Exception as e:
         print(f"[PONTO SCRAPER] Erro ao extrair tabela: {e}")
@@ -600,18 +621,15 @@ def executar_scraping_completo_ponto(headless=True, max_funcionarios=150):
             
             # Extrai os registros da tabela do Secullum
             registros = extrair_tabela_funcionario(navegador)
-            
-            # Formata datas e filtra somente os registros do mês atual (01/MM/AAAA até D-1)
-            mes_atual_fmt = f"/{hoje.month:02d}/{hoje.year}"
-            registros_mes_atual = []
-            
+
+            # Formata datas e armazena TODOS os registros da folha
+            # (o Secullum mostra a folha completa, nao apenas o mes atual)
+            registros_final = []
             for reg in registros:
                 reg["data"] = _formatar_data_registro(reg.get("data", ""), hoje.year)
-                if mes_atual_fmt in reg["data"] or f"/{hoje.month:02d}" in reg.get("data", ""):
-                    registros_mes_atual.append(reg)
-                    
-            registros_final = registros_mes_atual if registros_mes_atual else registros
-            print(f"[PONTO SCRAPER] -> {len(registros_final)} registros no historico do mes.")
+                registros_final.append(reg)
+
+            print(f"[PONTO SCRAPER] -> {len(registros_final)} registros na folha.")
             
             # Busca o card de D-1 (data_d1_str ex: 21/07/2026)
             registro_d1 = None
