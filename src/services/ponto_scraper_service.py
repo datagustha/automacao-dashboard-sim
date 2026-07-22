@@ -107,14 +107,13 @@ def realizar_login_secullum(navegador):
         print("[ERRO] EMAIL_SISTEMA ou SENHA_SISTEMA nao encontrados no .env")
         return False
     try:
-        print("[PONTO SCRAPER] Acessando Secullum RH...")
-        navegador.get("https://www.secullum.com.br/pt/produtos/secullum-rh#/cartao-ponto")
+        # Vai direto para a pagina de login do pontoweb (evita a pagina de marketing
+        # que pode nao carregar corretamente na VPS)
+        print("[PONTO SCRAPER] Acessando pagina de login do Secullum RH...")
+        navegador.get("https://pontoweb.secullum.com.br/login")
         time.sleep(3)
-        btn = WebDriverWait(navegador, 15).until(
-            EC.element_to_be_clickable((By.XPATH, "//a[contains(., 'Acessar Secullum RH')]"))
-        )
-        btn.click()
-        time.sleep(2)
+
+        # Pode redirecionar para autenticador.secullum.com.br
         campo_email = WebDriverWait(navegador, 15).until(
             EC.presence_of_element_located((By.ID, "Email"))
         )
@@ -126,12 +125,12 @@ def realizar_login_secullum(navegador):
         navegador.find_element(By.ID, "login").click()
         print("[PONTO SCRAPER] Login solicitado. Aguardando autenticacao...")
 
-        # Aguarda autenticacao e redirecionamento
+        # Aguarda redirecionamento para pontoweb.secullum.com.br/#/home
         inicio_login = time.time()
-        while time.time() - inicio_login < 20:
+        while time.time() - inicio_login < 25:
             url_curr = navegador.current_url
-            if "pontoweb.secullum.com.br" in url_curr or "#/" in url_curr:
-                print(f"[PONTO SCRAPER] Login efetuado com sucesso! URL atual: {url_curr}")
+            if "pontoweb.secullum.com.br/#/" in url_curr:
+                print(f"[PONTO SCRAPER] Login efetuado! URL: {url_curr}")
                 break
             time.sleep(1)
 
@@ -239,12 +238,13 @@ def navegar_para_calculos(navegador):
 
 
 def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
+    """Define o periodo de calculos. Inputs sao type=text com formato dd/MM/yyyy."""
     try:
         time.sleep(3)
         fechar_popups_secullum(navegador)
         time.sleep(1)
 
-        # Define dataInicio e dataFim via JS
+        # Inputs confirmados: id='dataInicio' e id='dataFim', type='text', formato dd/MM/yyyy
         navegador.execute_script("""
             var ids = ['dataInicio', 'dataFim'];
             var vals = [arguments[0], arguments[1]];
@@ -254,11 +254,14 @@ def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
                     el.value = vals[i];
                     el.dispatchEvent(new Event('input', {bubbles:true}));
                     el.dispatchEvent(new Event('change', {bubbles:true}));
+                    el.dispatchEvent(new Event('blur',  {bubbles:true}));
                 }
             }
         """, data_inicio_str, data_fim_str)
         time.sleep(1)
 
+        # Botao confirmado: text='Atualizar', id='btnAtualizar' ou button.btn com texto Atualizar
+        clicou = False
         try:
             btn = WebDriverWait(navegador, 8).until(
                 EC.element_to_be_clickable((By.ID, "btnAtualizar"))
@@ -266,8 +269,24 @@ def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
             navegador.execute_script("arguments[0].scrollIntoView(true);", btn)
             time.sleep(0.5)
             btn.click()
+            clicou = True
         except Exception:
-            navegador.execute_script("var b=document.getElementById('btnAtualizar'); if(b) b.click();")
+            pass
+
+        if not clicou:
+            # Fallback: botao com texto 'Atualizar'
+            try:
+                btn = navegador.find_element(By.XPATH,
+                    "//button[normalize-space(text())='Atualizar' or contains(.,'Atualizar')]")
+                btn.click()
+                clicou = True
+            except Exception:
+                pass
+
+        if not clicou:
+            navegador.execute_script(
+                "var b=document.getElementById('btnAtualizar'); if(b) b.click();")
+
         print(f"[PONTO SCRAPER] Periodo configurado: {data_inicio_str} a {data_fim_str}")
         time.sleep(5)
         return True
@@ -301,68 +320,64 @@ def obter_nome_funcionario_atual(navegador):
 
 
 def avancar_funcionario(navegador):
-    """Clica no botao de avancar para o proximo funcionario na tela de Calculos."""
-    # 1. Seletores XPath especificos de navegacao
-    xpaths = [
-        "//i[contains(@class, 'chevron-right')]/ancestor::button",
-        "//i[contains(@class, 'arrow-right')]/ancestor::button",
-        "//i[contains(@class, 'right')]/ancestor::button",
-        "//i[contains(@class, 'right')]/..",
-        "//button[descendant::i[contains(@class, 'right')]]",
-        "//button[contains(@title, 'ximo') or contains(@title, 'Next') or contains(@title, 'next')]",
-        "//div[contains(@class, 'Select')]/following-sibling::button[contains(@class, 'next') or contains(@class, 'right')]",
-        "//div[contains(@class, 'Select')]/following-sibling::button[2]",
-        "//div[contains(@class, 'Select')]/following-sibling::button"
+    """Clica no botao 'Visualizar o funcionario posterior' confirmado pelo diagnostico."""
+    # 1. Seletor EXATO confirmado pelo diagnostico:
+    #    button#09: title='Visualizar o funcionario posterior' class='btn button-icon arrow'
+    seletores_diretos = [
+        "button[title='Visualizar o funcionario posterior']",
+        "button[title*='posterior']",
+        "button.button-icon.arrow",  # pega o segundo (posterior), o primeiro e 'anterior'
     ]
-    for xp in xpaths:
+    for sel in seletores_diretos:
         try:
-            elems = navegador.find_elements(By.XPATH, xp)
-            for elem in elems:
-                if elem.is_displayed():
-                    elem.click()
-                    time.sleep(2)
-                    print("[PONTO SCRAPER] Avancou funcionario (via XPath)!")
-                    return True
+            elems = navegador.find_elements(By.CSS_SELECTOR, sel)
+            # Para 'button.button-icon.arrow' existem 2: [0]=anterior, [1]=posterior
+            alvo = elems[-1] if elems else None
+            if alvo and alvo.is_displayed():
+                alvo.click()
+                time.sleep(2)
+                print(f"[PONTO SCRAPER] Avancou funcionario via '{sel}'!")
+                return True
         except Exception:
             continue
 
-    # 2. Seletores CSS classicos
-    seletores = [
-        "i.fa-chevron-right",
-        "i.fa-arrow-right",
-        "i.fa-angle-right",
-        "[class*='chevron-right']",
-        "[class*='arrow-right']",
-        "button[title*='ximo']",
-        "button[title*='next']"
-    ]
-    for sel in seletores:
-        try:
-            elem = navegador.find_element(By.CSS_SELECTOR, sel)
-            pai = elem.find_element(By.XPATH, "..") if elem.tag_name == "i" else elem
-            pai.click()
-            time.sleep(2)
-            print("[PONTO SCRAPER] Avancou funcionario (via CSS)!")
-            return True
-        except Exception:
-            continue
+    # 2. Fallback via XPath com title
+    try:
+        btn = navegador.find_element(By.XPATH,
+            "//button[@title='Visualizar o funcionario posterior' or contains(@title,'posterior')]")
+        btn.click()
+        time.sleep(2)
+        print("[PONTO SCRAPER] Avancou funcionario via XPath title!")
+        return True
+    except Exception:
+        pass
 
-    # 3. Fallback via JavaScript click
+    # 3. Fallback via JS: clica no botao com i.fa-arrow-right
     try:
         clicou = navegador.execute_script("""
-            var icons = document.querySelectorAll('i.fa-chevron-right, i.fa-arrow-right, i.fa-angle-right, [class*="right"]');
-            for(var i=0; i<icons.length; i++){
-                var btn = icons[i].closest('button') || icons[i].parentElement;
-                if(btn && btn.offsetWidth > 0 && btn.offsetHeight > 0){
+            // Tenta pelo title
+            var btns = document.querySelectorAll('button');
+            for(var i=0; i<btns.length; i++){
+                var t = btns[i].getAttribute('title') || '';
+                if(t.indexOf('posterior') >= 0){
+                    btns[i].click();
+                    return 'title:posterior';
+                }
+            }
+            // Fallback: i.fa-arrow-right dentro de button
+            var icons = document.querySelectorAll('i.fa-arrow-right');
+            for(var j=0; j<icons.length; j++){
+                var btn = icons[j].closest('button') || icons[j].parentElement;
+                if(btn && btn.offsetWidth > 0){
                     btn.click();
-                    return true;
+                    return 'icon:arrow-right';
                 }
             }
             return false;
         """)
         if clicou:
             time.sleep(2)
-            print("[PONTO SCRAPER] Avancou funcionario via JavaScript.")
+            print(f"[PONTO SCRAPER] Avancou funcionario via JS ({clicou}).")
             return True
     except Exception:
         pass
