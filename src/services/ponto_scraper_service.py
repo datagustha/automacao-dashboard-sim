@@ -143,96 +143,116 @@ def realizar_login_secullum(navegador):
 
 
 def navegar_para_calculos(navegador):
-    """Navega para a tela de Cálculos do Secullum RH com múltiplos fallbacks e diagnósticos."""
-    print("[PONTO SCRAPER] Navegando para a tela de Calculos...")
+    """Navega para Calculos clicando no menu Relatorios -> Calculos.
+    IDs confirmados pelo DevTools:
+      - Menu principal: id='relatorios'
+      - Submenu: id='calculos'
+    """
+    print("[PONTO SCRAPER] Navegando para Calculos via menu Relatorios...")
     fechar_popups_secullum(navegador)
+    time.sleep(2)
 
-    # 1. Tenta clicar no menu 'Cálculos' na interface visual
-    clicou_menu = False
+    # ----------------------------------------------------------------
+    # 1. Clica no menu principal "Relatorios" (id='relatorios')
+    # ----------------------------------------------------------------
+    clicou_relatorios = False
     try:
-        seletores_menu = [
-            "//a[contains(@href, 'calculos')]",
-            "//a[contains(translate(text(), 'CÁLCULOS', 'cálculos'), 'cálculos')]",
-            "//span[contains(translate(text(), 'CÁLCULOS', 'cálculos'), 'cálculos')]",
-            "//li[contains(., 'Cálculos')]//a",
-            "i.fa-calculator",
-            "[title*='lculos']"
-        ]
-        for sel in seletores_menu:
-            try:
-                if sel.startswith("//"):
-                    elems = navegador.find_elements(By.XPATH, sel)
-                else:
-                    elems = navegador.find_elements(By.CSS_SELECTOR, sel)
-                for elem in elems:
-                    if elem.is_displayed():
-                        elem.click()
-                        print("[PONTO SCRAPER] Clicou no menu Calculos visualmente!")
-                        clicou_menu = True
-                        break
-                if clicou_menu:
-                    break
-            except Exception:
-                continue
-    except Exception as e_menu:
-        print(f"[AVISO] Tentativa de clique no menu visual: {e_menu}")
-
-    # 2. Se nao clicou via menu, ajusta hash/URL via JS
-    if not clicou_menu:
+        btn_rel = WebDriverWait(navegador, 15).until(
+            EC.element_to_be_clickable((By.ID, "relatorios"))
+        )
+        btn_rel.click()
+        print("[PONTO SCRAPER] Menu Relatorios clicado!")
+        clicou_relatorios = True
+        time.sleep(2)
+    except Exception as e:
+        print(f"[AVISO] Nao encontrou id='relatorios': {e}")
+        # Fallback: tenta por href ou texto
         try:
-            print("[PONTO SCRAPER] Redirecionando via Hash JS para #/calculos...")
-            navegador.execute_script("window.location.hash = '#/calculos';")
+            btn_rel = navegador.find_element(
+                By.XPATH,
+                "//a[contains(@href,'relatorio') or contains(.,'Relat')]"
+            )
+            btn_rel.click()
+            clicou_relatorios = True
             time.sleep(2)
+            print("[PONTO SCRAPER] Menu Relatorios clicado via XPath fallback!")
         except Exception:
             pass
 
-    # 3. Aguarda o carregamento de um dos elementos indicativos da tela de Calculos
-    inicio_espera = time.time()
-    while time.time() - inicio_espera < 20:
-        fechar_popups_secullum(navegador)
+    # ----------------------------------------------------------------
+    # 2. Clica no submenu "Calculos" (id='calculos')
+    # ----------------------------------------------------------------
+    clicou_calculos = False
+    try:
+        btn_calc = WebDriverWait(navegador, 10).until(
+            EC.element_to_be_clickable((By.ID, "calculos"))
+        )
+        btn_calc.click()
+        print("[PONTO SCRAPER] Submenu Calculos clicado!")
+        clicou_calculos = True
+        time.sleep(3)
+    except Exception as e:
+        print(f"[AVISO] Nao encontrou id='calculos': {e}")
+        # Fallback: tenta por href #/calculos ou texto
+        try:
+            btn_calc = navegador.find_element(
+                By.XPATH,
+                "//a[@href='#/calculos' or contains(.,'lculos')]"
+            )
+            btn_calc.click()
+            clicou_calculos = True
+            time.sleep(3)
+            print("[PONTO SCRAPER] Submenu Calculos clicado via XPath fallback!")
+        except Exception:
+            pass
 
-        for seletor in [
-            (By.CSS_SELECTOR, "#react-select-3--value-item"),
-            (By.ID, "dataInicio"),
-            (By.ID, "btnAtualizar"),
-            (By.CSS_SELECTOR, "input[name='dataInicio']"),
-            (By.CSS_SELECTOR, ".tabela-calculos-wrapper"),
-            (By.CSS_SELECTOR, ".Select-value-label")
-        ]:
-            try:
-                elem = navegador.find_element(*seletor)
-                if elem:
-                    print(f"[PONTO SCRAPER] Tela de Calculos carregada com sucesso! Elemento encontrado: {seletor}")
-                    return True
-            except Exception:
-                continue
+    # ----------------------------------------------------------------
+    # 3. Se nao conseguiu via menu, tenta URL direta como ultimo recurso
+    # ----------------------------------------------------------------
+    if not clicou_calculos:
+        print("[PONTO SCRAPER] Tentando URL direta como fallback...")
+        try:
+            navegador.get("https://pontoweb.secullum.com.br/#/calculos")
+            time.sleep(4)
+        except Exception:
+            pass
 
-        time.sleep(1.5)
+    # ----------------------------------------------------------------
+    # 4. Aguarda a tela de Calculos carregar (seletor do funcionario)
+    # ----------------------------------------------------------------
+    print("[PONTO SCRAPER] Aguardando tela de Calculos carregar...")
+    fechar_popups_secullum(navegador)
 
-        # Se ainda nao encontrou apos 10s, forca navegador.get() direto
-        if time.time() - inicio_espera > 10 and not clicou_menu:
-            try:
-                url_atual = navegador.current_url
-                if "#/calculos" not in url_atual:
-                    print("[PONTO SCRAPER] Forcando navegador.get('https://pontoweb.secullum.com.br/#/calculos')...")
-                    navegador.get("https://pontoweb.secullum.com.br/#/calculos")
-            except Exception:
-                pass
+    for seletor in [
+        (By.CSS_SELECTOR, "#react-select-3--value-item"),
+        (By.ID, "dataInicio"),
+        (By.ID, "rightArrow"),
+        (By.ID, "btnAtualizar"),
+        (By.CSS_SELECTOR, ".tabela-calculos-wrapper"),
+    ]:
+        try:
+            WebDriverWait(navegador, 15).until(
+                EC.presence_of_element_located(seletor)
+            )
+            print(f"[PONTO SCRAPER] Tela de Calculos carregada! Elemento: {seletor}")
+            return True
+        except Exception:
+            continue
 
-    # Se falhar tudo, grava relatorio detalhado para diagnostico
-    print(f"[ERRO] Falha ao acessar Calculos.")
+    # Falha total — grava dump HTML para diagnostico
+    print(f"[ERRO] Tela de Calculos nao carregou.")
     print(f"[DIAGNOSTICO] URL Atual: {navegador.current_url}")
-    print(f"[DIAGNOSTICO] Titulo Pagina: {navegador.title}")
+    print(f"[DIAGNOSTICO] Titulo: {navegador.title}")
     try:
         pasta_data = pathlib.Path(__file__).parent.parent.parent / "data"
         os.makedirs(pasta_data, exist_ok=True)
         dump_path = pasta_data / "debug_secullum_error.html"
         with open(dump_path, "w", encoding="utf-8") as f:
             f.write(navegador.page_source)
-        print(f"[DIAGNOSTICO] HTML da pagina salvo em: {dump_path}")
-        print(f"[DIAGNOSTICO] Primeiros 1000 chars do HTML:\n{navegador.page_source[:1000]}")
+        print(f"[DIAGNOSTICO] HTML salvo em: {dump_path}")
+        print(f"[DIAGNOSTICO] HTML (primeiros 1000 chars):\n{navegador.page_source[:1000]}")
     except Exception as e_dump:
-        print(f"[DIAGNOSTICO] Erro ao salvar dump HTML: {e_dump}")
+        print(f"[DIAGNOSTICO] Erro ao salvar dump: {e_dump}")
 
     return False
 
