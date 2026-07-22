@@ -193,12 +193,12 @@ def navegar_para_calculos(navegador):
         fechar_popups_secullum(navegador)
 
         for seletor in [
+            (By.CSS_SELECTOR, "#react-select-3--value-item"),
             (By.ID, "dataInicio"),
             (By.ID, "btnAtualizar"),
             (By.CSS_SELECTOR, "input[name='dataInicio']"),
             (By.CSS_SELECTOR, ".tabela-calculos-wrapper"),
-            (By.CSS_SELECTOR, ".Select-value-label"),
-            (By.ID, "react-select-3--value-item")
+            (By.CSS_SELECTOR, ".Select-value-label")
         ]:
             try:
                 elem = navegador.find_element(*seletor)
@@ -277,30 +277,64 @@ def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
 
 
 def obter_nome_funcionario_atual(navegador):
+    """Le o nome do funcionario na tela de Calculos usando o seletor exato #react-select-3--value-item."""
     try:
         el = WebDriverWait(navegador, 10).until(
-            EC.presence_of_element_located((By.ID, "react-select-3--value-item"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#react-select-3--value-item"))
         )
         nome = el.text.strip()
         if nome:
             return nome
     except Exception:
         pass
+        
     try:
         labels = navegador.find_elements(By.CSS_SELECTOR, ".Select-value-label")
-        if labels:
-            return labels[-1].text.strip()
+        for label in labels:
+            txt = label.text.strip()
+            if txt:
+                return txt
     except Exception:
         pass
+        
     return None
 
 
 def avancar_funcionario(navegador):
+    """Clica no botao de avancar para o proximo funcionario na tela de Calculos."""
+    # 1. Seletores XPath especificos de navegacao
+    xpaths = [
+        "//i[contains(@class, 'chevron-right')]/ancestor::button",
+        "//i[contains(@class, 'arrow-right')]/ancestor::button",
+        "//i[contains(@class, 'right')]/ancestor::button",
+        "//i[contains(@class, 'right')]/..",
+        "//button[descendant::i[contains(@class, 'right')]]",
+        "//button[contains(@title, 'ximo') or contains(@title, 'Next') or contains(@title, 'next')]",
+        "//div[contains(@class, 'Select')]/following-sibling::button[contains(@class, 'next') or contains(@class, 'right')]",
+        "//div[contains(@class, 'Select')]/following-sibling::button[2]",
+        "//div[contains(@class, 'Select')]/following-sibling::button"
+    ]
+    for xp in xpaths:
+        try:
+            elems = navegador.find_elements(By.XPATH, xp)
+            for elem in elems:
+                if elem.is_displayed():
+                    elem.click()
+                    time.sleep(2)
+                    print("[PONTO SCRAPER] Avancou funcionario (via XPath)!")
+                    return True
+        except Exception:
+            continue
+
+    # 2. Seletores CSS classicos
     seletores = [
+        "i.fa-chevron-right",
         "i.fa-arrow-right",
+        "i.fa-angle-right",
+        "[class*='chevron-right']",
         "[class*='arrow-right']",
         "button[title*='ximo']",
-        "button[title*='next']",
+        "button[title*='next']"
     ]
     for sel in seletores:
         try:
@@ -308,26 +342,32 @@ def avancar_funcionario(navegador):
             pai = elem.find_element(By.XPATH, "..") if elem.tag_name == "i" else elem
             pai.click()
             time.sleep(2)
-            print("[PONTO SCRAPER] Avancando...")
+            print("[PONTO SCRAPER] Avancou funcionario (via CSS)!")
             return True
         except Exception:
             continue
+
+    # 3. Fallback via JavaScript click
     try:
         clicou = navegador.execute_script("""
-            var icons = document.querySelectorAll('i.fa-arrow-right');
+            var icons = document.querySelectorAll('i.fa-chevron-right, i.fa-arrow-right, i.fa-angle-right, [class*="right"]');
             for(var i=0; i<icons.length; i++){
                 var btn = icons[i].closest('button') || icons[i].parentElement;
-                if(btn){ btn.click(); return true; }
+                if(btn && btn.offsetWidth > 0 && btn.offsetHeight > 0){
+                    btn.click();
+                    return true;
+                }
             }
             return false;
         """)
         if clicou:
             time.sleep(2)
-            print("[PONTO SCRAPER] Avancou via JavaScript.")
+            print("[PONTO SCRAPER] Avancou funcionario via JavaScript.")
             return True
     except Exception:
         pass
-    print("[PONTO SCRAPER] Nao encontrou botao de avancar.")
+
+    print("[PONTO SCRAPER] Nao encontrou botao de avancar funcionario.")
     return False
 
 
