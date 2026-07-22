@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 SERVICO DE SCRAPING DE PONTO ELETRONICO (SECULLUM RH)
-ABORDAGEM: Navegacao por setas (igual ao sistema original que funcionava).
+ABORDAGEM: Navegacao por setas e sincronizacao com a lista de funcionarios ATIVOS no banco.
 """
 import os
 import json
@@ -31,20 +31,40 @@ def _normalizar(texto):
     return "".join(c for c in nfkd if not unicodedata.combining(c)).upper().strip()
 
 
+def _formatar_data_registro(data_raw, ano_atual):
+    if not data_raw:
+        return ""
+    txt = data_raw.strip()
+    partes = txt.split()
+    data_pt = partes[0]
+    dia_sem = " - " + " ".join(partes[1:]) if len(partes) > 1 else ""
+    
+    if "/" in data_pt:
+        bits = data_pt.split("/")
+        if len(bits) == 2:
+            data_pt = f"{bits[0].zfill(2)}/{bits[1].zfill(2)}/{ano_atual}"
+        elif len(bits) == 3:
+            data_pt = f"{bits[0].zfill(2)}/{bits[1].zfill(2)}/{bits[2]}"
+            
+    return f"{data_pt}{dia_sem}"
+
+
 def calcular_data_alvo_d1(data_referencia=None):
     if data_referencia is None:
         data_referencia = datetime.now()
     d1 = data_referencia - timedelta(days=1)
-    if d1.weekday() == 5:
+    if d1.weekday() == 5:  # Sábado -> Sexta
         d1 -= timedelta(days=1)
-    elif d1.weekday() == 6:
+    elif d1.weekday() == 6:  # Domingo -> Sexta
         d1 -= timedelta(days=2)
     return d1
 
 
 def iniciar_navegador(headless=True):
     opts = Options()
-    opts.binary_location = "/usr/bin/google-chrome"  # 👈 ADICIONA!
+    if os.path.exists("/usr/bin/google-chrome"):
+        opts.binary_location = "/usr/bin/google-chrome"
+        
     if headless:
         opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
@@ -52,9 +72,12 @@ def iniciar_navegador(headless=True):
     opts.add_argument("--disable-gpu")
     opts.add_argument("--window-size=1920,1080")
     
-    # 👇 USA WEBDRIVER-MANAGER!
-    service = Service(ChromeDriverManager().install())
-    return webdriver.Chrome(service=service, options=opts)
+    try:
+        service = Service(ChromeDriverManager().install())
+        return webdriver.Chrome(service=service, options=opts)
+    except Exception as e:
+        print(f"[AVISO] ChromeDriverManager falhou: {e}. Inicializando Chrome padrao...")
+        return webdriver.Chrome(options=opts)
 
 
 def realizar_login_secullum(navegador):
@@ -103,7 +126,6 @@ def navegar_para_calculos(navegador):
         navegador.get("https://pontoweb.secullum.com.br/#/calculos")
         time.sleep(3)
 
-        # Aguarda a presenca do campo dataInicio
         WebDriverWait(navegador, 15).until(
             EC.presence_of_element_located((By.ID, "dataInicio"))
         )
@@ -111,7 +133,6 @@ def navegar_para_calculos(navegador):
         return True
     except Exception as e:
         print(f"[ERRO] Falha ao acessar Calculos: {e}")
-        # Tenta fallback via JavaScript
         try:
             navegador.execute_script("window.location.hash = '#/calculos';")
             time.sleep(4)
@@ -125,12 +146,11 @@ def navegar_para_calculos(navegador):
             return False
 
 
-
 def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
     try:
         time.sleep(3)
 
-        # Fecha modais/popups via JS se existirem
+        # Fecha modais/popups se existirem
         navegador.execute_script("""
             var btnNo = document.getElementById('btnNo');
             if (btnNo) btnNo.click();
@@ -143,7 +163,7 @@ def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
         """)
         time.sleep(1)
 
-        # Define os valores de dataInicio e dataFim via JS + eventos
+        # Define dataInicio e dataFim via JS
         navegador.execute_script("""
             var ids = ['dataInicio', 'dataFim'];
             var vals = [arguments[0], arguments[1]];
@@ -272,21 +292,26 @@ def extrair_tabela_funcionario(navegador):
 
 def obter_mapa_nome_login():
     mapa = {}
+    logins_ativos = set()
     try:
         with Session(engine) as session:
             usuarios = session.query(analistas).all()
             for u in usuarios:
-                if u.nome_completo and u.loguin:
+                ativid = _normalizar(u.atividade)
+                # Filtra apenas funcionários ATIVOS no banco d_analista
+                if (ativid == "ATIVO" or "ATIVO" in ativid) and u.nome_completo and u.loguin:
                     chave = _normalizar(u.nome_completo)
+                    login_clean = u.loguin.strip()
                     mapa[chave] = {
-                        "login": u.loguin.strip(),
+                        "login": login_clean,
                         "nome_db": u.nome_completo.strip(),
                         "banco": (u.banco or "").strip()
                     }
-        print(f"[PONTO SCRAPER] {len(mapa)} operadores carregados do banco d_analista.")
+                    logins_ativos.add(login_clean.lower())
+        print(f"[PONTO SCRAPER] {len(mapa)} funcionarios ATIVOS carregados do banco de dados.")
     except Exception as e:
-        print(f"[ERRO] Falha ao carregar operadores do banco: {e}")
-    return mapa
+        print(f"[ERRO] Falha ao carregar funcionarios ativos do banco: {e}")
+    return mapa, logins_ativos
 
 
 def encontrar_login_por_nome(nome_secullum, mapa_nome_login):
@@ -307,71 +332,109 @@ def encontrar_login_por_nome(nome_secullum, mapa_nome_login):
     return None
 
 
-def executar_scraping_completo_ponto(headless=True, max_funcionarios=120):
+def executar_scraping_completo_ponto(headless=True, max_funcionarios=150):
     print("\n" + "=" * 60)
-    print("[PONTO SCRAPER] INICIANDO SCRAPING (NAVEGACAO POR SETAS)")
+    print("[PONTO SCRAPER] INICIANDO SCRAPING DE PONTO (SECULLUM RH)")
     print("=" * 60)
+    
     hoje = datetime.now()
     d1 = calcular_data_alvo_d1(hoje)
     data_inicio_mes = f"01/{hoje.month:02d}/{hoje.year}"
     data_fim_str = d1.strftime("%d/%m/%Y")
     data_d1_str = d1.strftime("%d/%m/%Y")
-    print(f"[PONTO SCRAPER] Periodo: {data_inicio_mes} a {data_fim_str}")
-    mapa_nome_login = obter_mapa_nome_login()
+    
+    print(f"[PONTO SCRAPER] Data Alvo (D-1): {data_d1_str}")
+    print(f"[PONTO SCRAPER] Periodo do mes: {data_inicio_mes} ate {data_fim_str}")
+    
+    mapa_nome_login, logins_ativos = obter_mapa_nome_login()
+    
     pasta_data = pathlib.Path(__file__).parent.parent.parent / "data"
     os.makedirs(pasta_data, exist_ok=True)
     caminho_cache = pasta_data / "ponto_cache.json"
+    
     cache = {
         "ultima_atualizacao": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "data_alvo_d1": data_d1_str,
         "funcionarios": {}
     }
+    
     navegador = iniciar_navegador(headless=headless)
+    
     try:
         if not realizar_login_secullum(navegador):
-            print("[ERRO] Falha no login.")
+            print("[ERRO] Falha no login Secullum.")
             navegador.quit()
             return False
+            
         if not navegar_para_calculos(navegador):
-            print("[ERRO] Nao acessou Calculos.")
+            print("[ERRO] Nao acessou tela de Calculos.")
             navegador.quit()
             return False
+            
         if not configurar_periodo_calculo(navegador, data_inicio_mes, data_fim_str):
-            print("[ERRO] Falha ao configurar periodo.")
+            print("[ERRO] Falha ao configurar periodo no Secullum.")
             navegador.quit()
             return False
+            
         total_sucesso = 0
         total_sem_mapeamento = 0
         nomes_vistos = set()
+        tentativas_avancar_falhas = 0
+        
         for tentativa in range(max_funcionarios):
             nome_secullum = obter_nome_funcionario_atual(navegador)
+            
             if not nome_secullum:
-                print(f"[PONTO SCRAPER] ({tentativa+1}) Nao leu o nome. Avancando...")
-                avancar_funcionario(navegador)
+                print(f"[PONTO SCRAPER] ({tentativa+1}) Nao leu o nome. Tentando avancar...")
+                if not avancar_funcionario(navegador):
+                    tentativas_avancar_falhas += 1
+                else:
+                    tentativas_avancar_falhas = 0
+                    
+                if tentativas_avancar_falhas >= 3:
+                    print("[PONTO SCRAPER] Botao de avancar falhou 3 vezes consecutivas. Encerrando loop.")
+                    break
                 continue
+                
             print(f"\n[PONTO SCRAPER] ({tentativa+1}) {nome_secullum}")
+            
             if nome_secullum in nomes_vistos:
-                print(f"[PONTO SCRAPER] Nome repetido. Fim da lista.")
+                print(f"[PONTO SCRAPER] Nome repetido ('{nome_secullum}'). Fim da lista de funcionarios no Secullum RH.")
                 break
+                
             nomes_vistos.add(nome_secullum)
+            
+            # Extrai os registros da tabela do Secullum
             registros = extrair_tabela_funcionario(navegador)
             
-            # Filtra para manter somente as datas pertencentes ao mês atual (01/MM/AAAA em diante)
-            mes_atual_str = f"/{hoje.month:02d}/{hoje.year}"
-            registros_mes_atual = [r for r in registros if mes_atual_str in r.get("data", "")]
-            # Usa os registros filtrados do mês atual (se houver)
+            # Formata datas e filtra somente os registros do mês atual (01/MM/AAAA até D-1)
+            mes_atual_fmt = f"/{hoje.month:02d}/{hoje.year}"
+            registros_mes_atual = []
+            
+            for reg in registros:
+                reg["data"] = _formatar_data_registro(reg.get("data", ""), hoje.year)
+                if mes_atual_fmt in reg["data"] or f"/{hoje.month:02d}" in reg.get("data", ""):
+                    registros_mes_atual.append(reg)
+                    
             registros_final = registros_mes_atual if registros_mes_atual else registros
-
-            print(f"[PONTO SCRAPER] -> {len(registros_final)} registros do mes atual.")
-
+            print(f"[PONTO SCRAPER] -> {len(registros_final)} registros no historico do mes.")
+            
+            # Busca o card de D-1 (data_d1_str ex: 21/07/2026)
             registro_d1 = None
             for reg in registros_final:
                 if data_d1_str in reg.get("data", ""):
                     registro_d1 = reg
                     break
-            if not registro_d1 and registros_final:
-                registro_d1 = registros_final[-1]
-
+                    
+            if not registro_d1:
+                registro_d1 = {
+                    "data": f"{data_d1_str} - {d1.strftime('%a')}",
+                    "entrada1": "-", "saida1": "-",
+                    "entrada2": "-", "saida2": "-",
+                    "b_saldo": "00:00", "b_total": "00:00"
+                }
+                
+            # Mapeamento de login no banco de dados (funcionários ativos)
             info_db = encontrar_login_por_nome(nome_secullum, mapa_nome_login)
             if info_db:
                 login = info_db["login"]
@@ -379,50 +442,61 @@ def executar_scraping_completo_ponto(headless=True, max_funcionarios=120):
                     "nome_secullum": nome_secullum,
                     "login": login,
                     "status": "ok",
-                    "card_d1": registro_d1 or {
-                        "data": data_d1_str,
-                        "entrada1": "-", "saida1": "-",
-                        "entrada2": "-", "saida2": "-",
-                        "b_saldo": "00:00", "b_total": "00:00"
-                    },
+                    "card_d1": registro_d1,
                     "historico_mes": registros_final
                 }
-
                 total_sucesso += 1
                 print(f"[PONTO SCRAPER] [OK] -> {login} ({info_db['banco']})")
             else:
-                chave = _normalizar(nome_secullum).replace(" ", "_")
-                cache["funcionarios"][f"_sem_login_{chave}"] = {
+                chave_sem = _normalizar(nome_secullum).replace(" ", "_")
+                cache["funcionarios"][f"_sem_login_{chave_sem}"] = {
                     "nome_secullum": nome_secullum,
                     "login": None,
                     "status": "sem_mapeamento",
-                    "card_d1": registro_d1 or {
-                        "data": data_d1_str,
-                        "entrada1": "-", "saida1": "-",
-                        "entrada2": "-", "saida2": "-",
-                        "b_saldo": "-", "b_total": "-"
-                    },
-                    "historico_mes": registros
+                    "card_d1": registro_d1,
+                    "historico_mes": registros_final
                 }
                 total_sem_mapeamento += 1
-                print(f"[PONTO SCRAPER] [!] Sem mapeamento: '{nome_secullum}'")
+                print(f"[PONTO SCRAPER] [!] Sem mapeamento no banco: '{nome_secullum}'")
+                
+            # Salva o cache incrementalmente a cada funcionário lido
             try:
                 cache["ultima_atualizacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 with open(caminho_cache, "w", encoding="utf-8") as f:
                     json.dump(cache, f, ensure_ascii=False, indent=2)
             except Exception as e_save:
                 print(f"[PONTO SCRAPER] Erro ao salvar cache: {e_save}")
-            if not avancar_funcionario(navegador):
-                print("[PONTO SCRAPER] Nao avancou. Encerrando.")
+                
+            # Avança para o próximo funcionário
+            nome_anterior = nome_secullum
+            clicou_avancar = avancar_funcionario(navegador)
+            
+            if not clicou_avancar:
+                tentativas_avancar_falhas += 1
+                print(f"[PONTO SCRAPER] Nao encontrou botao de avancar (falha {tentativas_avancar_falhas}/3).")
+            else:
+                time.sleep(1.5)
+                novo_nome = obter_nome_funcionario_atual(navegador)
+                if novo_nome == nome_anterior:
+                    tentativas_avancar_falhas += 1
+                    print(f"[PONTO SCRAPER] Nome nao mudou apos avancar (falha {tentativas_avancar_falhas}/3).")
+                else:
+                    tentativas_avancar_falhas = 0
+                    
+            if tentativas_avancar_falhas >= 3:
+                print("[PONTO SCRAPER] Botao de avancar nao funcionou por 3 tentativas consecutivas. Encerrando.")
                 break
+                
         print(f"\n{'=' * 60}")
         print(f"[PONTO SCRAPER] CONCLUIDO! Mapeados: {total_sucesso} | Sem mapeamento: {total_sem_mapeamento}")
-        print(f"[PONTO SCRAPER] Cache: {caminho_cache}")
+        print(f"[PONTO SCRAPER] Cache salvo em: {caminho_cache}")
         print(f"{'=' * 60}")
+        
         navegador.quit()
         return True
+        
     except Exception as e:
-        print(f"[ERRO] Falha: {e}")
+        print(f"[ERRO] Falha geral no scraper: {e}")
         import traceback
         traceback.print_exc()
         try:
@@ -430,3 +504,7 @@ def executar_scraping_completo_ponto(headless=True, max_funcionarios=120):
         except Exception:
             pass
         return False
+
+
+if __name__ == "__main__":
+    executar_scraping_completo_ponto(headless=False)
