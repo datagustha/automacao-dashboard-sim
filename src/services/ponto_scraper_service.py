@@ -296,94 +296,132 @@ def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
 
 
 def obter_nome_funcionario_atual(navegador):
-    """Le o nome do funcionario na tela de Calculos usando o seletor exato #react-select-3--value-item."""
+    """Le o nome do funcionario usando o seletor #react-select-3--value-item.
+    Aguarda ate 20s pelo elemento e ate 10s pelo texto nao-vazio."""
     try:
-        el = WebDriverWait(navegador, 10).until(
+        # 1. Aguarda o elemento existir na pagina
+        el = WebDriverWait(navegador, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#react-select-3--value-item"))
         )
+        # 2. Aguarda o texto estar preenchido (nao vazio)
+        WebDriverWait(navegador, 10).until(
+            lambda d: el.text.strip() != ""
+        )
+        time.sleep(0.5)  # pequena pausa para garantir estabilidade
         nome = el.text.strip()
         if nome:
             return nome
-    except Exception:
-        pass
-        
+    except Exception as e:
+        print(f"[PONTO SCRAPER] [DEBUG] Erro ao ler nome: {e}")
+        # Salva HTML para diagnostico em caso de falha
+        try:
+            pasta_data = pathlib.Path(__file__).parent.parent.parent / "data"
+            dump = pasta_data / "debug_nome.html"
+            with open(dump, "w", encoding="utf-8") as f:
+                f.write(navegador.page_source)
+            print(f"[PONTO SCRAPER] [DEBUG] HTML salvo em: {dump}")
+        except Exception:
+            pass
+
+    # Fallback: qualquer .Select-value-label com texto
     try:
         labels = navegador.find_elements(By.CSS_SELECTOR, ".Select-value-label")
         for label in labels:
             txt = label.text.strip()
-            if txt:
+            if txt and not txt.startswith("57734"):  # ignora o seletor de empresa
                 return txt
     except Exception:
         pass
-        
+
     return None
 
 
 def avancar_funcionario(navegador):
-    """Clica no botao 'Visualizar o funcionario posterior' confirmado pelo diagnostico."""
-    # 1. Seletor EXATO confirmado pelo diagnostico:
-    #    button#09: title='Visualizar o funcionario posterior' class='btn button-icon arrow'
-    seletores_diretos = [
-        "button[title='Visualizar o funcionario posterior']",
-        "button[title*='posterior']",
-        "button.button-icon.arrow",  # pega o segundo (posterior), o primeiro e 'anterior'
-    ]
-    for sel in seletores_diretos:
-        try:
-            elems = navegador.find_elements(By.CSS_SELECTOR, sel)
-            # Para 'button.button-icon.arrow' existem 2: [0]=anterior, [1]=posterior
-            alvo = elems[-1] if elems else None
-            if alvo and alvo.is_displayed():
-                alvo.click()
-                time.sleep(2)
-                print(f"[PONTO SCRAPER] Avancou funcionario via '{sel}'!")
-                return True
-        except Exception:
-            continue
-
-    # 2. Fallback via XPath com title
+    """Clica no botao avançar funcionario.
+    ID exato confirmado pelo DevTools: id='rightArrow'
+    """
+    # 1. SELETOR EXATO por ID (confirmado pelo DevTools)
     try:
-        btn = navegador.find_element(By.XPATH,
-            "//button[@title='Visualizar o funcionario posterior' or contains(@title,'posterior')]")
+        btn = WebDriverWait(navegador, 5).until(
+            EC.element_to_be_clickable((By.ID, "rightArrow"))
+        )
         btn.click()
         time.sleep(2)
-        print("[PONTO SCRAPER] Avancou funcionario via XPath title!")
+        print("[PONTO SCRAPER] Avancou via #rightArrow!")
         return True
     except Exception:
         pass
 
-    # 3. Fallback via JS: clica no botao com i.fa-arrow-right
+    # 2. Por titulo exato (confirmado pelo DevTools)
+    try:
+        btn = navegador.find_element(By.CSS_SELECTOR,
+            "button[title='Visualizar o funcionario posterior']")
+        btn.click()
+        time.sleep(2)
+        print("[PONTO SCRAPER] Avancou via title='...posterior'!")
+        return True
+    except Exception:
+        pass
+
+    # 3. Ícone fa-arrow-right -> botao pai (confirmado no DevTools)
+    try:
+        icone = WebDriverWait(navegador, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "i.fa-arrow-right"))
+        )
+        botao = icone.find_element(By.XPATH, "./ancestor::button")
+        botao.click()
+        time.sleep(2)
+        print("[PONTO SCRAPER] Avancou via i.fa-arrow-right ancestor!")
+        return True
+    except Exception:
+        pass
+
+    # 4. Fallback JS pelo ID ou title
     try:
         clicou = navegador.execute_script("""
+            // Tenta pelo ID exato
+            var btn = document.getElementById('rightArrow');
+            if(btn){ btn.click(); return 'id:rightArrow'; }
             // Tenta pelo title
             var btns = document.querySelectorAll('button');
             for(var i=0; i<btns.length; i++){
                 var t = btns[i].getAttribute('title') || '';
-                if(t.indexOf('posterior') >= 0){
-                    btns[i].click();
-                    return 'title:posterior';
-                }
+                if(t.indexOf('posterior') >= 0){ btns[i].click(); return 'title:posterior'; }
             }
-            // Fallback: i.fa-arrow-right dentro de button
-            var icons = document.querySelectorAll('i.fa-arrow-right');
-            for(var j=0; j<icons.length; j++){
-                var btn = icons[j].closest('button') || icons[j].parentElement;
-                if(btn && btn.offsetWidth > 0){
-                    btn.click();
-                    return 'icon:arrow-right';
-                }
+            // Fallback: fa-arrow-right
+            var icon = document.querySelector('i.fa-arrow-right');
+            if(icon){
+                var b = icon.closest('button') || icon.parentElement;
+                if(b){ b.click(); return 'icon:fa-arrow-right'; }
             }
             return false;
         """)
         if clicou:
             time.sleep(2)
-            print(f"[PONTO SCRAPER] Avancou funcionario via JS ({clicou}).")
+            print(f"[PONTO SCRAPER] Avancou via JS ({clicou}).")
             return True
+    except Exception:
+        pass
+
+    # Diagnostico em caso de falha total
+    try:
+        btns_info = navegador.execute_script("""
+            var btns = document.querySelectorAll('button');
+            var r = [];
+            for(var i=0; i<btns.length; i++){
+                r.push(btns[i].id + ' | ' + (btns[i].getAttribute('title')||'') + ' | ' + btns[i].className);
+            }
+            return r;
+        """)
+        print("[PONTO SCRAPER] [DEBUG] Botoes na pagina:")
+        for b in btns_info:
+            print(f"  -> {b}")
     except Exception:
         pass
 
     print("[PONTO SCRAPER] Nao encontrou botao de avancar funcionario.")
     return False
+
 
 
 def extrair_tabela_funcionario(navegador):
