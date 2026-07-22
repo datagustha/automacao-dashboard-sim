@@ -20,6 +20,9 @@ from sqlalchemy.orm import Session
 from src.config.database import engine
 from src.models.LoginModel import analistas
 
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+
 
 def _normalizar(texto):
     if not texto:
@@ -41,13 +44,17 @@ def calcular_data_alvo_d1(data_referencia=None):
 
 def iniciar_navegador(headless=True):
     opts = Options()
+    opts.binary_location = "/usr/bin/google-chrome"  # 👈 ADICIONA!
     if headless:
         opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--window-size=1920,1080")
-    return webdriver.Chrome(options=opts)
+    
+    # 👇 USA WEBDRIVER-MANAGER!
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=opts)
 
 
 def realizar_login_secullum(navegador):
