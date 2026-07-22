@@ -60,6 +60,26 @@ def calcular_data_alvo_d1(data_referencia=None):
     return d1
 
 
+def fechar_popups_secullum(navegador):
+    try:
+        navegador.execute_script("""
+            var ids = ['modal-portaria-671-ok', 'btnNo', 'btnOk', 'btn-ok'];
+            ids.forEach(function(id){
+                var el = document.getElementById(id);
+                if (el) el.click();
+            });
+            var btns = document.querySelectorAll('.ReactModal__Overlay button, .modal button');
+            for(var i=0; i<btns.length; i++){
+                var txt = (btns[i].innerText || '').toLowerCase();
+                if(txt.includes('não') || txt.includes('ok') || txt.includes('fechar') || txt.includes('entendi')){
+                    btns[i].click();
+                }
+            }
+        """)
+    except Exception:
+        pass
+
+
 def iniciar_navegador(headless=True):
     opts = Options()
     if os.path.exists("/usr/bin/google-chrome"):
@@ -104,15 +124,19 @@ def realizar_login_secullum(navegador):
         campo_senha.clear()
         campo_senha.send_keys(senha)
         navegador.find_element(By.ID, "login").click()
-        print("[PONTO SCRAPER] Login solicitado.")
-        time.sleep(5)
-        try:
-            WebDriverWait(navegador, 5).until(
-                EC.element_to_be_clickable((By.ID, "modal-portaria-671-ok"))
-            ).click()
-            print("[PONTO SCRAPER] Popup inicial fechado.")
-        except TimeoutException:
-            pass
+        print("[PONTO SCRAPER] Login solicitado. Aguardando autenticacao...")
+
+        # Aguarda autenticacao e redirecionamento
+        inicio_login = time.time()
+        while time.time() - inicio_login < 20:
+            url_curr = navegador.current_url
+            if "pontoweb.secullum.com.br" in url_curr or "#/" in url_curr:
+                print(f"[PONTO SCRAPER] Login efetuado com sucesso! URL atual: {url_curr}")
+                break
+            time.sleep(1)
+
+        time.sleep(3)
+        fechar_popups_secullum(navegador)
         return True
     except Exception as e:
         print(f"[ERRO] Falha no login: {e}")
@@ -120,47 +144,104 @@ def realizar_login_secullum(navegador):
 
 
 def navegar_para_calculos(navegador):
-    """Navega diretamente para a tela de Cálculos via URL Hash do Secullum RH."""
-    print("[PONTO SCRAPER] Navegando para Calculos (https://pontoweb.secullum.com.br/#/calculos)...")
-    try:
-        navegador.get("https://pontoweb.secullum.com.br/#/calculos")
-        time.sleep(3)
+    """Navega para a tela de Cálculos do Secullum RH com múltiplos fallbacks e diagnósticos."""
+    print("[PONTO SCRAPER] Navegando para a tela de Calculos...")
+    fechar_popups_secullum(navegador)
 
-        WebDriverWait(navegador, 15).until(
-            EC.presence_of_element_located((By.ID, "dataInicio"))
-        )
-        print("[PONTO SCRAPER] Tela de Calculos carregada com sucesso!")
-        return True
-    except Exception as e:
-        print(f"[ERRO] Falha ao acessar Calculos: {e}")
+    # 1. Tenta clicar no menu 'Cálculos' na interface visual
+    clicou_menu = False
+    try:
+        seletores_menu = [
+            "//a[contains(@href, 'calculos')]",
+            "//a[contains(translate(text(), 'CÁLCULOS', 'cálculos'), 'cálculos')]",
+            "//span[contains(translate(text(), 'CÁLCULOS', 'cálculos'), 'cálculos')]",
+            "//li[contains(., 'Cálculos')]//a",
+            "i.fa-calculator",
+            "[title*='lculos']"
+        ]
+        for sel in seletores_menu:
+            try:
+                if sel.startswith("//"):
+                    elems = navegador.find_elements(By.XPATH, sel)
+                else:
+                    elems = navegador.find_elements(By.CSS_SELECTOR, sel)
+                for elem in elems:
+                    if elem.is_displayed():
+                        elem.click()
+                        print("[PONTO SCRAPER] Clicou no menu Calculos visualmente!")
+                        clicou_menu = True
+                        break
+                if clicou_menu:
+                    break
+            except Exception:
+                continue
+    except Exception as e_menu:
+        print(f"[AVISO] Tentativa de clique no menu visual: {e_menu}")
+
+    # 2. Se nao clicou via menu, ajusta hash/URL via JS
+    if not clicou_menu:
         try:
+            print("[PONTO SCRAPER] Redirecionando via Hash JS para #/calculos...")
             navegador.execute_script("window.location.hash = '#/calculos';")
-            time.sleep(4)
-            WebDriverWait(navegador, 10).until(
-                EC.presence_of_element_located((By.ID, "dataInicio"))
-            )
-            print("[PONTO SCRAPER] Tela de Calculos carregada via Hash JS!")
-            return True
-        except Exception as e2:
-            print(f"[ERRO] Fallback hash falhou: {e2}")
-            return False
+            time.sleep(2)
+        except Exception:
+            pass
+
+    # 3. Aguarda o carregamento de um dos elementos indicativos da tela de Calculos
+    inicio_espera = time.time()
+    while time.time() - inicio_espera < 20:
+        fechar_popups_secullum(navegador)
+
+        for seletor in [
+            (By.ID, "dataInicio"),
+            (By.ID, "btnAtualizar"),
+            (By.CSS_SELECTOR, "input[name='dataInicio']"),
+            (By.CSS_SELECTOR, ".tabela-calculos-wrapper"),
+            (By.CSS_SELECTOR, ".Select-value-label"),
+            (By.ID, "react-select-3--value-item")
+        ]:
+            try:
+                elem = navegador.find_element(*seletor)
+                if elem:
+                    print(f"[PONTO SCRAPER] Tela de Calculos carregada com sucesso! Elemento encontrado: {seletor}")
+                    return True
+            except Exception:
+                continue
+
+        time.sleep(1.5)
+
+        # Se ainda nao encontrou apos 10s, forca navegador.get() direto
+        if time.time() - inicio_espera > 10 and not clicou_menu:
+            try:
+                url_atual = navegador.current_url
+                if "#/calculos" not in url_atual:
+                    print("[PONTO SCRAPER] Forcando navegador.get('https://pontoweb.secullum.com.br/#/calculos')...")
+                    navegador.get("https://pontoweb.secullum.com.br/#/calculos")
+            except Exception:
+                pass
+
+    # Se falhar tudo, grava relatorio detalhado para diagnostico
+    print(f"[ERRO] Falha ao acessar Calculos.")
+    print(f"[DIAGNOSTICO] URL Atual: {navegador.current_url}")
+    print(f"[DIAGNOSTICO] Titulo Pagina: {navegador.title}")
+    try:
+        pasta_data = pathlib.Path(__file__).parent.parent.parent / "data"
+        os.makedirs(pasta_data, exist_ok=True)
+        dump_path = pasta_data / "debug_secullum_error.html"
+        with open(dump_path, "w", encoding="utf-8") as f:
+            f.write(navegador.page_source)
+        print(f"[DIAGNOSTICO] HTML da pagina salvo em: {dump_path}")
+        print(f"[DIAGNOSTICO] Primeiros 1000 chars do HTML:\n{navegador.page_source[:1000]}")
+    except Exception as e_dump:
+        print(f"[DIAGNOSTICO] Erro ao salvar dump HTML: {e_dump}")
+
+    return False
 
 
 def configurar_periodo_calculo(navegador, data_inicio_str, data_fim_str):
     try:
         time.sleep(3)
-
-        # Fecha modais/popups se existirem
-        navegador.execute_script("""
-            var btnNo = document.getElementById('btnNo');
-            if (btnNo) btnNo.click();
-            var modalBtns = document.querySelectorAll('.ReactModal__Overlay button');
-            for(var i=0; i<modalBtns.length; i++){
-                if(modalBtns[i].id === 'btnNo' || modalBtns[i].innerText.includes('Não') || modalBtns[i].innerText.includes('OK')){
-                    modalBtns[i].click();
-                }
-            }
-        """)
+        fechar_popups_secullum(navegador)
         time.sleep(1)
 
         # Define dataInicio e dataFim via JS
@@ -298,7 +379,7 @@ def obter_mapa_nome_login():
             usuarios = session.query(analistas).all()
             for u in usuarios:
                 ativid = _normalizar(u.atividade)
-                # Filtra apenas funcionários ATIVOS no banco d_analista
+                # Filtra apenas funcionarios ATIVOS no banco d_analista
                 if (ativid == "ATIVO" or "ATIVO" in ativid) and u.nome_completo and u.loguin:
                     chave = _normalizar(u.nome_completo)
                     login_clean = u.loguin.strip()
