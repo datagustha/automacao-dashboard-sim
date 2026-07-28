@@ -23,7 +23,8 @@ from src.services.db_service import (
 )
 from src.services.analytics_service import (
     calcular_performance_operador,
-    calcular_tempo_de_casa
+    calcular_tempo_de_casa,
+    montar_matriz_faixa_vs_mes
 )
 
 def buscar_dados_semear(atividade: str = 'ATIVO') -> List[Dict[str, Any]]:
@@ -52,43 +53,83 @@ def _mes_anterior(ano: int, mes: int) -> Tuple[int, int]:
         return ano - 1, 12
     return ano, mes - 1
 
+def _parse_date_safe(data: Any) -> Optional[date]:
+    if not data:
+        return None
+    if isinstance(data, datetime):
+        return data.date()
+    if isinstance(data, date):
+        return data
+    s = str(data)[:10].strip()
+    try:
+        if '-' in s:
+            return datetime.strptime(s, '%Y-%m-%d').date()
+        elif '/' in s:
+            return datetime.strptime(s, '%d/%m/%Y').date()
+    except Exception:
+        pass
+    return None
+
 
 def _pagamento_no_mes(pagamento: dict, ano: int, mes: int) -> bool:
-    """Verifica se um pagamento pertence ao mês/ano especificado."""
-    data = pagamento.get('dtPgto')
-    if not data:
+    """Verifica se um pagamento pertence ao ano e mês informados."""
+    dt_obj = _parse_date_safe(pagamento.get('dtPgto'))
+    if not dt_obj:
         return False
-    try:
-        if isinstance(data, datetime):
-            return data.year == ano and data.month == mes
-        data_obj = datetime.strptime(str(data)[:10], '%Y-%m-%d')
-        return data_obj.year == ano and data_obj.month == mes
-    except Exception:
-        return False
+    return dt_obj.year == ano and dt_obj.month == mes
 
 
 def _pagamento_no_range(pagamento: dict, data_inicio: Optional[str], data_fim: Optional[str]) -> bool:
     """Verifica se um pagamento está dentro do range de datas fornecido."""
     if not data_inicio and not data_fim:
         return True
-    data = pagamento.get('dtPgto')
-    if not data:
+    dt = _parse_date_safe(pagamento.get('dtPgto'))
+    if not dt:
         return False
     try:
-        if isinstance(data, datetime):
-            dt = data.date()
-        else:
-            dt = datetime.strptime(str(data)[:10], '%Y-%m-%d').date()
-
         if data_inicio:
-            inicio = datetime.strptime(data_inicio[:10], '%Y-%m-%d').date()
-            if dt < inicio:
+            inicio = _parse_date_safe(data_inicio)
+            if inicio and dt < inicio:
                 return False
         if data_fim:
-            fim = datetime.strptime(data_fim[:10], '%Y-%m-%d').date()
-            if dt > fim:
+            fim = _parse_date_safe(data_fim)
+            if fim and dt > fim:
                 return False
         return True
+    except Exception:
+        return False
+
+
+import holidays
+
+def _pagamento_no_du_range(pagamento: dict, du_inicio: Optional[int], du_fim: Optional[int]) -> bool:
+    """Verifica se um pagamento ocorreu dentro do intervalo de dias úteis (du_inicio a du_fim) do seu mês."""
+    if du_inicio is None and du_fim is None:
+        return True
+    dt_obj = _parse_date_safe(pagamento.get('dtPgto'))
+    if not dt_obj:
+        return False
+    try:
+        if dt_obj.weekday() >= 5:
+            return False
+
+        a, m = dt_obj.year, dt_obj.month
+        total_dias = monthrange(a, m)[1]
+        feriados_br = holidays.country_holidays('BR', years=a)
+        from dateutil.easter import easter
+        from datetime import timedelta as _td
+        feriados_br.update({easter(a) + _td(days=60): "Corpus Christi"})
+
+        du_rank = 0
+        for d in range(1, total_dias + 1):
+            cur_dt = date(a, m, d)
+            if cur_dt.weekday() < 5 and cur_dt not in feriados_br:
+                du_rank += 1
+                if cur_dt == dt_obj:
+                    ini = du_inicio or 1
+                    fim = du_fim or 99
+                    return ini <= du_rank <= fim
+        return False
     except Exception:
         return False
 
@@ -102,7 +143,9 @@ def montar_ranking(
     contrato_filtro: str = '',
     faixa_filtro: str = 'todas',
     data_inicio: Optional[str] = None,
-    data_fim: Optional[str] = None
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], int, float, int, float, float, float, Optional[str]]:
     """
     Calcula a performance de cada operador, aplica os filtros de busca e
@@ -130,8 +173,48 @@ def montar_ranking(
     tem_range = bool(data_inicio or data_fim)
 
     # ---------------------------------------------------------------
+    # PRÉ-PASSAGEM: calcula a data máxima de pagamento (última baixa) do
+    # BANCO INTEIRO, sempre olhando TODOS os operadores do banco.
+    #
+    # IMPORTANTE: isso é feito ANTES e INDEPENDENTE do filtro de operador/
+    # contrato/faixa. Se calculássemos essa data dentro do loop filtrado
+    # abaixo, ao selecionar um operador específico a "última baixa" passaria
+    # a refletir só aquele operador (ex: baixas até dia 22), quando o banco
+    # inteiro já recebeu baixas até um dia mais recente (ex: dia 24). Isso
+    # cortava a evolução diária, a visão por banco e o filtro por operador
+    # no dia errado.
+    # ---------------------------------------------------------------
+    for op_global in operadores:
+        if banco == 'SEMEAR':
+            pagamentos_global = Buscar_pagamento_semear(op_global) or []
+        else:
+            pagamentos_global = Buscar_pagamento_agoracred(op_global) or []
+
+        if pagamentos_global and not isinstance(pagamentos_global[0], dict):
+            pagamentos_global = [p.__dict__ for p in pagamentos_global]
+
+        if tem_range:
+            pagamentos_periodo_global = [p for p in pagamentos_global if _pagamento_no_range(p, data_inicio, data_fim)]
+        else:
+            pagamentos_periodo_global = [p for p in pagamentos_global if _pagamento_no_mes(p, ano, mes)]
+
+        if du_inicio is not None or du_fim is not None:
+            pagamentos_periodo_global = [p for p in pagamentos_periodo_global if _pagamento_no_du_range(p, du_inicio, du_fim)]
+
+        for p in pagamentos_periodo_global:
+            dt_val = p.get('dtPgto')
+            if not dt_val:
+                continue
+            try:
+                dt_obj = dt_val if isinstance(dt_val, datetime) else datetime.strptime(str(dt_val)[:10], '%Y-%m-%d')
+                if max_data_banco is None or dt_obj > max_data_banco:
+                    max_data_banco = dt_obj
+            except Exception:
+                pass
+
+    # ---------------------------------------------------------------
     # PRIMEIRA PASSAGEM: coleta pagamentos e performance de cada operador
-    # Também coleta a data máxima de pagamento do banco inteiro
+    # (max_data_banco já está definido acima e NÃO é mais recalculado aqui)
     # ---------------------------------------------------------------
     # Lista temporária para recalcular feito_dia após saber o max_data_banco
     dados_temporarios = []
@@ -181,7 +264,16 @@ def montar_ranking(
         # Se tem filtro de range, filtra por data range; caso contrário, filtra por mês/ano
         if tem_range:
             pagamentos_periodo = [p for p in pagamentos if _pagamento_no_range(p, data_inicio, data_fim)]
-            pagamentos_ant = []  # Sem período anterior quando usa range
+            # Calcula o mesmo intervalo equivalente no mês anterior para comparar
+            try:
+                from dateutil.relativedelta import relativedelta
+                dt_ini = datetime.strptime(data_inicio[:10], '%Y-%m-%d') if data_inicio else None
+                dt_fim = datetime.strptime(data_fim[:10], '%Y-%m-%d') if data_fim else None
+                dt_ini_ant = (dt_ini - relativedelta(months=1)).strftime('%Y-%m-%d') if dt_ini else None
+                dt_fim_ant = (dt_fim - relativedelta(months=1)).strftime('%Y-%m-%d') if dt_fim else None
+                pagamentos_ant = [p for p in pagamentos if _pagamento_no_range(p, dt_ini_ant, dt_fim_ant)]
+            except Exception:
+                pagamentos_ant = []
             mes_para_meta = mes
             ano_para_meta = ano
         else:
@@ -190,21 +282,12 @@ def montar_ranking(
             mes_para_meta = mes
             ano_para_meta = ano
 
-        # Coleta a data máxima de pagamento do período deste operador
-        # para compor a data máxima GLOBAL do banco inteiro
-        for p in pagamentos_periodo:
-            dt_val = p.get('dtPgto')
-            if not dt_val:
-                continue
-            try:
-                if isinstance(dt_val, datetime):
-                    dt_obj = dt_val
-                else:
-                    dt_obj = datetime.strptime(str(dt_val)[:10], '%Y-%m-%d')
-                if max_data_banco is None or dt_obj > max_data_banco:
-                    max_data_banco = dt_obj  # atualiza o máximo do banco
-            except Exception:
-                pass
+        if du_inicio is not None or du_fim is not None:
+            pagamentos_periodo = [p for p in pagamentos_periodo if _pagamento_no_du_range(p, du_inicio, du_fim)]
+            pagamentos_ant = [p for p in pagamentos_ant if _pagamento_no_du_range(p, du_inicio, du_fim)]
+
+        # (max_data_banco já foi calculado no pré-passo acima, de forma
+        # independente do operador/contrato/faixa filtrados aqui)
 
         # Calcula a performance do operador (mês atual / período)
         performance = calcular_performance_operador(
@@ -307,29 +390,118 @@ def montar_ranking(
     hoje = datetime.now()
     total_dias_mes = monthrange(ano, mes)[1]
 
+    # Pré-calcula dias úteis totais do mês para usar na projeção
+    import holidays as _hols_rank
+    from dateutil.easter import easter as _easter_rank
+    from datetime import timedelta as _td_rank
+    _feriados_rank = _hols_rank.country_holidays('BR', years=ano)
+    _feriados_rank.update({_easter_rank(ano) + _td_rank(days=60): 'Corpus Christi'})
+    total_du_mes = sum(
+        1 for d in range(1, total_dias_mes + 1)
+        if date(ano, mes, d).weekday() < 5 and date(ano, mes, d) not in _feriados_rank
+    )
+
     for item in dados_temporarios:
         faturamento = item['faturamento']
 
         # Feito/dia usa a data máxima do banco inteiro, não o dia atual
         # Isso garante que o cálculo reflita a realidade das baixas bancárias
         if tem_range:
-            feito_dia = faturamento  # Sem lógica diária para range
-            dias_passados_calc = 1
-            total_dias_calc = 1
+            # Calcula quantos dias corridos existem no range filtrado
+            # e usa total de dias úteis do mês para projeção mensal
+            try:
+                from datetime import timedelta as _td2
+                _dt_ini = datetime.strptime(data_inicio[:10], '%Y-%m-%d').date() if data_inicio else date(ano, mes, 1)
+                # Usa a data máxima do banco como referência de "até quando foi recebido"
+                _dt_fim_range = max_data_banco.date() if max_data_banco else (
+                    datetime.strptime(data_fim[:10], '%Y-%m-%d').date() if data_fim else date(ano, mes, total_dias_mes)
+                )
+                # Dias úteis passados no range (início até data máxima do banco)
+                dias_passados_calc = max(1, sum(
+                    1 for i in range((_dt_fim_range - _dt_ini).days + 1)
+                    if (_dt_ini + _td2(days=i)).weekday() < 5
+                    and (_dt_ini + _td2(days=i)) not in _feriados_rank
+                ))
+                total_dias_calc = max(1, total_du_mes)
+            except Exception:
+                dias_passados_calc = 1
+                total_dias_calc = 1
+            feito_dia = faturamento / dias_passados_calc if dias_passados_calc > 0 else 0.0
         else:
-            total_dias_calc = total_dias_mes
+            total_dias_calc = total_du_mes if total_du_mes > 0 else total_dias_mes
             # Usa dia_divisor (data máxima do banco) para meses atuais
-            # Para meses passados usa o total de dias do mês
+            # Para meses passados usa o total de dias úteis do mês
             if hoje.year == ano and hoje.month == mes:
-                dias_passados_calc = dia_divisor  # DATA MÁXIMA DO BANCO INTEIRO
+                # Dias úteis passados até a data máxima do banco
+                if max_data_banco:
+                    dias_passados_calc = sum(
+                        1 for d in range(1, max_data_banco.day + 1)
+                        if date(ano, mes, d).weekday() < 5 and date(ano, mes, d) not in _feriados_rank
+                    )
+                else:
+                    dias_passados_calc = dia_divisor
+                dias_passados_calc = max(1, dias_passados_calc)
             else:
-                dias_passados_calc = total_dias_mes
+                dias_passados_calc = total_dias_calc
             feito_dia = faturamento / dias_passados_calc if dias_passados_calc > 0 else 0.0
 
         # Calcula projeção do mês com base no ritmo do feito/dia
         projecao = (faturamento / dias_passados_calc * total_dias_calc) if dias_passados_calc > 0 else 0.0
         meta_val = item['meta_val']
         projecao_percentual = (projecao / meta_val * 100) if meta_val > 0 else 0.0
+
+        # Calcula dias sem recebimento do operador individual
+        max_dt_op: Optional[datetime] = None
+        for p in item['pagamentos']:
+            dt_v = p.get('dtPgto')
+            if not dt_v:
+                continue
+            try:
+                dt_o = datetime.strptime(str(dt_v)[:10], '%Y-%m-%d') if not isinstance(dt_v, datetime) else dt_v
+                if dt_o.year == ano and dt_o.month == mes:
+                    if max_dt_op is None or dt_o > max_dt_op:
+                        max_dt_op = dt_o
+            except Exception:
+                pass
+
+        # Calcula dias úteis sem recebimento do operador em relação à última baixa do banco
+        ref_dt = max_data_banco or datetime.now()
+        ultimo_valor_pgto = 0.0
+        ultima_data_op_str = '-'
+
+        if max_dt_op:
+            # Seleciona o pagamento mais recente do operador no mês para obter o valor
+            for p in item['pagamentos']:
+                dt_v = p.get('dtPgto')
+                if not dt_v:
+                    continue
+                try:
+                    dt_o = datetime.strptime(str(dt_v)[:10], '%Y-%m-%d') if not isinstance(dt_v, datetime) else dt_v
+                    if dt_o == max_dt_op:
+                        ultimo_valor_pgto = float(p.get('valorTotal', 0.0) or 0.0)
+                        break
+                except Exception:
+                    pass
+
+            ultima_data_op_str = max_dt_op.strftime('%d/%m/%Y')
+
+            # Conta exclusivamente DIAS ÚTEIS (seg-sex excluindo feriados BR)
+            # entre a data do último pagamento do operador e a última baixa do banco
+            from datetime import timedelta
+            feriados_br = holidays.country_holidays('BR', years=ref_dt.year)
+            start_d = max_dt_op.date()
+            end_d = ref_dt.date()
+
+            dias_sem_rec = 0
+            curr_d = start_d + timedelta(days=1)
+            while curr_d <= end_d:
+                if curr_d.weekday() < 5 and curr_d not in feriados_br:
+                    dias_sem_rec += 1
+                curr_d += timedelta(days=1)
+        else:
+            dias_sem_rec = dias_passados_calc
+
+        alerta_op = dias_sem_rec >= 2
 
         # Monta a estrutura de dados do operador para o ranking
         ranking_list.append({
@@ -355,9 +527,14 @@ def montar_ranking(
             'projecao_percentual': round(projecao_percentual, 2),
             'dias_trabalhados': dias_passados_calc,
             'total_dias_uteis': total_dias_calc,
-            'ultima_baixa': ultima_baixa_str,  # "Baixas até dia X" — mesma para todos do banco
-            'pagamentos_brutos': item['pagamentos']  # Mantém referência para cálculo de faixas e evolução
+            'ultima_baixa': ultima_baixa_str,
+            'alerta_sem_pgto': alerta_op,
+            'dias_sem_pgto': dias_sem_rec,
+            'ultima_data_op': ultima_data_op_str,
+            'ultimo_valor_pgto': round(ultimo_valor_pgto, 2),
+            'pagamentos_brutos': item['pagamentos']
         })
+
 
     # Calcula ticket médio atual e anterior
     ticket_medio = total_faturamento / total_operacoes if total_operacoes > 0 else 0.0
@@ -368,13 +545,83 @@ def montar_ranking(
     return ranking_list, faixas_acumuladas, total_operacoes, total_faturamento, total_operacoes_ant, total_faturamento_ant, ticket_medio, ticket_medio_ant, ultima_baixa_str
 
 
-def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[Dict[str, Any]]:
+def montar_evolucao(
+    ranking_list: List[Dict[str, Any]],
+    ano: int,
+    mes: int,
+    data_inicio: Optional[str] = None,
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None,
+    max_data_banco_str: Optional[str] = None
+) -> List[Dict[str, Any]]:
     """
     Consolida o faturamento diário para o período selecionado somando
     os valores de faturamento de todos os pagamentos processados.
+    Preenche com R$ 0,00 todos os dias úteis (seg-sex) sem pagamento.
+    Respeita os filtros de data e dia útil.
+    Limita o intervalo exibido até max_data_banco_str (última baixa real do banco)
+    para evitar dias futuros zerados.
     """
+    from calendar import monthrange
+    import holidays as _hols
+    from dateutil.easter import easter as _easter
+    from datetime import timedelta as _td
+
     evolucao_diaria = {}
     tem_range = bool(data_inicio or data_fim)
+
+    # --- determina intervalo a ser preenchido ---
+    if tem_range and data_inicio and data_fim:
+        try:
+            ref_ini = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+            ref_fim = datetime.strptime(data_fim, '%Y-%m-%d').date()
+        except Exception:
+            ref_ini = date(ano, mes, 1)
+            ref_fim = date(ano, mes, monthrange(ano, mes)[1])
+    else:
+        ref_ini = date(ano, mes, 1)
+        ref_fim = date(ano, mes, monthrange(ano, mes)[1])
+
+    # Limita ref_fim à última data real de baixa do banco (evita dias zerados futuros)
+    # Aplica apenas quando não há filtro de data explícito (sem tem_range)
+    if not tem_range and max_data_banco_str:
+        try:
+            max_dt = datetime.strptime(max_data_banco_str, '%d/%m/%Y').date()
+            if max_dt < ref_fim:
+                ref_fim = max_dt
+        except Exception:
+            pass
+
+    # --- feriados para evitar exibir feriado como DU ---
+    feriados = _hols.country_holidays('BR', years=ano)
+    feriados.update({_easter(ano) + _td(days=60): 'Corpus Christi'})
+
+    # Dias abreviados: 0=seg ... 6=dom
+    DIAS_ABREV = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+
+    # Pre-popula todos os dias uteis do intervalo com 0
+    d = ref_ini
+    du_cont = 0
+    while d <= ref_fim:
+        if d.weekday() < 5 and d not in feriados:
+            du_cont += 1
+            # Se houver filtro de DU, filtra apenas os DUs dentro do intervalo
+            if du_inicio is not None and du_cont < du_inicio:
+                d += _td(days=1)
+                continue
+            if du_fim is not None and du_cont > du_fim:
+                d += _td(days=1)
+                continue
+
+            ds = d.strftime('%Y-%m-%d')
+            nome_dia = DIAS_ABREV[d.weekday()]
+            evolucao_diaria[ds] = {
+                'total': 0.0,
+                'quantidade': 0,
+                'data_formatada': f"{d.day} - {nome_dia}"
+            }
+        d += _td(days=1)
 
     for op in ranking_list:
         for p in op.get('pagamentos_brutos', []):
@@ -382,7 +629,6 @@ def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data
             if not data:
                 continue
 
-            # Verifica se o pagamento é do período correto
             if tem_range:
                 if not _pagamento_no_range(p, data_inicio, data_fim):
                     continue
@@ -390,20 +636,38 @@ def montar_evolucao(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data
                 if not _pagamento_no_mes(p, ano, mes):
                     continue
 
-            # Formata a data como string YYYY-MM-DD
+            if du_inicio is not None or du_fim is not None:
+                if not _pagamento_no_du_range(p, du_inicio, du_fim):
+                    continue
+
             if isinstance(data, datetime):
                 data_str = data.strftime('%Y-%m-%d')
+                dia_dt = data.date()
             else:
                 data_str = str(data)[:10]
+                try:
+                    dia_dt = datetime.strptime(data_str, '%Y-%m-%d').date()
+                except Exception:
+                    continue
 
-            evolucao_diaria.setdefault(data_str, {'total': 0.0, 'quantidade': 0})
-            evolucao_diaria[data_str]['total'] += (p.get('valorTotal') or 0.0)
-            evolucao_diaria[data_str]['quantidade'] += 1
+            # Só inclui se estiver presente no dicionário de dias pré-populados (respeita o filtro)
+            if data_str in evolucao_diaria:
+                evolucao_diaria[data_str]['total'] += (p.get('valorTotal') or 0.0)
+                evolucao_diaria[data_str]['quantidade'] += 1
 
-    return [{'data': k, 'total': v['total'], 'quantidade': v['quantidade']} for k, v in sorted(evolucao_diaria.items())]
+    return [
+        {
+            'data': k,
+            'total': v['total'],
+            'quantidade': v['quantidade'],
+            'data_formatada': v.get('data_formatada', k)
+        }
+        for k, v in sorted(evolucao_diaria.items())
+    ]
 
 
-def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[Dict[str, Any]]:
+
+def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_inicio: Optional[str] = None, data_fim: Optional[str] = None, du_inicio: Optional[int] = None, du_fim: Optional[int] = None) -> List[Dict[str, Any]]:
     """
     Monta a distribuição de faturamento e quantidade de pagamentos por faixas de atraso para os operadores.
     Mapeia os valores totais cobrados e a quantidade de cada operador por faixa (faseAtraso).
@@ -425,6 +689,11 @@ def montar_faixas(ranking_list: List[Dict[str, Any]], ano: int, mes: int, data_i
             else:
                 if not _pagamento_no_mes(p, ano, mes):
                     continue
+
+            if du_inicio is not None or du_fim is not None:
+                if not _pagamento_no_du_range(p, du_inicio, du_fim):
+                    continue
+
 
             fase = p.get('faseAtraso') or 'Outros'
             fases_encontradas.add(str(fase))
@@ -485,6 +754,9 @@ def montar_evolucao_operadores(
             perc_meta_ant = (fat_anterior / meta_ant * 100) if meta_ant > 0 else 0.0
             variacao_meta_pp = perc_meta_atual - perc_meta_ant
 
+            projecao = op.get('projecao', 0.0)
+            projecao_pct = op.get('projecao_percentual') or ((projecao / meta_atual * 100) if meta_atual > 0 else 0.0)
+
             evolucao.append({
                 'banco': banco,
                 'operador': op.get('login', '-'),
@@ -495,16 +767,24 @@ def montar_evolucao_operadores(
                 'variacao_percentual': variacao_pct,
                 'perc_meta_atual': perc_meta_atual,
                 'perc_meta_anterior': perc_meta_ant,
-                'variacao_meta_pp': variacao_meta_pp
+                'variacao_meta_pp': variacao_meta_pp,
+                'projecao': projecao,
+                'projecao_percentual': round(projecao_pct, 1),
+                'meta': meta_atual
             })
 
+    # Ordena os operadores por quem mais possui % de projeção atingida (decrescente)
+    evolucao.sort(key=lambda x: x.get('projecao_percentual', 0.0), reverse=True)
+
     return evolucao
+
 
 
 def montar_historico_mensal_banco(
     operadores: List[Dict[str, Any]],
     banco: str,
-    ano: int
+    ano: int,
+    ultima_baixa: str = None
 ) -> List[Dict[str, Any]]:
     """
     Consolida o faturamento e a meta de todos os operadores do banco
@@ -571,12 +851,31 @@ def montar_historico_mensal_banco(
             except Exception:
                 continue
 
+    from src.services.analytics_service import _contar_dias_uteis
+    hoje = datetime.now()
+
     # Monta resultado
     resultado = []
     for m in range(1, 13):
         fat = fat_por_mes[m]
         meta = meta_por_mes[m]
         perc = (fat / meta * 100) if meta > 0 else 0.0
+        bateu = "Sim" if (meta > 0 and fat >= meta) else "Não"
+
+        # Projeção para o mês atual / aberto
+        proj_m = fat
+        proj_perc_m = perc
+        if ano == hoje.year and m == hoje.month:
+            data_ref = hoje
+            if ultima_baixa:
+                try:
+                    data_ref = datetime.strptime(ultima_baixa, '%d/%m/%Y')
+                except Exception:
+                    pass
+            d_tot, d_pass = _contar_dias_uteis(ano, m, data_ref)
+            if d_pass > 0:
+                proj_m = (fat / d_pass) * d_tot
+                proj_perc_m = (proj_m / meta * 100) if meta > 0 else 0.0
 
         # Calcula variação em relação ao mês anterior
         fat_ant = fat_por_mes[m - 1] if m > 1 else 0.0
@@ -595,6 +894,9 @@ def montar_historico_mensal_banco(
             'variacao': round(variacao, 2),
             'variacao_pct': round(variacao_pct, 2),
             'perc_meta_ant': round(perc_meta_ant, 2),
+            'bateu': bateu,
+            'projecao': round(proj_m, 2),
+            'projecao_percentual': round(proj_perc_m, 2)
         })
 
     return resultado
@@ -603,12 +905,15 @@ def montar_historico_mensal_banco(
 def montar_dashboard_adm(
     ano: int,
     mes: int,
+    banco: str = 'TODOS',
     atividade: str = 'ATIVO',
     operador_filtro: str = 'TODOS',
     contrato_filtro: str = '',
     faixa_filtro: str = 'todas',
     data_inicio: Optional[str] = None,
-    data_fim: Optional[str] = None
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Função principal que coordena a montagem completa do painel do Administrador.
@@ -619,7 +924,6 @@ def montar_dashboard_adm(
     operadores_agoracred = buscar_dados_agoracred(atividade)
 
     # 2. Monta o ranking e dados de performance dos operadores (SEMEAR)
-    # O 9º valor retornado é a data máxima de pagamento do banco (ex: "14/07/2026")
     ranking_semear, _, ops_semear, fat_semear, ops_semear_ant, fat_semear_ant, ticket_semear, ticket_semear_ant, ultima_baixa_semear = montar_ranking(
         operadores=operadores_semear,
         banco='SEMEAR',
@@ -629,7 +933,9 @@ def montar_dashboard_adm(
         contrato_filtro=contrato_filtro,
         faixa_filtro=faixa_filtro,
         data_inicio=data_inicio,
-        data_fim=data_fim
+        data_fim=data_fim,
+        du_inicio=du_inicio,
+        du_fim=du_fim
     )
 
     # 3. Monta o ranking e dados de performance dos operadores (AGORACRED)
@@ -642,22 +948,38 @@ def montar_dashboard_adm(
         contrato_filtro=contrato_filtro,
         faixa_filtro=faixa_filtro,
         data_inicio=data_inicio,
-        data_fim=data_fim
+        data_fim=data_fim,
+        du_inicio=du_inicio,
+        du_fim=du_fim
     )
 
+    # Adiciona a indicação do banco para cada operador do ranking
+    for op in ranking_semear:
+        op['banco'] = 'SEMEAR'
+    for op in ranking_agoracred:
+        op['banco'] = 'AGORACRED'
+
     # 4. Processa a evolução diária de faturamento para cada banco
-    evolucao_semear = montar_evolucao(ranking_semear, ano, mes, data_inicio, data_fim)
-    evolucao_agoracred = montar_evolucao(ranking_agoracred, ano, mes, data_inicio, data_fim)
+    # Passa ultima_baixa para limitar os dias exibidos até a última baixa real (sem dias futuros zerados)
+    evolucao_semear = montar_evolucao(ranking_semear, ano, mes, data_inicio, data_fim, du_inicio, du_fim, ultima_baixa_semear)
+    evolucao_agoracred = montar_evolucao(ranking_agoracred, ano, mes, data_inicio, data_fim, du_inicio, du_fim, ultima_baixa_agoracred)
+
 
     # 5. Processa as faixas de atraso dos operadores (SEMEAR)
-    faixas_semear = montar_faixas(ranking_semear, ano, mes, data_inicio, data_fim)
+    faixas_semear = montar_faixas(ranking_semear, ano, mes, data_inicio, data_fim, du_inicio, du_fim)
 
     # 6. Calcula metas totais por banco (soma das metas individuais)
     meta_semear = sum(op.get('meta', 0.0) for op in ranking_semear)
     meta_agoracred = sum(op.get('meta', 0.0) for op in ranking_agoracred)
 
-    # 7. Monta a evolução geral dos operadores com dados reais
-    evolucao_operadores = montar_evolucao_operadores(ranking_semear, ranking_agoracred)
+    # 7. Monta a evolução geral dos operadores com dados reais (respeitando o filtro de banco)
+    banco_upper = (banco or 'TODOS').upper()
+    if banco_upper == 'SEMEAR':
+        evolucao_operadores = montar_evolucao_operadores(ranking_semear, [])
+    elif banco_upper == 'AGORACRED':
+        evolucao_operadores = montar_evolucao_operadores([], ranking_agoracred)
+    else:
+        evolucao_operadores = montar_evolucao_operadores(ranking_semear, ranking_agoracred)
 
     # 8. Calcula KPIs consolidados
     total_ops = ops_semear + ops_agoracred
@@ -667,16 +989,35 @@ def montar_dashboard_adm(
     ticket_medio_anterior_grupo = (fat_semear_ant + fat_agoracred_ant) / total_ops_ant if total_ops_ant > 0 else 0.0
 
     # 9. Histórico de 12 meses consolidado por banco (para Resultado Mês a Mês)
-    historico_semear = montar_historico_mensal_banco(operadores_semear, 'SEMEAR', ano)
-    historico_agoracred = montar_historico_mensal_banco(operadores_agoracred, 'AGORACRED', ano)
+    historico_semear = montar_historico_mensal_banco(operadores_semear, 'SEMEAR', ano, ultima_baixa_semear)
+    historico_agoracred = montar_historico_mensal_banco(operadores_agoracred, 'AGORACRED', ano, ultima_baixa_agoracred)
 
-    # 10. Remove pagamentos brutos antes de serializar
+    # 10. Matriz Faixas de Atraso vs Mês para o SEMEAR
+    todos_pag_semear = []
+    for op in ranking_semear:
+        todos_pag_semear.extend(op.get('pagamentos_brutos', []))
+    matriz_faixas_semear = montar_matriz_faixa_vs_mes(todos_pag_semear, ano, 'SEMEAR', data_inicio, data_fim, du_inicio, du_fim)
+
+
+    # 11a. Visão Trimestral por DU — SEMEAR e AGORACRED
+    from src.services.analytics_service import montar_comparativo_trimestre_du
+
+    todos_pag_agoracred = []
+    for op in ranking_agoracred:
+        todos_pag_agoracred.extend(op.get('pagamentos_brutos', []))
+
+    trimestre_du_semear = montar_comparativo_trimestre_du(todos_pag_semear, ano, mes, 'SEMEAR', data_inicio, data_fim, du_inicio, du_fim, ultima_baixa_semear)
+    trimestre_du_agoracred = montar_comparativo_trimestre_du(todos_pag_agoracred, ano, mes, 'AGORACRED', data_inicio, data_fim, du_inicio, du_fim, ultima_baixa_agoracred)
+
+
+
+    # 12. Remove pagamentos brutos antes de serializar
     for op in ranking_semear:
         op.pop('pagamentos_brutos', None)
     for op in ranking_agoracred:
         op.pop('pagamentos_brutos', None)
 
-    # 11. Retorna o dicionário final com o formato exato esperado pelo frontend
+    # 13. Retorna o dicionário final com o formato exato esperado pelo frontend
     return {
         'semear': {
             'faturamento': fat_semear,
@@ -690,7 +1031,8 @@ def montar_dashboard_adm(
             'operadores': ranking_semear,
             'faixas': faixas_semear,
             'resultado_mes_a_mes': historico_semear,
-            # Data máxima de pagamento do SEMEAR (usada no banner "Baixas até dia X")
+            'matriz_faixas_mes': matriz_faixas_semear,
+            'trimestre_du': trimestre_du_semear,
             'ultima_baixa': ultima_baixa_semear,
         },
         'agoracred': {
@@ -704,15 +1046,16 @@ def montar_dashboard_adm(
             'evolucao': evolucao_agoracred,
             'operadores': ranking_agoracred,
             'resultado_mes_a_mes': historico_agoracred,
-            # Data máxima de pagamento do AGORACRED (usada no banner "Baixas até dia X")
+            'trimestre_du': trimestre_du_agoracred,
             'ultima_baixa': ultima_baixa_agoracred,
         },
         'total_operacoes': total_ops,
         'operacoes_anterior': total_ops_ant,
         'ticket_medio': ticket_medio_grupo,
         'ticket_medio_anterior': ticket_medio_anterior_grupo,
-        'evolucao_operadores': evolucao_operadores
+        'evolucao_operadores': evolucao_operadores,
     }
+
 
 
 # ==============================================================
@@ -758,10 +1101,10 @@ def buscar_tma_todos_operadores(ano: int, mes: int, atividade: str = 'ATIVO') ->
     return resultado
 
 
-def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', operador_filtro: str = 'TODOS', data_inicio: str = None, data_fim: str = None, atividade: str = 'ATIVO') -> Dict[str, Any]:
+def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', operador_filtro: str = 'TODOS', data_inicio: str = None, data_fim: str = None, atividade: str = 'ATIVO', du_inicio: Optional[int] = None, du_fim: Optional[int] = None) -> Dict[str, Any]:
     """
     Busca pagamentos individuais (contrato a contrato) de todos os operadores
-    filtrados pelo banco, operador e período selecionados.
+    filtrados pelo banco, operador, período e dias úteis selecionados.
     """
     pagamentos_filtrados = []
     operadores_disponiveis = {}
@@ -794,6 +1137,11 @@ def buscar_pagamentos_individuais_adm(ano: int, mes: int, banco: str = 'TODOS', 
                         continue
                 else:
                     if not _pagamento_no_mes(p, ano, mes):
+                        continue
+
+                # Filtragem por Dia Útil (DU)
+                if du_inicio is not None or du_fim is not None:
+                    if not _pagamento_no_du_range(p, du_inicio, du_fim):
                         continue
 
                 # Formata data

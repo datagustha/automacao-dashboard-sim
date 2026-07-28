@@ -2,10 +2,11 @@
    RESET E VARIÁVEIS DE COR
    ================================================================ */
 :root {
-    --purple-main: #7e3d97;
+    --purple-main: #7E3E9A;
     --purple-light: #9b5bad;
     --purple-dark: #612d75;
     --emerald: #10B981;
+    --agoracred-green: #10B981;
     --gray-bg: #F9FAFB;
     --text-main: #111827;
     --text-muted: #6B7280;
@@ -186,9 +187,13 @@ body {
    ================================================================ */
 .main-content {
     margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    max-width: calc(100% - var(--sidebar-width));
     min-height: 100vh;
     padding: 24px 32px;
     background-color: var(--gray-bg);
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 /* ================================================================
@@ -366,13 +371,16 @@ body {
 }
 
 .card-full h3 i {
-    color: var(--purple-main);
+    color: inherit;
 }
 
 /* ================================================================
    TABELAS
    ================================================================ */
 .table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     overflow-x: auto;
     max-height: 480px;
     overflow-y: auto;
@@ -633,6 +641,13 @@ body {
 
 .table-wrapper tbody tr:hover {
     background-color: rgba(126, 61, 151, 0.04) !important;
+}
+
+/* Impede hover de sobrescrever linhas de TOTAL (com background inline escuro) */
+.table-wrapper tbody tr.row-total:hover,
+.table-wrapper tbody tr[style*="background"]:hover {
+    filter: brightness(1.08);
+    background-color: inherit !important;
 }
 
 .btn, .sidebar-nav li a {

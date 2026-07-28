@@ -237,6 +237,51 @@ function renderizarDashboard(dados) {
     // EVOLUÇÃO
     // ============================================================
     renderizarEvolucao(dados);
+
+    // ============================================================
+    // VISÃO TRIMESTRAL POR DIA ÚTIL (OPERADOR)
+    // Compara faturamento dos 3 últimos meses por dia útil.
+    // ============================================================
+    if (typeof renderizarTrimestreDUOp === 'function') {
+        renderizarTrimestreDUOp(dados.trimestre_du || null);
+    }
+
+    // ============================================================
+    // RELATÓRIO FAIXA DE ATRASO VS MÊS (EXCLUSIVO SEMEAR)
+    // Mostra faturamento por faixa de atraso em cada mês do ano.
+    // ============================================================
+    if (typeof renderizarMatrizFaixasOp === 'function') {
+        const bancoOp = (dados.operador && dados.operador.banco) || 'SEMEAR';
+        if (bancoOp === 'SEMEAR') {
+            renderizarMatrizFaixasOp(dados.matriz_faixas_mes || null);
+        } else {
+            // Oculta o card para AGORACRED
+            const containerFaixas = document.getElementById('card-faixas-vs-mes-op-container');
+            if (containerFaixas) containerFaixas.style.display = 'none';
+        }
+    }
+
+    // ============================================================
+    // ALERTA DE INATIVIDADE (> 2 DIAS SEM RECEBIMENTO)
+    // Banner exibido no topo da página do operador.
+    // ============================================================
+    (() => {
+        // Usa o id real do HTML: alerta-sem-pgto-modal
+        const banner = document.getElementById('alerta-sem-pgto-modal');
+        if (!banner) return;
+        const perf = dados.performance || {};
+        const diasSem = perf.dias_sem_pgto;
+
+        if (diasSem !== undefined && diasSem >= 2) {
+            banner.style.display = 'block';
+            const titulo = document.getElementById('alerta-sem-pgto-titulo');
+            if (titulo) {
+                titulo.textContent = `⚠️ ATENÇÃO: Você está há ${diasSem} dias úteis sem registrar recebimentos!`;
+            }
+        } else {
+            banner.style.display = 'none';
+        }
+    })();
 }
 
 // ================================================================
@@ -264,6 +309,124 @@ function renderizarPerformance(performance) {
             <td>${performance.dias_trabalhados || 0}/${performance.total_dias_uteis || 0}</td>
         </tr>
     `;
+}
+
+// ================================================================
+// RENDERIZAÇÃO - VISÃO TRIMESTRAL POR DIA ÚTIL (OPERADOR)
+// Recebe o objeto trimestre_du com: { colunas, linhas, totais }
+// ================================================================
+
+function renderizarTrimestreDUOp(dados) {
+    const tbody = document.getElementById('tabela-trimestre-du-op');
+    if (!tbody) return;
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#95a5a6;padding:20px;">Sem dados trimestrais disponíveis para o período.</td></tr>';
+        return;
+    }
+
+    // Atualiza cabeçalhos com nomes dos meses reais
+    const colunas = dados.colunas || [];
+    const nomesCols = ['th-trimestre-m0', 'th-trimestre-m1', 'th-trimestre-m2'];
+    colunas.forEach((col, i) => {
+        const el = document.getElementById(nomesCols[i]);
+        if (el) el.textContent = col;
+    });
+
+    const linhas = dados.linhas || [];
+    let html = '';
+
+    linhas.forEach(linha => {
+        const vAtual = linha.v_atual || 0;
+        const vM1 = linha.v_m1 || 0;
+        const vM2 = linha.v_m2 || 0;
+
+        // Destaque verde se mês atual > mês anterior
+        const corAtual = vAtual > vM1 ? '#16a34a' : (vAtual < vM1 ? '#dc2626' : '#374151');
+        const bgAtual = vAtual > vM1 ? '#dcfce7' : (vAtual < vM1 ? '#fee2e2' : 'transparent');
+
+        html += `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:8px 14px;text-align:center;font-weight:700;color:#7c3aed;">${linha.dia_util || '-'}</td>
+                <td style="padding:8px 14px;text-align:center;color:var(--text-muted);">${linha.data_atual || '-'}</td>
+                <td style="padding:8px 14px;text-align:center;font-weight:700;color:${corAtual};background:${bgAtual};border-radius:6px;">${formatarMoeda(vAtual)}</td>
+                <td style="padding:8px 14px;text-align:center;color:#374151;">${vM1 > 0 ? formatarMoeda(vM1) : '<span style="color:#9ca3af;">—</span>'}</td>
+                <td style="padding:8px 14px;text-align:center;color:#374151;">${vM2 > 0 ? formatarMoeda(vM2) : '<span style="color:#9ca3af;">—</span>'}</td>
+            </tr>
+        `;
+    });
+
+    // Linha de totais
+    if (dados.totais) {
+        const t = dados.totais;
+        html += `
+            <tr style="background:#ede9fe;font-weight:800;border-top:2px solid #7c3aed;">
+                <td colspan="2" style="padding:10px 14px;text-align:center;color:#4a1d8c;">TOTAL DO PERÍODO</td>
+                <td style="padding:10px 14px;text-align:center;color:#7c3aed;">${formatarMoeda(t.v_atual || 0)}</td>
+                <td style="padding:10px 14px;text-align:center;color:#6d28d9;">${t.v_m1 > 0 ? formatarMoeda(t.v_m1) : '—'}</td>
+                <td style="padding:10px 14px;text-align:center;color:#5b21b6;">${t.v_m2 > 0 ? formatarMoeda(t.v_m2) : '—'}</td>
+            </tr>
+        `;
+    }
+
+    tbody.innerHTML = html;
+}
+
+// ================================================================
+// RENDERIZAÇÃO - RELATÓRIO FAIXA DE ATRASO VS MÊS (OPERADOR)
+// Recebe o objeto matriz_faixas_mes com: { ano, meses, linhas, totais }
+// Exibido somente para operadores SEMEAR.
+// ================================================================
+
+function renderizarMatrizFaixasOp(dados) {
+    const container = document.getElementById('card-faixas-vs-mes-op-container');
+    const tbody = document.getElementById('tabela-faixa-vs-mes-op');
+    if (!tbody) return;
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+
+    // Exibe o container (oculto por padrão, só aparece para SEMEAR)
+    if (container) container.style.display = 'block';
+
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const linhas = dados.linhas || [];
+    let html = '';
+
+    linhas.forEach((linha, idx) => {
+        const bgRow = idx % 2 === 0 ? '#ffffff' : '#fcf5ff';
+        let rowHtml = `<tr style="background:${bgRow};border-bottom:1px solid #e5e7eb;">
+            <td style="padding:9px 14px;font-weight:700;color:var(--purple-main);border-right:2px solid #e5e7eb;white-space:nowrap;">${linha.faixa || '-'}</td>`;
+
+        meses.forEach(mes => {
+            const val = linha[mes] || 0;
+            const cor = val > 0 ? '#6b21a8' : '#9ca3af';
+            rowHtml += `<td style="padding:9px 12px;text-align:center;color:${cor};font-weight:${val > 0 ? '600' : '400'};">${val > 0 ? formatarMoeda(val) : '—'}</td>`;
+        });
+
+        const totalAno = linha.total_ano || 0;
+        rowHtml += `<td style="padding:9px 12px;text-align:center;font-weight:800;color:#6b21a8;background:#f3e8ff;">${formatarMoeda(totalAno)}</td>`;
+        rowHtml += '</tr>';
+        html += rowHtml;
+    });
+
+    // Linha de totais
+    if (dados.totais) {
+        const t = dados.totais;
+        let totalRowHtml = `<tr class="tr-total-row" style="background:var(--purple-main);color:#ffffff;font-weight:800;">
+            <td style="padding:10px 14px;border-right:2px solid #581c87;color:#ffffff;background:var(--purple-main);">TOTAL</td>`;
+        meses.forEach(mes => {
+            const val = t[mes] || 0;
+            totalRowHtml += `<td style="padding:10px 12px;text-align:center;color:#ffffff;background:var(--purple-main);">${val > 0 ? formatarMoeda(val) : '—'}</td>`;
+        });
+        totalRowHtml += `<td class="td-total-sum" style="padding:10px 12px;text-align:center;background:#581c87;color:#ffffff;">${formatarMoeda(t.total_ano || 0)}</td>`;
+        totalRowHtml += '</tr>';
+        html += totalRowHtml;
+    }
+
+    tbody.innerHTML = html;
 }
 
 // ================================================================
@@ -583,8 +746,9 @@ function renderizarTabelaPerformanceOpNova(perf) {
                 const partes = ultimaBaixa.split('-');
                 dataFmt = `${partes[2].substring(0,2)}/${partes[1]}/${partes[0]}`;
             }
-            const diaBaixa = dataFmt.split('/')[0];
-            txtEl.innerHTML = `<strong>Baixas até ${dataFmt}</strong> <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${parseInt(diaBaixa)} dias)</span>`;
+            const duCalculado = typeof calcularDUdaData === 'function' ? calcularDUdaData(dataFmt) : '';
+            const tagDu = duCalculado ? ` <span style="background:rgba(255,255,255,0.7);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;border:1px solid currentColor;">${duCalculado}</span>` : '';
+            txtEl.innerHTML = `<strong>Baixas até ${dataFmt}</strong>${tagDu} <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${duCalculado ? duCalculado : parseInt(diaBaixa) + ' dias'})</span>`;
             const isAgoracred = window.operadorLogado?.banco === 'AGORACRED';
             bannerEl.style.background = isAgoracred ? 'linear-gradient(90deg,#10b98120,#34d39910)' : 'linear-gradient(90deg,#7e3d9720,#a855f710)';
             bannerEl.style.borderColor = isAgoracred ? '#10b98140' : '#a855f740';
@@ -782,8 +946,9 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
                 const partes = ultimaBaixa.split('-');
                 dataFmtAba = `${partes[2].substring(0,2)}/${partes[1]}/${partes[0]}`;
             }
-            const diaBaixaAba = dataFmtAba.split('/')[0];
-            txtElAba.innerHTML = `<strong>Baixas até ${dataFmtAba}</strong> <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${parseInt(diaBaixaAba)} dias)</span>`;
+            const duCalculadoAba = typeof calcularDUdaData === 'function' ? calcularDUdaData(dataFmtAba) : '';
+            const tagDuAba = duCalculadoAba ? ` <span style="background:rgba(255,255,255,0.7);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;border:1px solid currentColor;">${duCalculadoAba}</span>` : '';
+            txtElAba.innerHTML = `<strong>Baixas até ${dataFmtAba}</strong>${tagDuAba} <span style="color:var(--text-muted);font-weight:400;">(Feito/Dia = Faturamento ÷ ${duCalculadoAba ? duCalculadoAba : parseInt(diaBaixaAba) + ' dias'})</span>`;
             const isAgoracred = window.operadorLogado?.banco === 'AGORACRED';
             bannerElAba.style.background = isAgoracred ? 'linear-gradient(90deg,#10b98120,#34d39910)' : 'linear-gradient(90deg,#7e3d9720,#a855f710)';
             bannerElAba.style.borderColor = isAgoracred ? '#10b98140' : '#a855f740';
@@ -879,6 +1044,18 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
     document.getElementById('op-dias-rest').textContent = perf.dias_restantes || 0;
     document.getElementById('op-total-dias').textContent = perf.total_dias_uteis || 0;
 
+    // --- ALERTA DE INATIVIDADE (> 2 DIAS) ---
+    const modalAlerta = document.getElementById('alerta-sem-pgto-modal');
+    if (modalAlerta) {
+        if (perf && perf.alerta_sem_pgto) {
+            modalAlerta.style.display = 'block';
+            const txtSub = document.getElementById('alerta-sem-pgto-sub');
+            if (txtSub) txtSub.textContent = `Você está há ${perf.dias_sem_pgto} dias sem registrar recebimentos nesta carteira.`;
+        } else {
+            modalAlerta.style.display = 'none';
+        }
+    }
+
     // --- 3. RECEBIMENTO DIÁRIO ---
     const tbodyDiario = document.getElementById('tabela-recebimento-diario-op');
     if (tbodyDiario) {
@@ -887,41 +1064,23 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
             theadDiario.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
         }
         if (diarios.length === 0) {
-            tbodyDiario.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:20px;">Nenhum faturamento registrado nos dias úteis.</td></tr>';
+            tbodyDiario.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6B7280;padding:20px;">Nenhum faturamento registrado nos dias úteis.</td></tr>';
         } else {
-            const mesSel = document.getElementById('filtro-mes')?.value || getMesAtual();
-            const anoSel = document.getElementById('filtro-ano')?.value || getAnoAtual();
-
-            tbodyDiario.innerHTML = diarios.map((d, idx) => {
-                let diaNum = d.dia;
-                let dataStr = d.data || d.dtPgto || '';
-
-                if ((diaNum === undefined || diaNum === null || diaNum === 0) && dataStr) {
-                    diaNum = parseInt(dataStr.split('-')[2], 10) || 0;
-                }
-
-                let dataFormatada = '—';
-                if (dataStr && dataStr.includes('-')) {
-                    const partes = dataStr.split('-');
-                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-                } else if (diaNum > 0) {
-                    const diaP = diaNum < 10 ? '0' + diaNum : diaNum;
-                    const mesP = mesSel < 10 ? '0' + mesSel : mesSel;
-                    dataFormatada = `${diaP}/${mesP}/${anoSel}`;
-                }
-
-                const diaExib = diaNum > 0 ? diaNum : '—';
-                const qtd = d.quantidade ?? d.qtd ?? d.contratos ?? '—';
-                const metaBatida = d.meta_batida || 'Não';
+            tbodyDiario.innerHTML = diarios.map((d) => {
+                const dataExib = d.data_formatada || d.data || '—';
+                const duExib = d.dia_util || '—';
+                const qtd = d.quantidade ?? d.qtd ?? 0;
+                const realizadoStr = d.realizado || 'R$ 0,00';
+                const metaDiariaStr = d.meta_diaria || '—';
+                const metaBatida = d.meta_batida || '❌ Não';
 
                 return `
                     <tr>
-                        <td style="text-align:center;font-weight:600;">${diaExib}</td>
-                        <td style="text-align:center;">${idx + 1}</td>
-                        <td style="text-align:center;">${dataFormatada}</td>
+                        <td style="text-align:center;font-weight:600;">${dataExib}</td>
+                        <td style="text-align:center;">${duExib}</td>
                         <td style="text-align:center;">${qtd}</td>
-                        <td style="text-align:center;font-weight:600;">${d.realizado}</td>
-                        <td style="text-align:center;">${d.meta_diaria}</td>
+                        <td style="text-align:center;font-weight:600;">${realizadoStr}</td>
+                        <td style="text-align:center;">${metaDiariaStr}</td>
                         <td style="text-align:center;">
                             <span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:11px;background:${metaBatida.includes('Sim')?'#dcfce7':'#fee2e2'};color:${metaBatida.includes('Sim')?'#16a34a':'#dc2626'};"> ${metaBatida}</span>
                         </td>
@@ -931,15 +1090,38 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
         }
     }
 
+    // --- 3.1. VISÃO TRIMESTRAL POR DIA ÚTIL ---
+    if (typeof renderizarTrimestreDUOp === 'function') {
+        renderizarTrimestreDUOp(dadosPerformance.trimestre_du);
+    }
+    // Guarda referência dos dados de performance
+    window._ultimoResultadoPerformance = dadosPerformance;
+
     // --- 4. FATURAMENTO POR SEMANA ---
     renderizarSemanalOp();
 
+
     // --- 5. RESULTADO MÊS A MÊS ---
     const tbodyMesAPerf = document.getElementById('tabela-resultado-mes-a-mes-perf');
-    if (tbodyMesAPerf && window.dadosCompletos && window.dadosCompletos.resultado_mes_a_mes) {
-        const listaCompleta = window.dadosCompletos.resultado_mes_a_mes;
-        const comVariacao = listaCompleta.map((item, idx) => {
-            const anterior = idx > 0 ? listaCompleta[idx - 1] : null;
+    const listaResultadoMes = (dadosPerformance && dadosPerformance.resultado_mes_a_mes) || (window.dadosCompletos && window.dadosCompletos.resultado_mes_a_mes) || [];
+    if (tbodyMesAPerf && listaResultadoMes.length > 0) {
+        const isAgora = window.operadorLogado?.banco === 'AGORACRED';
+        const mainColor = isAgora ? 'var(--emerald)' : 'var(--purple-main)';
+        const projHeaderColor = isAgora ? '#047857' : '#5b21b6';
+        const projCellBg = isAgora ? '#d1fae5' : '#f3e8ff';
+        const projMoneyColor = isAgora ? '#047857' : '#5b21b6';
+
+        const theadMesA = tbodyMesAPerf.previousElementSibling;
+        if (theadMesA) {
+            theadMesA.style.backgroundColor = mainColor;
+            const thVal = document.getElementById('th-projecao-val');
+            const thPct = document.getElementById('th-projecao-pct');
+            if (thVal) thVal.style.backgroundColor = projHeaderColor;
+            if (thPct) thPct.style.backgroundColor = projHeaderColor;
+        }
+
+        const comVariacao = listaResultadoMes.map((item, idx) => {
+            const anterior = idx > 0 ? listaResultadoMes[idx - 1] : null;
             const fatAnt = anterior ? (anterior.faturamento || 0) : null;
             let variacaoPct = null;
             if (fatAnt !== null && fatAnt > 0) {
@@ -947,33 +1129,47 @@ function renderizarMinhaPerformanceOp(dadosPerformance) {
             }
             return { ...item, variacaoPct };
         });
-        const comMeta = comVariacao.filter(item => (item.meta || 0) > 0);
+        const comDados = comVariacao.filter(item => (item.faturamento || 0) > 0 || (item.meta || 0) > 0);
 
-        if (comMeta.length === 0) {
-            tbodyMesAPerf.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:20px;">Nenhum mês com meta definida no período</td></tr>';
+        if (comDados.length === 0) {
+            tbodyMesAPerf.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:20px;">Nenhum mês com histórico no período</td></tr>';
         } else {
-            tbodyMesAPerf.innerHTML = comMeta.map(item => {
+            tbodyMesAPerf.innerHTML = comDados.map(item => {
                 const bateuCor = item.bateu === 'Sim' ? '#16a34a' : '#dc2626';
                 const bateuBg = item.bateu === 'Sim' ? '#dcfce7' : '#fee2e2';
                 const varHtml = item.variacaoPct === null
                     ? '<span style="color:#9ca3af;">—</span>'
                     : `<span style="color:${item.variacaoPct >= 0 ? '#16a34a' : '#dc2626'};font-weight:700;">${item.variacaoPct >= 0 ? '▲' : '▼'} ${Math.abs(item.variacaoPct).toFixed(1)}%</span>`;
+
+                const proj = item.projecao || 0;
+                const projPct = item.projecao_percentual || 0;
+                const projCor = projPct >= 100 ? '#16a34a' : projPct >= 80 ? '#d97706' : '#dc2626';
+                const projHtml = proj > 0
+                    ? `<span style="font-weight:700;color:${projMoneyColor};">${formatarMoeda(proj)}</span>`
+                    : '<span style="color:#9ca3af;">—</span>';
+                const projPctHtml = proj > 0
+                    ? `<span style="font-weight:700;color:${projCor};">${projPct.toFixed(1)}%</span>`
+                    : '<span style="color:#9ca3af;">—</span>';
+
                 return `
                     <tr>
                         <td style="text-align:center;font-weight:600;">${item.mes}</td>
                         <td style="text-align:center;">${item.quantidade}</td>
                         <td style="text-align:center;font-weight:600;">${formatarMoeda(item.faturamento)}</td>
                         <td style="text-align:center;">${formatarMoeda(item.meta)}</td>
-                        <td style="text-align:center;font-weight:600;">${item.perc_meta.toFixed(1)}%</td>
+                        <td style="text-align:center;font-weight:600;">${(item.perc_meta || 0).toFixed(1)}%</td>
                         <td style="text-align:center;">${varHtml}</td>
                         <td style="text-align:center;">
                             <span style="background:${bateuBg};color:${bateuCor};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">${item.bateu}</span>
                         </td>
+                        <td style="text-align:center;background:${projCellBg};">${projHtml}</td>
+                        <td style="text-align:center;background:${projCellBg};">${projPctHtml}</td>
                     </tr>
                 `;
             }).join('');
         }
     }
+
 
     // --- 6. VARIAÇÃO VS MÊS ANTERIOR ---
     const divVar = document.getElementById('op-variacao-periodo-detalhe');
@@ -1014,8 +1210,8 @@ function renderizarSemanalOp() {
         theadSemanal.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
     }
 
-    const pagamentos = pagamentosRecentesOpData;
-    if (pagamentos.length === 0) {
+    const pagamentos = (window.dadosCompletos && window.dadosCompletos.ultimos_pagamentos) || pagamentosRecentesOpData || [];
+    if (!pagamentos || pagamentos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6B7280;padding:20px;">Sem pagamentos no período.</td></tr>';
         return;
     }
@@ -1029,13 +1225,21 @@ function renderizarSemanalOp() {
     ];
 
     pagamentos.forEach(p => {
-        const dia = parseInt(p.dtPgto.split('-')[2], 10);
+        if (!p.dtPgto) return;
+        let dia = NaN;
+        const s = String(p.dtPgto).trim();
+        if (s.includes('/')) {
+            dia = parseInt(s.split('/')[0], 10);
+        } else if (s.includes('-')) {
+            const parts = s.split('-');
+            dia = parseInt(parts[2] ? parts[2].substring(0, 2) : parts[0], 10);
+        }
         if (isNaN(dia)) return;
 
-        for (let s of semanas) {
-            if (dia >= s.inicio && dia <= s.fim) {
-                s.total += p.valorTotal || 0;
-                s.qtd++;
+        for (let sem of semanas) {
+            if (dia >= sem.inicio && dia <= sem.fim) {
+                sem.total += parseFloat(p.valorTotal) || 0;
+                sem.qtd++;
                 break;
             }
         }
@@ -1062,10 +1266,19 @@ function renderizarGraficoBarrasMensalOp() {
     const el = document.getElementById('grafico-barras-faturamento-mensal');
     if (!el) return;
 
-    if (!window.dadosCompletos || !window.dadosCompletos.resultado_mes_a_mes) return;
+    const lista = (window._ultimoResultadoPerformance && window._ultimoResultadoPerformance.resultado_mes_a_mes)
+        || (window.dadosCompletos && window.dadosCompletos.resultado_mes_a_mes) || [];
 
-    const meses = window.dadosCompletos.resultado_mes_a_mes.map(m => m.mes.substring(0, 3));
-    const faturamentos = window.dadosCompletos.resultado_mes_a_mes.map(m => m.faturamento);
+    const listaComDados = lista.filter(m => (m.faturamento || 0) > 0 || (m.meta || 0) > 0);
+    if (!listaComDados || listaComDados.length === 0) return;
+
+    const meses = listaComDados.map(m => {
+        const nome = m.mes_nome || m.mes || '';
+        return typeof nome === 'string' ? nome.substring(0, 3) : String(nome);
+    });
+    const faturamentos = listaComDados.map(m => m.faturamento || 0);
+
+    const maxVal = Math.max(...faturamentos, 100);
 
     const options = {
         series: [{
@@ -1074,7 +1287,7 @@ function renderizarGraficoBarrasMensalOp() {
         }],
         chart: {
             type: 'bar',
-            height: 180,
+            height: 190,
             toolbar: { show: false }
         },
         colors: [window.operadorLogado?.banco === 'AGORACRED' ? '#10B981' : '#7e3d97'],
@@ -1087,30 +1300,22 @@ function renderizarGraficoBarrasMensalOp() {
         },
         dataLabels: {
             enabled: true,
+            enabledOnSeries: [0],
             formatter: function (val) {
-                return val > 0 ? (val >= 1000 ? (val / 1000).toFixed(1) + 'k' : formatarMoeda(val)) : '';
+                if (!val || val === 0) return '';
+                return val >= 1000 ? 'R$ ' + (val / 1000).toFixed(1) + 'k' : 'R$ ' + val.toFixed(0);
             },
-            style: { fontSize: '9px', colors: ['#374151'] },
-            offsetY: -18
+            style: { fontSize: '11px', fontWeight: '700', colors: [window.operadorLogado?.banco === 'AGORACRED' ? '#047857' : '#6b21a8'] },
+            offsetY: -22
         },
+        grid: { padding: { top: 25 } },
         xaxis: {
-            categories: meses,
-            labels: { style: { fontSize: '11px', colors: '#374151', fontWeight: 600 } }
+            categories: meses
         },
         yaxis: {
+            max: maxVal * 1.25,
             labels: {
-                formatter: function (val) {
-                    return val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val;
-                },
-                style: { fontSize: '12px', colors: '#374151', fontWeight: 600 }
-            }
-        },
-
-        tooltip: {
-            y: {
-                formatter: function (val) {
-                    return formatarMoeda(val);
-                }
+                formatter: (v) => formatarMoeda(v)
             }
         }
     };
@@ -1127,23 +1332,27 @@ function renderizarVariacaoDetalhada(lista) {
     const tbody = document.getElementById('tabela-variacao-detalhada-op');
     if (!tbody) return;
 
+    const theadVar = tbody.previousElementSibling;
+    if (theadVar) {
+        theadVar.style.backgroundColor = (window.operadorLogado?.banco === 'AGORACRED') ? 'var(--emerald)' : 'var(--purple-main)';
+    }
+
     if (!lista || lista.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:20px;">Nenhum histórico disponível</td></tr>';
         return;
     }
 
-    // Só faz sentido comparar meses que de fato têm meta definida
-    const comMeta = lista.filter(item => (item.meta || 0) > 0);
+    const comDados = lista.filter(item => (item.faturamento || 0) > 0 || (item.meta || 0) > 0);
 
-    if (comMeta.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:20px;">Nenhum mês com meta definida no período</td></tr>';
+    if (comDados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B7280;padding:20px;">Nenhum mês com histórico no período</td></tr>';
         return;
     }
 
     let prevFat = null;
     let prevPerc = null;
 
-    tbody.innerHTML = comMeta.map((item, idx) => {
+    tbody.innerHTML = comDados.map((item, idx) => {
         const varR = prevFat !== null ? (item.faturamento - prevFat) : 0;
         const varPct = prevFat !== null && prevFat > 0 ? ((item.faturamento - prevFat) / prevFat) * 100 : 0;
         const varMeta = prevPerc !== null ? (item.perc_meta - prevPerc) : 0;
@@ -1151,18 +1360,23 @@ function renderizarVariacaoDetalhada(lista) {
         const corVar = varR >= 0 ? '#16a34a' : '#dc2626';
         const setaVar = varR >= 0 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
 
+        // Suporte a diferentes nomes de campo (mes_nome, periodo, mes)
+        const nomeMes = item.mes_nome || item.periodo || item.mes || '';
+        const contratos = item.contratos ?? item.quantidade ?? 0;
+        const perc = typeof item.perc_meta === 'number' ? item.perc_meta : 0;
+
         const html = `
             <tr style="background:${idx % 2 === 0 ? '#fff' : '#f9fafb'}">
-                <td style="text-align:center;font-weight:600;">${item.periodo || item.mes}</td>
+                <td style="text-align:center;font-weight:600;">${nomeMes}</td>
                 <td style="text-align:center;font-weight:700;">${formatarMoeda(item.faturamento)}</td>
-                <td style="text-align:center;">${item.quantidade}</td>
+                <td style="text-align:center;">${contratos}</td>
                 <td style="text-align:center;">${formatarMoeda(item.meta)}</td>
                 <td style="text-align:center;">
                     <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                         <div style="width:60px;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
-                            <div style="width:${Math.min(item.perc_meta, 100)}%;height:100%;background:var(--purple-main);"></div>
+                            <div style="width:${Math.min(perc, 100)}%;height:100%;background:var(--purple-main);"></div>
                         </div>
-                        <span style="font-weight:700;color:var(--purple-main);">${item.perc_meta.toFixed(1)}%</span>
+                        <span style="font-weight:700;color:var(--purple-main);">${perc.toFixed(1)}%</span>
                     </div>
                 </td>
                 <td style="text-align:center;font-weight:700;color:${corVar};">${prevFat !== null ? (varR >= 0 ? '+' : '') + formatarMoeda(varR) : '—'}</td>
@@ -1694,3 +1908,161 @@ function simularBaterPonto() {
 window.inicializarRelogioPonto = inicializarRelogioPonto;
 window.renderizarPontoOperador = renderizarPontoOperador;
 window.simularBaterPonto        = simularBaterPonto;
+
+// ================================================================
+// VISÃO TRIMESTRAL POR DIA ÚTIL — OPERADOR
+// ================================================================
+// Renderiza a tabela comparativa de 3 meses com recebimento por
+// dia útil (somente seg a sex), facilitando análise dia-a-dia.
+
+function renderizarTrimestreDUOp(trimestre) {
+    const tbody = document.getElementById('tabela-trimestre-du-op');
+    if (!tbody) return;
+
+    // Backend retorna: { colunas: [m0, m1, m2], linhas: [{dia_util, data_atual, v_atual, v_m1, v_m2}], totais: {...} }
+    if (!trimestre || !trimestre.linhas || trimestre.linhas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6B7280;padding:20px;">Dados trimestrais n\u00e3o dispon\u00edveis.</td></tr>';
+        return;
+    }
+
+    // Atualiza cabe\u00e7alhos com o nome dos meses
+    const thM0 = document.getElementById('th-trimestre-m0');
+    const thM1 = document.getElementById('th-trimestre-m1');
+    const thM2 = document.getElementById('th-trimestre-m2');
+    if (thM0 && trimestre.colunas?.[0]) thM0.textContent = trimestre.colunas[0];
+    if (thM1 && trimestre.colunas?.[1]) thM1.textContent = trimestre.colunas[1];
+    if (thM2 && trimestre.colunas?.[2]) thM2.textContent = trimestre.colunas[2];
+
+    let html = trimestre.linhas.map(linha => {
+        // Backend usa: dia_util, data_atual, v_atual, v_m1, v_m2
+        const v0 = linha.v_atual || 0;
+        const v1 = linha.v_m1 || 0;
+        const v2 = linha.v_m2 || 0;
+        const corM0 = v0 >= v1 ? '#16a34a' : '#dc2626';
+
+        return `
+            <tr>
+                <td style="text-align:center;font-weight:700;color:var(--purple-main);">${linha.dia_util || '—'}</td>
+                <td style="text-align:center;">${linha.data_atual || '—'}</td>
+                <td style="text-align:center;font-weight:700;color:${corM0};">${formatarMoeda(v0)}</td>
+                <td style="text-align:center;color:#6b7280;">${formatarMoeda(v1)}</td>
+                <td style="text-align:center;color:#9ca3af;">${formatarMoeda(v2)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // Linha de totais vinda do backend
+    const t = trimestre.totais || {};
+    html += `
+        <tr style="background:#ede9fe;font-weight:800;">
+            <td colspan="2" style="text-align:center;color:#4a1d8c;padding:10px;">TOTAL DO PERÍODO</td>
+            <td style="text-align:center;color:#4a1d8c;">${formatarMoeda(t.total_atual || 0)}</td>
+            <td style="text-align:center;color:#4a1d8c;">${formatarMoeda(t.total_m1 || 0)}</td>
+            <td style="text-align:center;color:#4a1d8c;">${formatarMoeda(t.total_m2 || 0)}</td>
+        </tr>
+    `;
+
+    tbody.innerHTML = html;
+}
+window.renderizarTrimestreDUOp = renderizarTrimestreDUOp;
+
+// ================================================================
+// RELATÓRIO FAIXA DE ATRASO VS MÊS — OPERADOR (EXCLUSIVO SEMEAR)
+// ================================================================
+// Renderiza a matriz de Faixas de Atraso x 12 Meses do Ano.
+// Exibido apenas quando o banco do operador for SEMEAR.
+
+function renderizarMatrizFaixasOp(matriz) {
+    const container = document.getElementById('card-faixas-vs-mes-op-container');
+    const tbody = document.getElementById('tabela-faixa-vs-mes-op');
+    if (!tbody || !container) return;
+
+    if (!matriz || !matriz.linhas || matriz.linhas.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    // Exibe o card apenas para SEMEAR
+    container.style.display = 'block';
+
+    const mesesAbrev = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    let html = '';
+    let totalGeralPorMes = new Array(12).fill(0);
+
+    // Encontra os valores máximos por coluna para highlight
+    const maxPorMes = new Array(12).fill(0);
+    matriz.linhas.forEach(linha => {
+        if (linha.faixa === 'TOTAL GERAL') return;
+        mesesAbrev.forEach((mes, idx) => {
+            const v = linha[mes] || 0;
+            if (v > maxPorMes[idx]) maxPorMes[idx] = v;
+        });
+    });
+
+    matriz.linhas.forEach(linha => {
+        if (linha.faixa === 'TOTAL GERAL') return;
+        let celulas = '';
+        mesesAbrev.forEach((mes, idx) => {
+            const v = linha[mes] || 0;
+            totalGeralPorMes[idx] += v;
+            const destaque = (v > 0 && v === maxPorMes[idx]) ? 'background:#f3e8ff;font-weight:800;color:#6d28d9;' : '';
+            celulas += `<td style="text-align:center;padding:8px 10px;${destaque}">${v > 0 ? formatarMoeda(v) : '—'}</td>`;
+        });
+        html += `
+            <tr>
+                <td style="padding:8px 12px;font-weight:700;white-space:nowrap;border-right:2px solid #e5e7eb;color:var(--purple-main);">${linha.faixa}</td>
+                ${celulas}
+                <td style="text-align:center;padding:8px 10px;font-weight:800;background:#f3e8ff;color:#5b21b6;">${formatarMoeda(linha.total_ano || 0)}</td>
+            </tr>
+        `;
+    });
+
+    // Linha de totais por mês
+    const t = matriz.totais || {};
+    const celulasTotais = mesesAbrev.map(mes =>
+        `<td style="text-align:center;padding:8px 10px;font-weight:800;color:#5b21b6;">${formatarMoeda(t[mes] || 0)}</td>`
+    ).join('');
+    html += `
+        <tr style="background:#f3e8ff;">
+            <td style="padding:8px 12px;font-weight:800;color:#4a1d8c;border-right:2px solid #e5e7eb;">TOTAL</td>
+            ${celulasTotais}
+            <td style="text-align:center;font-weight:800;padding:8px 10px;background:#ede9fe;color:#4a1d8c;">${formatarMoeda(t.total_ano || 0)}</td>
+        </tr>
+    `;
+
+    tbody.innerHTML = html;
+}
+window.renderizarMatrizFaixasOp = renderizarMatrizFaixasOp;
+
+// ================================================================
+// FILTRAR PELA DATA ATUAL DO DU (BOTÃO "ATÉ DU ATUAL")
+// ================================================================
+
+// Preenche os campos de dia útil com 1 e o DU atual do mês,
+// e recarrega todos os dados da página automaticamente.
+
+function filtrarDUAtual() {
+    const duFimEl = document.getElementById('filtro-du-fim');
+    const duInicioEl = document.getElementById('filtro-du-inicio');
+    if (!duFimEl || !duInicioEl) return;
+
+    // Calcula quantos dias úteis já passaram no mês atual
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth(); // 0-indexed
+    let duContador = 0;
+
+    for (let d = 1; d <= hoje.getDate(); d++) {
+        const dia = new Date(ano, mes, d);
+        const dow = dia.getDay(); // 0=dom, 6=sab
+        if (dow >= 1 && dow <= 5) duContador++;
+    }
+
+    duInicioEl.value = 1;
+    duFimEl.value = Math.max(1, duContador);
+
+    // Recarrega com o novo filtro de DU
+    if (typeof carregarDados === 'function') carregarDados();
+}
+window.filtrarDUAtual = filtrarDUAtual;

@@ -22,22 +22,28 @@ def api_resumo_adm():
     try:
         ano = request.args.get('ano', datetime.now().year, type=int)
         mes = request.args.get('mes', datetime.now().month, type=int)
+        banco = request.args.get('banco', 'TODOS')
         atividade = request.args.get('atividade', 'ATIVO')
         operador_filtro = request.args.get('operador', 'TODOS')
         contrato_filtro = request.args.get('contrato', '')
         faixa_filtro = request.args.get('faixa', 'todas')
         data_inicio = request.args.get('data_inicio', None)
         data_fim = request.args.get('data_fim', None)
+        du_inicio = request.args.get('du_inicio', None, type=int)
+        du_fim = request.args.get('du_fim', None, type=int)
 
         resultado = montar_dashboard_adm(
             ano=ano,
             mes=mes,
+            banco=banco,
             atividade=atividade,
             operador_filtro=operador_filtro,
             contrato_filtro=contrato_filtro,
             faixa_filtro=faixa_filtro,
             data_inicio=data_inicio,
-            data_fim=data_fim
+            data_fim=data_fim,
+            du_inicio=du_inicio,
+            du_fim=du_fim
         )
 
         return jsonify({
@@ -97,9 +103,11 @@ def api_pagamentos_adm():
         mes = request.args.get('mes', datetime.now().month, type=int)
         banco = request.args.get('banco', 'TODOS')
         operador_filtro = request.args.get('operador', 'TODOS')
+        atividade = request.args.get('atividade', 'ATIVO')
         data_inicio = request.args.get('data_inicio', None)
         data_fim = request.args.get('data_fim', None)
-        atividade = request.args.get('atividade', 'ATIVO')
+        du_inicio = request.args.get('du_inicio', None, type=int)
+        du_fim = request.args.get('du_fim', None, type=int)
 
         resultado = buscar_pagamentos_individuais_adm(
             ano=ano,
@@ -108,7 +116,9 @@ def api_pagamentos_adm():
             operador_filtro=operador_filtro,
             data_inicio=data_inicio,
             data_fim=data_fim,
-            atividade=atividade
+            atividade=atividade,
+            du_inicio=du_inicio,
+            du_fim=du_fim
         )
 
         return jsonify({

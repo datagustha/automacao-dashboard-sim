@@ -65,6 +65,39 @@ function formatarDataCompleta(data) {
     }
 }
 
+function calcularDUdaData(dataStr) {
+    if (!dataStr) return '';
+    try {
+        let dia, mes, ano;
+        const s = String(dataStr).trim();
+        if (s.includes('/')) {
+            const parts = s.split('/');
+            dia = parseInt(parts[0], 10);
+            mes = parseInt(parts[1], 10) - 1;
+            ano = parseInt(parts[2], 10);
+        } else if (s.includes('-')) {
+            const parts = s.split('-');
+            ano = parseInt(parts[0], 10);
+            mes = parseInt(parts[1], 10) - 1;
+            dia = parseInt(parts[2].substring(0, 2), 10);
+        } else {
+            return '';
+        }
+        if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return '';
+        let duCount = 0;
+        for (let d = 1; d <= dia; d++) {
+            const dt = new Date(ano, mes, d);
+            const dow = dt.getDay(); // 0=Dom, 6=Sab
+            if (dow >= 1 && dow <= 5) {
+                duCount++;
+            }
+        }
+        return duCount > 0 ? `${duCount}º DU` : '';
+    } catch {
+        return '';
+    }
+}
+
 // ================================================================
 // FORMATAÇÃO DE PERCENTUAL
 // ================================================================

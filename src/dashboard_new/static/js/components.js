@@ -160,7 +160,7 @@ function criarGraficoEvolucao(dados, cor = '#7e3d97') {
             if (!d.data) return '';
             const partes = d.data.split('-');
             if (partes.length === 3) {
-                return `${partes[2]}/${partes[1]}`; // Retorna DD/MM
+                return partes[2]; // Só o dia: "24" em vez de "24/07"
             }
             return d.data;
         });

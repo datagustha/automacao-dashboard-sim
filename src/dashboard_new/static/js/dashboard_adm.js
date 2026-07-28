@@ -4,12 +4,12 @@
  */
 
 // ================================================================
-// RENDERIZAÇÃO - DASHBOARD ADM
+// RENDERIZAÇÃƒO - DASHBOARD ADM
 // ================================================================
 
 function renderizarDashboardAdm(dados) {
     if (!dados) {
-        console.warn('⚠️ Dados não fornecidos para renderizarDashboardAdm');
+        console.warn('âš ï¸ Dados não fornecidos para renderizarDashboardAdm');
         return;
     }
 
@@ -43,7 +43,7 @@ function renderizarDashboardAdm(dados) {
     // Rodapé SEMEAR — duas colunas: Mês Anterior | Diferença da Meta
     const corVarSemear = variacaoSemear >= 0 ? '#16a34a' : '#dc2626';
     const bgVarSemear = variacaoSemear >= 0 ? '#dcfce7' : '#fee2e2';
-    const setaSemear = variacaoSemear >= 0 ? '▲' : '▼';
+    const setaSemear = variacaoSemear >= 0 ? '<i class="fas fa-arrow-up" style="margin-right:2px;"></i>' : '<i class="fas fa-arrow-down" style="margin-right:2px;"></i>';
     const faltaSemearHtml = faltaSemear > 0
         ? `<span style="font-weight:700;color:var(--text-main);font-size:12px;">Falta: ${formatarMoeda(faltaSemear)}</span>
            <span style="color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;margin-left:4px;">${faltaSemearPct.toFixed(1)}% abaixo</span>`
@@ -89,7 +89,7 @@ function renderizarDashboardAdm(dados) {
     // Rodapé AGORACRED — duas colunas
     const corVarAgoracred = variacaoAgoracred >= 0 ? '#16a34a' : '#dc2626';
     const bgVarAgoracred = variacaoAgoracred >= 0 ? '#dcfce7' : '#fee2e2';
-    const setaAgoracred = variacaoAgoracred >= 0 ? '▲' : '▼';
+    const setaAgoracred = variacaoAgoracred >= 0 ? '<i class="fas fa-arrow-up" style="margin-right:2px;"></i>' : '<i class="fas fa-arrow-down" style="margin-right:2px;"></i>';
     const faltaAgoracredHtml = faltaAgoracred > 0
         ? `<span style="font-weight:700;color:var(--text-main);font-size:12px;">Falta: ${formatarMoeda(faltaAgoracred)}</span>
            <span style="color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;margin-left:4px;">${faltaAgoracredPct.toFixed(1)}% abaixo</span>`
@@ -111,7 +111,7 @@ function renderizarDashboardAdm(dados) {
         </div>
     `;
 
-    // --- CÁLCULO E EXIBIÇÃO DE ÚLTIMO RECEBIMENTO POR BANCO ---
+    // --- CÃLCULO E EXIBIÇÃƒO DE ÃšLTIMO RECEBIMENTO POR BANCO ---
     const todasDatasSemear = [];
     (semear.operadores || []).forEach(op => {
         const ult = op.ultimo_pagamento || op.ultima_data;
@@ -170,7 +170,7 @@ function renderizarDashboardAdm(dados) {
     const difOps = totalOps - opsAnterior;
     const corVarOps = variacaoOps >= 0 ? '#16a34a' : '#dc2626';
     const bgVarOps = variacaoOps >= 0 ? '#dcfce7' : '#fee2e2';
-    const setaOps = variacaoOps >= 0 ? '▲' : '▼';
+    const setaOps = variacaoOps >= 0 ? '<i class="fas fa-arrow-up" style="margin-right:2px;"></i>' : '<i class="fas fa-arrow-down" style="margin-right:2px;"></i>';
     const sinalOps = difOps >= 0 ? '+' : '';
 
     const footerOpsEl = document.getElementById('kpi-ops-adm-anterior-detalhe');
@@ -200,7 +200,7 @@ function renderizarDashboardAdm(dados) {
     const difTk = ticketAtual - ticketAnterior;
     const corVarTk = variacaoTk >= 0 ? '#16a34a' : '#dc2626';
     const bgVarTk = variacaoTk >= 0 ? '#dcfce7' : '#fee2e2';
-    const setaTk = variacaoTk >= 0 ? '▲' : '▼';
+    const setaTk = variacaoTk >= 0 ? '<i class="fas fa-arrow-up" style="margin-right:2px;"></i>' : '<i class="fas fa-arrow-down" style="margin-right:2px;"></i>';
     const sinalTk = difTk >= 0 ? '+' : '';
 
     const footerTkEl = document.getElementById('kpi-ticket-adm-anterior-detalhe');
@@ -223,7 +223,7 @@ function renderizarDashboardAdm(dados) {
     }
 
     // ============================================================
-    // GRÁFICOS
+    // GRÃFICOS
     // ============================================================
     const graficoSemear = document.getElementById('grafico-evolucao-semear-adm');
     if (graficoSemear) {
@@ -259,8 +259,8 @@ function renderizarDashboardAdm(dados) {
     // Exibe "Baixas até dia X" acima de cada ranking, informando
     // que o feito/dia é dividido pelo dia desta data máxima do banco
     // ============================================================
-    _atualizarBannerUltimaBaixa('semear', semear.ultima_baixa);
-    _atualizarBannerUltimaBaixa('agoracred', agoracred.ultima_baixa);
+    _atualizarBannerUltimaBaixa('semear', semear.ultima_baixa, semear.operadores);
+    _atualizarBannerUltimaBaixa('agoracred', agoracred.ultima_baixa, agoracred.operadores);
 
     // ============================================================
     // TABELA - Faixas SEMEAR (COM FOTOS)
@@ -271,7 +271,31 @@ function renderizarDashboardAdm(dados) {
     // TABELA - Evolução Operadores
     // ============================================================
     renderizarEvolucaoOperadores(dados.evolucao_operadores || []);
+
+    // ============================================================
+    // RELATÓRIO DIRETORIA: FAIXA DE ATRASO VS MÊS (SEMEAR)
+    // ============================================================
+    if (typeof renderizarMatrizFaixasAdm === 'function') {
+        renderizarMatrizFaixasAdm(semear.matriz_faixas_mes || null);
+    }
+
+    // ============================================================
+    // VISÃO TRIMESTRAL POR DIA ÚTIL — SEMEAR / AGORACRED
+    // ============================================================
+    if (typeof renderizarTrimestreDUAdm === 'function') {
+        renderizarTrimestreDUAdm('semear', semear.trimestre_du || null);
+        renderizarTrimestreDUAdm('agoracred', agoracred.trimestre_du || null);
+    }
+
+    // ============================================================
+    // ALERTAS DE OPERADORES INATIVOS (> 2 DIAS SEM RECEBIMENTO)
+    // ============================================================
+    if (typeof exibirAlertasInativosAdm === 'function') {
+        const rankingCompleto = [...(semear.operadores || []), ...(agoracred.operadores || [])];
+        exibirAlertasInativosAdm(rankingCompleto);
+    }
 }
+
 
 // ================================================================
 // AVATAR HELPER
@@ -286,45 +310,243 @@ function _avatarCell(imagem, login, cor) {
 }
 
 // ================================================================
+// RENDERIZAÇÃO - VISÃO TRIMESTRAL POR DIA ÚTIL (ADM)
+// ================================================================
+
+function renderizarTrimestreDUAdm(banco, dados) {
+    const idMap = {
+        semear: 'tabela-trimestre-du-semear',
+        agoracred: 'tabela-trimestre-du-agoracred'
+    };
+    const corMap = {
+        semear: '#7E3E9A',
+        agoracred: '#047857'
+    };
+    const bgTotalMap = {
+        semear: '#f3e8ff',
+        agoracred: '#d1fae5'
+    };
+
+    const tbodyId = idMap[banco] || 'tabela-trimestre-du-semear';
+    const cor = corMap[banco] || '#7E3E9A';
+    const bgTotal = bgTotalMap[banco] || '#f3e8ff';
+
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#95a5a6;padding:20px;">Sem dados trimestrais disponíveis.</td></tr>`;
+        return;
+    }
+
+    const colunas = dados.colunas || [];
+    const prefixo = banco;
+    ['m0', 'm1', 'm2'].forEach((suf, i) => {
+        const el = document.getElementById(`th-trimestre-${prefixo}-${suf}`);
+        if (el && colunas[i]) el.textContent = colunas[i];
+    });
+
+    const linhas = dados.linhas || [];
+    let html = '';
+
+    linhas.forEach(linha => {
+        const vAtual = linha.v_atual || 0;
+        const vM1 = linha.v_m1 || 0;
+        const vM2 = linha.v_m2 || 0;
+        const corAtual = vAtual > vM1 ? '#16a34a' : (vAtual < vM1 ? '#dc2626' : '#374151');
+        const bgAtual  = vAtual > vM1 ? '#dcfce7' : (vAtual < vM1 ? '#fee2e2' : 'transparent');
+
+        html += `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:8px 14px;text-align:center;font-weight:700;color:${cor};">${linha.dia_util || '-'}</td>
+                <td style="padding:8px 14px;text-align:center;color:#6b7280;font-size:12px;">${linha.data_atual || '-'}</td>
+                <td style="padding:8px 14px;text-align:center;font-weight:700;color:${corAtual};background:${bgAtual};border-radius:6px;">${formatarMoeda(vAtual)}</td>
+                <td style="padding:8px 14px;text-align:center;color:#374151;">${vM1 > 0 ? formatarMoeda(vM1) : '<span style="color:#9ca3af;">—</span>'}</td>
+                <td style="padding:8px 14px;text-align:center;color:#374151;">${vM2 > 0 ? formatarMoeda(vM2) : '<span style="color:#9ca3af;">—</span>'}</td>
+            </tr>
+        `;
+    });
+
+    if (dados.totais) {
+        const t = dados.totais;
+        const totAtual = t.total_atual !== undefined ? t.total_atual : (t.v_atual || 0);
+        const totM1 = t.total_m1 !== undefined ? t.total_m1 : (t.v_m1 || 0);
+        const totM2 = t.total_m2 !== undefined ? t.total_m2 : (t.v_m2 || 0);
+
+        html += `
+            <tr style="background:${bgTotal};font-weight:800;border-top:2px solid ${cor};">
+                <td colspan="2" style="padding:10px 14px;text-align:center;color:${cor};">TOTAL DO PERÍODO</td>
+                <td style="padding:10px 14px;text-align:center;color:${cor};">${formatarMoeda(totAtual)}</td>
+                <td style="padding:10px 14px;text-align:center;">${totM1 > 0 ? formatarMoeda(totM1) : '—'}</td>
+                <td style="padding:10px 14px;text-align:center;">${totM2 > 0 ? formatarMoeda(totM2) : '—'}</td>
+            </tr>
+        `;
+    }
+
+    tbody.innerHTML = html;
+}
+
+
+// ================================================================
+// RENDERIZAÇÃO - RELATÓRIO FAIXA DE ATRASO VS MÊS (ADM)
+// ================================================================
+
+function renderizarMatrizFaixasAdm(dados) {
+    const tbody = document.getElementById('tabela-faixa-vs-mes-adm');
+    if (!tbody) return;
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#95a5a6;padding:20px;">Sem dados disponíveis para o relatório de faixas.</td></tr>';
+        return;
+    }
+
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const linhas = dados.linhas || [];
+    let html = '';
+
+    linhas.forEach((linha, idx) => {
+        const bgRow = idx % 2 === 0 ? '#ffffff' : '#faf5ff';
+        let rowHtml = `<tr style="background:${bgRow};border-bottom:1px solid #e5e7eb;">
+            <td style="padding:9px 14px;font-weight:700;color:#7E3E9A;border-right:2px solid #e5e7eb;white-space:nowrap;">${linha.faixa || '-'}</td>`;
+
+        meses.forEach(mes => {
+            const val = linha[mes] || 0;
+            const cor = val > 0 ? '#612d75' : '#9ca3af';
+            rowHtml += `<td style="padding:9px 12px;text-align:center;color:${cor};font-weight:${val > 0 ? '600' : '400'};">${val > 0 ? formatarMoeda(val) : '—'}</td>`;
+        });
+
+        const totalAno = linha.total_ano || 0;
+        rowHtml += `<td style="padding:9px 12px;text-align:center;font-weight:800;color:#612d75;background:#f3e8ff;">${formatarMoeda(totalAno)}</td></tr>`;
+        html += rowHtml;
+    });
+
+    if (dados.totais) {
+        const t = dados.totais;
+        let totalRow = `<tr style="background:#7E3E9A;color:#ffffff !important;font-weight:800;">
+            <td style="padding:10px 14px;border-right:2px solid #612d75;color:#ffffff !important;">TOTAL GERAL</td>`;
+        meses.forEach(mes => {
+            const val = t[mes] || 0;
+            totalRow += `<td style="padding:10px 12px;text-align:center;color:#ffffff !important;font-weight:800;">${val > 0 ? formatarMoeda(val) : '—'}</td>`;
+        });
+        totalRow += `<td style="padding:10px 12px;text-align:center;background:#612d75;color:#ffffff !important;font-weight:800;">${formatarMoeda(t.total_ano || 0)}</td></tr>`;
+        html += totalRow;
+    }
+
+
+    tbody.innerHTML = html;
+}
+
+// ================================================================
+// ALERTA DE OPERADORES INATIVOS — ADM
+// Exibe banner amarelo com badges de quem está > 2 DU sem pgto.
+// Recebe lista de operadores com: { login, dias_sem_pgto, banco }
+// ================================================================
+
+function exibirAlertasInativosAdm(operadores) {
+    const banner = document.getElementById('banner-alertas-inativos-adm');
+    const lista = document.getElementById('lista-alertas-inativos-adm');
+    if (!banner || !lista) return;
+
+    const inativos = (operadores || []).filter(op => (op.dias_sem_pgto || 0) >= 2 || op.alerta_sem_pgto);
+
+    if (inativos.length === 0) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    banner.style.display = 'block';
+
+    lista.innerHTML = inativos.map(op => {
+        const dias = op.dias_sem_pgto || 0;
+        const banco = op.banco || 'SEMEAR';
+        const corBanco = banco === 'AGORACRED' ? '#10B981' : '#7E3E9A';
+        const fotoHtml = _avatarCell(op.imagem, op.login || op.operador, corBanco);
+        const ultData = op.ultima_data_op || op.ultima_baixa || '-';
+        const ultVal = op.ultimo_valor_pgto ? formatarMoeda(op.ultimo_valor_pgto) : '';
+
+        return `
+            <div style="display:inline-flex;align-items:center;gap:10px;background:#ffffff;border-radius:10px;padding:8px 14px;border-left:4px solid ${corBanco};box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-right:8px;margin-bottom:8px;">
+                <div style="flex-shrink:0;">${fotoHtml}</div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-weight:700;color:#1f2937;font-size:13px;">${op.login || op.operador}</span>
+                        <span style="background:${corBanco};color:white;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">${banco}</span>
+                    </div>
+                    <div style="font-size:11px;color:#6b7280;display:flex;align-items:center;gap:8px;">
+                        <span><i class="fas fa-calendar-day" style="color:${corBanco};"></i> Último pgto: <strong>${ultData}</strong> ${ultVal ? `(${ultVal})` : ''}</span>
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:12px;padding:2px 8px;font-weight:700;font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+                            <i class="fas fa-triangle-exclamation" style="color:#d97706;"></i> ${dias} DU sem pgto
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+window.exibirAlertasInativosAdm = exibirAlertasInativosAdm;
+
+
+// ================================================================
 // RENDERIZAÇÃO - EVOLUÇÃO DIÁRIA
 // ================================================================
+
 
 function renderizarEvolucaoDiaria(semear, agoracred) {
     const tbody = document.getElementById('tabela-evolucao-diaria-adm');
     if (!tbody) return;
 
-    // Combina os dados
-    const dias = new Set();
-    semear.forEach(d => dias.add(d.data));
-    agoracred.forEach(d => dias.add(d.data));
+    // Mapeia por data para cruzar os dois bancos
+    const mapSemear = {};
+    semear.forEach(d => { mapSemear[d.data || d.data_formatada] = d; });
 
-    const diasArray = Array.from(dias).sort();
+    const mapAgoracred = {};
+    agoracred.forEach(d => { mapAgoracred[d.data || d.data_formatada] = d; });
+
+    // Usa datas do semear como referência principal (já preenchido com seg-sex)
+    const todasDatas = new Set([
+        ...semear.map(d => d.data || ''),
+        ...agoracred.map(d => d.data || '')
+    ]);
+    const diasArray = Array.from(todasDatas).filter(Boolean).sort();
 
     if (diasArray.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6B7280;padding:30px;">Nenhum dado disponível</td></tr>';
         return;
     }
 
+    // Dias da semana para formatação local (fallback)
+    const diasSemAbrev = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+
     let html = '';
     let totalSemear = 0;
     let totalAgoracred = 0;
 
-    diasArray.forEach(dia => {
-        const s = semear.find(d => d.data === dia) || { total: 0 };
-        const a = agoracred.find(d => d.data === dia) || { total: 0 };
-        const total = (s.total || 0) + (a.total || 0);
+    diasArray.forEach(data => {
+        const s = mapSemear[data] || { total: 0, realizado: 0 };
+        const a = mapAgoracred[data] || { total: 0, realizado: 0 };
+        const vS = s.total || s.realizado || 0;
+        const vA = a.total || a.realizado || 0;
+        const total = vS + vA;
 
-        totalSemear += s.total || 0;
-        totalAgoracred += a.total || 0;
+        totalSemear += vS;
+        totalAgoracred += vA;
 
-        // Mostra apenas o dia do mês (1, 2, 3...) como no dashboard antigo
-        const diaNumero = dia ? parseInt(dia.split('-')[2], 10) : '-';
+        // Usa data_formatada do backend se disponível (ex: "24 - sex"),
+        // senão calcula localmente a partir da string YYYY-MM-DD
+        let diaExib = s.data_formatada || a.data_formatada || null;
+        if (!diaExib && data && data.includes('-')) {
+            const partes = data.split('-');
+            const diaNum = parseInt(partes[2], 10);
+            const dataObj = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, diaNum);
+            const nomeDia = diasSemAbrev[dataObj.getDay()] || '';
+            diaExib = `${diaNum} - ${nomeDia}`;
+        }
 
         html += `
             <tr>
-                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;font-weight:600;">${diaNumero}</td>
-                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;">${formatarMoeda(s.total || 0)}</td>
-                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;">${formatarMoeda(a.total || 0)}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;font-weight:600;">${diaExib || data}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;">${formatarMoeda(vS)}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;">${formatarMoeda(vA)}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0;text-align:center;font-weight:700;">${formatarMoeda(total)}</td>
             </tr>
         `;
@@ -392,6 +614,7 @@ function renderizarRankingSemear(operadores) {
         else medalha = `${index + 1}°`;
 
         const foto = _avatarCell(op.imagem, op.login, '#7e3d97');
+
         const corMeta = percMeta >= 100 ? 'var(--emerald)' : 'var(--purple-main)';
 
         const progressoHtml = `
@@ -534,31 +757,33 @@ function renderizarRankingAgoracred(operadores) {
         else medalha = `${index + 1}°`;
 
         const foto = _avatarCell(op.imagem, op.login, '#10B981');
-        const corMeta = percMeta >= 100 ? 'var(--emerald)' : 'var(--text-main)';
+        const corMetaText = percMeta >= 100 ? '#10B981' : '#064e3b';
 
         const progressoHtml = `
             <div class="table-progress-container">
                 <div class="table-progress-bar">
-                    <div class="table-progress-fill green" style="width: ${Math.min(percMeta, 100)}%;"></div>
+                    <div class="table-progress-fill" style="width: ${Math.min(percMeta, 100)}%; background: #10B981;"></div>
                 </div>
-                <span class="table-progress-text" style="color: ${corMeta};">${percMeta.toFixed(1)}%</span>
+                <span class="table-progress-text" style="color: ${corMetaText}; font-weight: 700;">${percMeta.toFixed(1)}%</span>
             </div>
         `;
 
         const projecaoProgressoHtml = `
             <div class="table-progress-container">
                 <div class="table-progress-bar">
-                    <div class="table-progress-fill green" style="width: ${Math.min(projecaoPct, 100)}%;"></div>
+                    <div class="table-progress-fill" style="width: ${Math.min(projecaoPct, 100)}%; background: #10B981;"></div>
                 </div>
-                <span class="table-progress-text" style="color: ${corTextoNeutro};">${projecaoPct.toFixed(1)}%</span>
+                <span class="table-progress-text" style="color: #064e3b; font-weight: 700;">${projecaoPct.toFixed(1)}%</span>
             </div>
         `;
+
 
         return `
             <tr>
                 <td class="sticky-col-1" style="text-align:center;padding:8px 10px;font-weight:600;font-size:14px;">${medalha}</td>
                 <td class="sticky-col-2" style="text-align:center;padding:8px 10px;">${foto}</td>
-                <td class="sticky-col-3 sticky-col-name" style="text-align:center;padding:8px 10px;font-weight:600;color:var(--emerald);">${op.login || '-'}</td>
+                <td class="sticky-col-3 sticky-col-name" style="text-align:center;padding:8px 10px;font-weight:700;color:#064e3b;">${op.login || '-'}</td>
+
                 <td style="text-align:center;padding:8px 10px;">${op.turno || '-'}</td>
                 <td style="text-align:center;padding:8px 10px;font-size:11px;white-space:nowrap;">${op.tempo_casa || '-'}</td>
                 <td style="text-align:center;padding:8px 10px;font-weight:600;">${formatarMoeda(op.faturamento || 0)}</td>
@@ -592,16 +817,16 @@ function renderizarRankingAgoracred(operadores) {
     const progressoTotalHtml = `
         <div class="table-progress-container">
             <div class="table-progress-bar">
-                <div class="table-progress-fill green" style="width: ${Math.min(totalPerc, 100)}%;"></div>
+                <div class="table-progress-fill agoracred-green" style="width: ${Math.min(totalPerc, 100)}%;"></div>
             </div>
-            <span class="table-progress-text" style="color: #065f46;">${totalPerc.toFixed(1)}%</span>
+            <span class="table-progress-text" style="color: #047857;">${totalPerc.toFixed(1)}%</span>
         </div>
     `;
 
     const totalProjecaoProgressoHtml = `
         <div class="table-progress-container">
             <div class="table-progress-bar">
-                <div class="table-progress-fill green" style="width: ${Math.min(totalProjecaoPct, 100)}%;"></div>
+                <div class="table-progress-fill agoracred-green" style="width: ${Math.min(totalProjecaoPct, 100)}%;"></div>
             </div>
             <span class="table-progress-text" style="color: #374151;">${totalProjecaoPct.toFixed(1)}%</span>
         </div>
@@ -609,13 +834,13 @@ function renderizarRankingAgoracred(operadores) {
 
     const tr = `
         <tr style="background:#d1fae5;font-weight:bold;">
-            <td class="sticky-col-1" style="text-align:center;padding:10px;color:#065f46;" colspan="2"><strong>TOTAL</strong></td>
-            <td class="sticky-col-3" style="text-align:center;padding:10px;color:#065f46;"></td>
+            <td class="sticky-col-1" style="text-align:center;padding:10px;color:#047857;" colspan="2"><strong>TOTAL</strong></td>
+            <td class="sticky-col-3" style="text-align:center;padding:10px;color:#047857;"></td>
             <td style="text-align:center;padding:10px;"></td>
             <td style="text-align:center;padding:10px;"></td>
-            <td style="text-align:center;padding:10px;color:#065f46;">${formatarMoeda(totalFat)}</td>
+            <td style="text-align:center;padding:10px;color:#047857;">${formatarMoeda(totalFat)}</td>
             <td style="text-align:center;padding:10px;"></td>
-            <td style="text-align:center;padding:10px;color:#065f46;">${formatarMoeda(totalMeta)}</td>
+            <td style="text-align:center;padding:10px;color:#047857;">${formatarMoeda(totalMeta)}</td>
             <td style="text-align:center;padding:10px;">${progressoTotalHtml}</td>
             <td style="text-align:center;padding:10px;"></td>
             <td style="text-align:center;padding:10px;"></td>
@@ -755,6 +980,8 @@ async function carregarPagamentosAdm() {
 
     const dataInicio = document.getElementById('filtro-pag-inicio-adm')?.value || '';
     const dataFim = document.getElementById('filtro-pag-fim-adm')?.value || '';
+    const duInicio = document.getElementById('filtro-du-inicio-adm')?.value || '';
+    const duFim = document.getElementById('filtro-du-fim-adm')?.value || '';
 
     // AGORACRED não tem faixa de atraso — oculta o multiselect de faixas do topo em caso de AGORACRED
     const multiselectFaixa = document.getElementById('multiselect-faixa-adm');
@@ -772,6 +999,8 @@ async function carregarPagamentosAdm() {
         let url = `/api/pagamentos-adm?mes=${mes}&ano=${ano}&banco=${banco}&operador=${encodeURIComponent(operador)}&atividade=${atividade}`;
         if (dataInicio) url += `&data_inicio=${dataInicio}`;
         if (dataFim) url += `&data_fim=${dataFim}`;
+        if (duInicio) url += `&du_inicio=${duInicio}`;
+        if (duFim) url += `&du_fim=${duFim}`;
 
         const resp = await fetch(url);
         const data = await resp.json();
@@ -931,7 +1160,7 @@ function _renderizarPagamentosAdmTabela() {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:30px;">Nenhum pagamento encontrado com os filtros aplicados.</td></tr>';
     } else {
         tbody.innerHTML = pagina.map(p => {
-            const bancoCor = (p.banco || '') === 'SEMEAR' ? '#7e3d97' : '#10B981';
+            const bancoCor = (p.banco || '') === 'SEMEAR' ? '#7E3E9A' : '#10B981';
             const isAgoracred = p.banco === 'AGORACRED';
             const atrasoVal = isAgoracred ? '—' : (p.atraso !== null && p.atraso !== undefined ? p.atraso + 'd' : '-');
             const maiorAtrasoVal = isAgoracred ? '—' : (p.maiorAtraso !== null && p.maiorAtraso !== undefined ? p.maiorAtraso + 'd' : '-');
@@ -960,14 +1189,14 @@ function _renderizarPagamentosAdmTabela() {
         let html = '';
         const prev = _pagAdmPage > 1;
         const next = _pagAdmPage < totalPages;
-        html += `<button onclick="_pagAdmIr(${_pagAdmPage-1})" ${prev?'':'disabled'} style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;cursor:${prev?'pointer':'not-allowed'};background:${prev?'white':'#f3f4f6'};">‹</button>`;
+        html += `<button onclick="_pagAdmIr(${_pagAdmPage-1})" ${prev?'':'disabled'} style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;cursor:${prev?'pointer':'not-allowed'};background:${prev?'white':'#f3f4f6'};">&laquo;</button>`;
         const start = Math.max(1, _pagAdmPage - 2);
         const end = Math.min(totalPages, _pagAdmPage + 2);
         for (let i = start; i <= end; i++) {
             html += `<button onclick="_pagAdmIr(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid ${i===_pagAdmPage?'var(--purple-main)':'#d1d5db'};background:${i===_pagAdmPage?'var(--purple-main)':'white'};color:${i===_pagAdmPage?'white':'inherit'};font-weight:${i===_pagAdmPage?'700':'400'};cursor:pointer;">${i}</button>`;
         }
-        html += `<button onclick="_pagAdmIr(${_pagAdmPage+1})" ${next?'':'disabled'} style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;cursor:${next?'pointer':'not-allowed'};background:${next?'white':'#f3f4f6'};">›</button>`;
-        html += `<span style="font-size:12px;color:var(--text-muted);margin-left:8px;">${inicio+1}–${Math.min(inicio+_pagAdmPerPage,total)} de ${total}</span>`;
+        html += `<button onclick="_pagAdmIr(${_pagAdmPage+1})" ${next?'':'disabled'} style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;cursor:${next?'pointer':'not-allowed'};background:${next?'white':'#f3f4f6'};">&raquo;</button>`;
+        html += `<span style="font-size:12px;color:var(--text-muted);margin-left:8px;">${inicio+1} a ${Math.min(inicio+_pagAdmPerPage,total)} de ${total}</span>`;
         pagEl.innerHTML = html;
     }
 }
@@ -994,7 +1223,7 @@ function renderizarEvolucaoOperadores(operadores) {
     if (!tbody) return;
 
     if (!operadores || operadores.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#6B7280;padding:30px;">Nenhum dado disponível</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:#6B7280;padding:30px;">Nenhum dado disponível</td></tr>';
         if (resumo) resumo.innerHTML = '';
         return;
     }
@@ -1013,85 +1242,109 @@ function renderizarEvolucaoOperadores(operadores) {
         `;
     }
 
-    operadores.sort((a, b) => (b.variacao_percentual || 0) - (a.variacao_percentual || 0));
+    operadores.sort((a, b) => {
+        const projA = a.projecao_percentual !== undefined ? a.projecao_percentual : (a.meta > 0 ? (a.projecao / a.meta) * 100 : 0);
+        const projB = b.projecao_percentual !== undefined ? b.projecao_percentual : (b.meta > 0 ? (b.projecao / b.meta) * 100 : 0);
+        return projB - projA;
+    });
 
     tbody.innerHTML = operadores.map(op => {
-        const corVar = (op.variacao_percentual || 0) >= 0 ? 'var(--emerald)' : '#e74c3c';
-        const sinal = (op.variacao_percentual || 0) >= 0 ? '+' : '';
+        // ── Variação: ÚNICO lugar com vermelho/verde ──
+        const varPct   = op.variacao_percentual || 0;
+        const corVar   = varPct >= 0 ? 'var(--emerald)' : '#e74c3c';
+        const setaVar  = varPct >= 0 ? '▲' : '▼';
+        const sinalVar = varPct >= 0 ? '+' : '';
 
-        const bancoCor = op.banco === 'SEMEAR' ? '#7e3d97' : '#10B981';
+        // ── Banco: cor e label ──
+        const bancoCor   = op.banco === 'SEMEAR' ? '#7E3E9A' : '#10B981';
         const bancoLabel = op.banco === 'SEMEAR' ? 'SEMEAR' : 'AGORACRED';
+        const barraClasse = op.banco === 'SEMEAR' ? 'purple' : 'agoracred-green';
         const foto = _avatarCell(op.imagem, op.operador, bancoCor);
 
-        // VAR. Atingido da Meta: variacao_meta_pp / perc_meta_anterior * 100
-        const percMetaAnt = op.perc_meta_anterior || 0;
-        const varAtingPct = percMetaAnt > 0
-            ? ((op.perc_meta_atual - percMetaAnt) / percMetaAnt) * 100
-            : 0;
-        const corVarAting = varAtingPct >= 0 ? 'var(--emerald)' : '#e74c3c';
-        const sinalVarAting = varAtingPct >= 0 ? '+' : '';
-
-        const corMeta = (op.perc_meta_atual || 0) >= 100 ? 'var(--emerald)' : 'var(--text-main)';
-        
-        // Barras de progresso nas células
-        const progressoAtualHtml = `
-            <div class="table-progress-container" style="min-width:110px;">
+        // ── % Meta atual — barra cor do banco ──
+        const percAtual = op.perc_meta_atual || 0;
+        const percAnt   = op.perc_meta_anterior || 0;
+        const barraAtual = `
+            <div class="table-progress-container" style="min-width:96px;">
                 <div class="table-progress-bar">
-                    <div class="table-progress-fill ${op.banco === 'SEMEAR' ? 'purple' : 'green'}" style="width: ${Math.min(op.perc_meta_atual || 0, 100)}%;"></div>
+                    <div class="table-progress-fill ${barraClasse}" style="width:${Math.min(percAtual,100)}%;"></div>
                 </div>
-                <span class="table-progress-text" style="color: ${bancoCor};">${(op.perc_meta_atual || 0).toFixed(1)}%</span>
-            </div>
-        `;
-
-        const progressoAntHtml = `
-            <div class="table-progress-container" style="min-width:110px;">
+                <span class="table-progress-text" style="color:${percAtual>=100?bancoCor:'#374151'};">${percAtual.toFixed(1)}%</span>
+            </div>`;
+        const barraAnt = `
+            <div class="table-progress-container" style="min-width:96px;">
                 <div class="table-progress-bar">
-                    <div class="table-progress-fill ${op.banco === 'SEMEAR' ? 'purple' : 'green'}" style="width: ${Math.min(percMetaAnt, 100)}%; opacity: 0.6;"></div>
+                    <div class="table-progress-fill ${barraClasse}" style="width:${Math.min(percAnt,100)}%;opacity:0.45;"></div>
                 </div>
-                <span class="table-progress-text" style="color: var(--text-muted);">${percMetaAnt.toFixed(1)}%</span>
-            </div>
-        `;
+                <span class="table-progress-text" style="color:#9ca3af;">${percAnt.toFixed(1)}%</span>
+            </div>`;
+
+        // ── Var pp — discreto ──
+        const varPP  = op.variacao_meta_pp || 0;
+        const corPP  = varPP >= 0 ? 'var(--emerald)' : '#e74c3c';
+        const setaPP = varPP >= 0 ? '▲' : '▼';
+
+        // ── Projeção — barra cor do banco, texto neutro ──
+        const projR$  = op.projecao || 0;
+        const projPct = op.projecao_percentual != null ? op.projecao_percentual : (op.meta > 0 ? (projR$ / op.meta) * 100 : 0);
+        const barraProj = `
+            <div class="table-progress-container" style="min-width:96px;">
+                <div class="table-progress-bar">
+                    <div class="table-progress-fill ${barraClasse}" style="width:${Math.min(projPct,100)}%;"></div>
+                </div>
+                <span class="table-progress-text" style="color:#374151;">${projPct.toFixed(1)}%</span>
+            </div>`;
 
         return `
             <tr>
                 <td class="sticky-col-1" style="text-align:center;padding:8px 10px;">${foto}</td>
-                <td class="sticky-col-2" style="text-align:center;padding:8px 10px;">
-                    <span style="background:${bancoCor};color:white;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">${bancoLabel}</span>
+                <td class="sticky-col-2" style="text-align:center;padding:8px 6px;">
+                    <span style="background:${bancoCor};color:white;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${bancoLabel}</span>
                 </td>
-                <td class="sticky-col-3 sticky-col-name" style="text-align:center;padding:8px 10px;font-weight:600;">${op.operador || '-'}</td>
-                <td style="text-align:center;padding:8px 10px;font-weight:600;">${formatarMoeda(op.fat_atual || 0)}</td>
-                <td style="text-align:center;padding:8px 10px;">${formatarMoeda(op.fat_anterior || 0)}</td>
-                <td style="text-align:center;padding:8px 10px;color:${corVar};font-weight:700;">${formatarMoeda(op.variacao || 0)}</td>
-                <td style="text-align:center;padding:8px 10px;color:${corVar};font-weight:700;">${sinal}${(op.variacao_percentual || 0).toFixed(1)}%</td>
-                <td style="text-align:center;padding:8px 10px;">${progressoAtualHtml}</td>
-                <td style="text-align:center;padding:8px 10px;">${progressoAntHtml}</td>
-                <td style="text-align:center;padding:8px 10px;font-weight:600;color:${(op.variacao_meta_pp || 0) >= 0 ? 'var(--emerald)' : '#e74c3c'};">${(op.variacao_meta_pp || 0) >= 0 ? '+' : ''}${(op.variacao_meta_pp || 0).toFixed(1)} pp</td>
-                <td style="text-align:center;padding:8px 10px;font-weight:600;color:${corVarAting};">${sinalVarAting}${varAtingPct.toFixed(1)}%</td>
-            </tr>
-        `;
+                <td class="sticky-col-3 sticky-col-name" style="text-align:left;padding:8px 10px;font-weight:600;color:#1f2937;">${op.operador || '-'}</td>
+                <td style="text-align:right;padding:8px 14px;font-weight:600;color:#1f2937;">${formatarMoeda(op.fat_atual || 0)}</td>
+                <td style="text-align:right;padding:8px 14px;color:#6b7280;">${formatarMoeda(op.fat_anterior || 0)}</td>
+                <td style="text-align:right;padding:8px 14px;color:${corVar};font-weight:700;">${formatarMoeda(op.variacao || 0)}</td>
+                <td style="text-align:center;padding:8px 10px;color:${corVar};font-weight:700;">${setaVar} ${sinalVar}${varPct.toFixed(1)}%</td>
+                <td style="text-align:center;padding:8px 8px;">${barraAtual}</td>
+                <td style="text-align:center;padding:8px 8px;">${barraAnt}</td>
+                <td style="text-align:center;padding:8px 10px;font-weight:600;color:${corPP};">${setaPP} ${varPP>=0?'+':''}${varPP.toFixed(1)} pp</td>
+                <td style="text-align:right;padding:8px 14px;color:#374151;font-weight:600;">${formatarMoeda(projR$)}</td>
+                <td style="text-align:center;padding:8px 8px;">${barraProj}</td>
+            </tr>`;
     }).join('');
 
-    // Linha de total
-    const totalFatAtual = operadores.reduce((s, op) => s + (op.fat_atual || 0), 0);
-    const totalFatAnt = operadores.reduce((s, op) => s + (op.fat_anterior || 0), 0);
-    const variacaoTotal = totalFatAnt > 0 ? ((totalFatAtual - totalFatAnt) / totalFatAnt) * 100 : 0;
-    const difTotal = totalFatAtual - totalFatAnt;
-    const corVarTotal = variacaoTotal >= 0 ? 'var(--emerald)' : '#e74c3c';
+    // ── Linha de total — neutra ──
+    const totAtual = operadores.reduce((s,op)=>s+(op.fat_atual||0),0);
+    const totAnt   = operadores.reduce((s,op)=>s+(op.fat_anterior||0),0);
+    const totVar   = totAnt>0?((totAtual-totAnt)/totAnt)*100:0;
+    const totDif   = totAtual-totAnt;
+    const corTot   = totVar>=0?'var(--emerald)':'#e74c3c';
+    const setaTot  = totVar>=0?'▲':'▼';
+    const totProj  = operadores.reduce((s,op)=>s+(op.projecao||0),0);
+    const totMeta  = operadores.reduce((s,op)=>s+(op.meta||0),0);
+    const totPct   = totMeta>0?(totProj/totMeta)*100:0;
+    const barraTot = `
+        <div class="table-progress-container" style="min-width:96px;">
+            <div class="table-progress-bar">
+                <div class="table-progress-fill purple" style="width:${Math.min(totPct,100)}%;"></div>
+            </div>
+            <span class="table-progress-text" style="color:#374151;">${totPct.toFixed(1)}%</span>
+        </div>`;
+
     tbody.innerHTML += `
-        <tr style="background:#fef3c7;font-weight:bold;">
-            <td class="sticky-col-1" style="text-align:center;padding:10px;color:#92400e;"></td>
-            <td class="sticky-col-2" style="text-align:center;padding:10px;color:#92400e;"></td>
-            <td class="sticky-col-3" style="text-align:center;padding:10px;color:#92400e;"><strong>TOTAL</strong></td>
-            <td style="text-align:center;padding:10px;color:#92400e;">${formatarMoeda(totalFatAtual)}</td>
-            <td style="text-align:center;padding:10px;color:#92400e;">${formatarMoeda(totalFatAnt)}</td>
-            <td style="text-align:center;padding:10px;color:${corVarTotal};">${formatarMoeda(difTotal)}</td>
-            <td style="text-align:center;padding:10px;color:${corVarTotal};">${variacaoTotal >= 0 ? '+' : ''}${variacaoTotal.toFixed(1)}%</td>
-            <td style="text-align:center;padding:10px;"></td>
-            <td style="text-align:center;padding:10px;"></td>
-            <td style="text-align:center;padding:10px;"></td>
-            <td style="text-align:center;padding:10px;"></td>
-        </tr>
-    `;
+        <tr style="background:#f8f9fa;font-weight:700;border-top:2px solid #e5e7eb;">
+            <td class="sticky-col-1" style="padding:10px;"></td>
+            <td class="sticky-col-2" style="padding:10px;"></td>
+            <td class="sticky-col-3" style="padding:10px;text-align:left;color:#374151;">TOTAL</td>
+            <td style="text-align:right;padding:10px;color:#374151;">${formatarMoeda(totAtual)}</td>
+            <td style="text-align:right;padding:10px;color:#6b7280;">${formatarMoeda(totAnt)}</td>
+            <td style="text-align:right;padding:10px;color:${corTot};">${formatarMoeda(totDif)}</td>
+            <td style="text-align:center;padding:10px;color:${corTot};">${setaTot} ${totVar>=0?'+':''}${totVar.toFixed(1)}%</td>
+            <td style="padding:10px;"></td><td style="padding:10px;"></td><td style="padding:10px;"></td>
+            <td style="text-align:right;padding:10px;color:#374151;">${formatarMoeda(totProj)}</td>
+            <td style="padding:10px;">${barraTot}</td>
+        </tr>`;
 }
 
 // ================================================================
@@ -1129,16 +1382,49 @@ function filtrarAdm() {
  * @param {string} banco - 'semear' ou 'agoracred'
  * @param {string|null} ultimaBaixa - Data no formato 'DD/MM/YYYY' ou null
  */
-function _atualizarBannerUltimaBaixa(banco, ultimaBaixa) {
+function _atualizarBannerUltimaBaixa(banco, ultimaBaixa, operadores) {
     // IDs dos elementos HTML criados no dashboard_adm.html
     const bannerEl = document.getElementById(`banner-ultima-baixa-${banco}`);
     const textoEl  = document.getElementById(`txt-ultima-baixa-${banco}`);
     if (!bannerEl || !textoEl) return;
 
     if (ultimaBaixa) {
-        // Exibe o banner com a data máxima do banco
-        textoEl.innerHTML = `<strong>Baixas até ${ultimaBaixa}</strong> (Feito/Dia = Faturamento ÷ ${ultimaBaixa.split('/')[0]} dias)`;
-        bannerEl.style.display = 'flex';  // torna visível
+        // Exibe o banner com a data máxima do banco e o Dia Útil correspondente
+        const duCalculado = typeof calcularDUdaData === 'function' ? calcularDUdaData(ultimaBaixa) : '';
+        const tagDu = duCalculado ? ` <span style="background:rgba(255,255,255,0.7);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;border:1px solid currentColor;">${duCalculado}</span>` : '';
+        
+        let extrasHtml = '';
+        if (operadores && operadores.length > 0) {
+            const op = operadores[0];
+            const dTrabalhados = op.dias_trabalhados || 0;
+            const dRestantes = op.dias_restantes || 0;
+            const dTotal = op.total_dias_uteis || 0;
+            
+            const isAgoracred = banco === 'agoracred';
+            const iconColor = isAgoracred ? 'color:#10b981;opacity:0.8;' : 'color:var(--purple-main);opacity:0.8;';
+            
+            extrasHtml = `
+            <div style="margin-top:6px;font-size:12.5px;font-weight:600;display:flex;gap:12px;color:var(--text-main);align-items:center;flex-wrap:wrap;">
+                <span><i class="fas fa-calendar-check" style="margin-right:4px;${iconColor}"></i>Dias úteis trabalhados: ${dTrabalhados}</span>
+                <span style="color:#cbd5e1;">|</span>
+                <span><i class="fas fa-hourglass-half" style="margin-right:4px;${iconColor}"></i>Dias úteis restantes: ${dRestantes}</span>
+                <span style="color:#cbd5e1;">|</span>
+                <span><i class="fas fa-calendar-alt" style="margin-right:4px;${iconColor}"></i>Total de dias úteis no mês: ${dTotal}</span>
+            </div>`;
+        }
+
+        textoEl.style.display = 'block';
+        textoEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <strong style="font-size:14px;color:var(--text-main);">Baixas até ${ultimaBaixa}</strong>${tagDu} 
+                <span style="font-size:11.5px;color:var(--text-muted);margin-left:4px;font-weight:500;">(Feito/Dia e projeção calculados até esta data de baixas do banco)</span>
+            </div>
+            ${extrasHtml}
+        </div>`;
+        
+        bannerEl.style.display = 'flex';
+        bannerEl.style.alignItems = 'flex-start';
     } else {
         // Oculta o banner quando não há data (ex: sem pagamentos no mês)
         bannerEl.style.display = 'none';
@@ -1814,3 +2100,37 @@ async function carregarPontoAdm(loginAlvo, skipPopularDropdown = false) {
 // Expõe para chamadas globais/onclick
 window.carregarPontoAdm                      = carregarPontoAdm;
 window.carregarOperadoresDropdownPontoAdm    = carregarOperadoresDropdownPontoAdm;
+
+// ================================================================
+// A função renderizarTrimestreDUAdm(banco, dados) está definida
+// nas linhas acima (~315-390) e é a versão correta com mapeamento bancoâ†’ID.
+
+
+
+// ================================================================
+// FILTRAR PELO DU ATUAL — BOTÃƒO "ATÃ‰ DU ATUAL" — ADM
+// ================================================================
+// Calcula e preenche os inputs de DU e recarrega toda a página ADM.
+
+function filtrarDUAtualAdm() {
+    const duFimEl = document.getElementById('filtro-du-fim-adm');
+    const duInicioEl = document.getElementById('filtro-du-inicio-adm');
+    if (!duFimEl || !duInicioEl) return;
+
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+    let duContador = 0;
+
+    for (let d = 1; d <= hoje.getDate(); d++) {
+        const dia = new Date(ano, mes, d);
+        const dow = dia.getDay();
+        if (dow >= 1 && dow <= 5) duContador++;
+    }
+
+    duInicioEl.value = 1;
+    duFimEl.value = Math.max(1, duContador);
+
+    if (typeof carregarDadosAdm === 'function') carregarDadosAdm();
+}
+window.filtrarDUAtualAdm = filtrarDUAtualAdm;

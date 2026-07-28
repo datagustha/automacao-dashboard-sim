@@ -215,6 +215,19 @@
                         <i class="fas fa-times" style="color:#dc2626;"></i> Limpar
                     </button>
                     <span id="badge-data-range" style="display:none;background:#ede9fe;color:var(--purple-main);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;"></span>
+
+                    <!-- Filtro por Dia Útil (Global em toda a página) -->
+                    <div style="display: flex; align-items: center; gap: 8px; border-left: 1px solid #e5e7eb; padding-left: 12px; margin-left: 4px;">
+                        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">
+                            <i class="fas fa-filter" style="margin-right:4px;color:var(--purple-main);"></i>Dia Útil:
+                        </span>
+                        <input type="number" id="filtro-du-inicio" min="1" max="31" placeholder="1" style="width:48px;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:center;" onchange="carregarDados()">
+                        <span style="font-size:11px;color:var(--text-muted);font-weight:600;">a</span>
+                        <input type="number" id="filtro-du-fim" min="1" max="31" placeholder="22" style="width:48px;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;text-align:center;" onchange="carregarDados()">
+                        <button type="button" onclick="filtrarDUAtual()" style="padding:5px 10px;background:var(--purple-main);color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;" title="Filtrar todos os relatórios até o dia útil atual">
+                            <i class="fas fa-calendar-check"></i> Até DU Atual
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -224,6 +237,22 @@
             <!-- PÁGINA: DASHBOARD                        -->
             <!-- ========================================== -->
             <section id="page-dashboard" class="page active">
+                <!-- BANNER DE ALERTA DE INATIVIDADE (SEM RECEBIMENTO > 2 DIAS) -->
+                <div id="alerta-sem-pgto-modal" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px 18px;margin-bottom:16px;color:#991b1b;font-weight:700;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:22px;color:#dc2626;"></i>
+                            <div>
+                                <span style="font-size:14px;display:block;" id="alerta-sem-pgto-titulo">⚠️ ATENÇÃO: Você está há mais de 2 dias úteis sem registrar recebimentos!</span>
+                                <span style="font-size:12px;font-weight:500;color:#7f1d1d;" id="alerta-sem-pgto-sub">💡 Dica: Revise seus preventivos, faça buscas ativas e negocie com os clientes em atraso. Cada contato conta para bater sua meta!</span>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('alerta-sem-pgto-modal').style.display='none'" style="border:none;background:transparent;color:#991b1b;font-size:16px;cursor:pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Cards de resumo (Nova estrutura refinada e minimalista) -->
                 <div class="row cards-adm-row grid-3">
                     <!-- Faturamento & Progresso da Meta -->
@@ -589,26 +618,49 @@
 
                 <!-- Recebimento Diário - Meta Diária (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
-                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária</h3>
+                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária (Seg a Sex)</h3>
                     <div class="table-wrapper" style="max-height:500px;overflow-y:auto;">
                         <table>
                             <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
                                 <tr>
-                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Dia</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Data (ex: 24 - sex)</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Dia Útil</th>
-                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Data</th>
-                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Quantidade</th>
-                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Qtd. Pgtos</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Recebimento (R$)</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Meta Diária</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Bateu Meta?</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-recebimento-diario-op">
-                                <tr><td colspan="7" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados diários...</td></tr>
+                                <tr><td colspan="6" style="text-align:center;color:#95a5a6;padding:20px;">Carregando dados diários...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                <!-- Visão Trimestral por Dia Útil -->
+                <div class="card-full" style="margin-bottom:16px;">
+                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> Visão Trimestral por Dia Útil (Últimos 3 Meses)</h3>
+                    <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Comparação direta dos recebimentos por dia útil nos 3 meses mais recentes (somente de segunda a sexta).</p>
+                    <div class="table-wrapper" style="max-height:450px;overflow-y:auto;">
+                        <table>
+                            <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
+                                <tr>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Dia Útil</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Data (Mês Atual)</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;" id="th-trimestre-m0">Mês Atual</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;" id="th-trimestre-m1">Mês -1</th>
+                                    <th style="padding:10px 14px;text-align:center;white-space:nowrap;" id="th-trimestre-m2">Mês -2</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-trimestre-du-op">
+                                <tr><td colspan="5" style="text-align:center;color:#95a5a6;padding:20px;">Carregando comparativo trimestral...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
 
                 <!-- Faturamento por Semana (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
@@ -630,14 +682,15 @@
                     </div>
                 </div>
 
+
                 <!-- ===== BLOCO 2: COMO VOCÊ ESTÁ EM RELAÇÃO AO MÊS ANTERIOR ===== -->
-                <div class="section-divider" style="border-color:#d97706;margin-bottom:16px;">
-                    <span style="color:#d97706;"><i class="fas fa-arrows-left-right"></i> COMPARAÇÃO COM O MÊS ANTERIOR</span>
+                <div class="section-divider" style="border-color:var(--purple-main);margin-bottom:16px;">
+                    <span style="color:var(--purple-main);"><i class="fas fa-arrows-left-right"></i> COMPARAÇÃO COM O MÊS ANTERIOR</span>
                 </div>
 
-                <!-- Variação vs Mês Anterior (largura total) — MOVIDO PARA ANTES DE "MÊS A MÊS" -->
+                <!-- Variação vs Mês Anterior (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
-                    <h3 class="panel-title" style="color:#d97706;"><i class="fas fa-arrows-left-right"></i> Variação vs Mês Anterior</h3>
+                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-arrows-left-right"></i> Variação vs Mês Anterior</h3>
                     <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Comparação do período selecionado com o mês anterior.</p>
                     <div id="op-variacao-periodo-detalhe" style="padding:18px;border-radius:8px;font-weight:700;font-size:15px;text-align:center;background:#f3f4f6;color:#374151;">
                         Carregando variação...
@@ -645,7 +698,7 @@
                     <!-- Tabela de variação detalhada -->
                     <div class="table-wrapper" style="margin-top:16px;">
                         <table>
-                            <thead style="background:#d97706;color:white;">
+                            <thead style="background:var(--purple-main);color:white;">
                                 <tr>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Período</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Faturamento</th>
@@ -679,10 +732,12 @@
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">% Meta</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Var. vs Mês Ant.</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Bateu?</th>
+                                    <th id="th-projecao-val" style="padding:10px 14px;text-align:center;white-space:nowrap;background:#5b21b6;">Projeção (R$)</th>
+                                    <th id="th-projecao-pct" style="padding:10px 14px;text-align:center;white-space:nowrap;background:#5b21b6;">% Proj.</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-resultado-mes-a-mes-perf">
-                                <tr><td colspan="7" style="text-align:center;color:#95a5a6;padding:20px;">Carregando histórico...</td></tr>
+                                <tr><td colspan="9" style="text-align:center;color:#95a5a6;padding:20px;">Carregando histórico...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -710,9 +765,9 @@
                     </div>
                     <div id="perf-dias-info-aba" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <div class="table-wrapper" style="overflow-x:auto;">
-                        <table>
-                            <thead style="background:var(--purple-main);color:white;">
-                                <tr>
+                        <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px;">
+                            <thead>
+                                <tr style="background:var(--purple-main);color:white;">
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;width:56px;">Foto</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Login</th>
                                     <th style="padding:10px 14px;text-align:center;white-space:nowrap;">Qtd. Pgtos</th>
@@ -735,7 +790,58 @@
                         </table>
                     </div>
                 </div>
+
+
+                <!-- ============================================ -->
+                <!-- RELATÓRIO FAIXA DE ATRASO VS MÊS (SEMEAR)  -->
+                <!-- Exibido somente para operadores SEMEAR       -->
+                <!-- ============================================ -->
+                <div id="card-faixas-vs-mes-op-container" style="display:none;margin-bottom:16px;">
+                    <div class="section-divider" style="border-color:var(--purple-main);margin:24px 0 16px;">
+                        <span style="color:var(--purple-main);"><i class="fas fa-layer-group"></i> FAIXA DE ATRASO VS MÊS (SEMEAR)</span>
+                    </div>
+
+                    <div class="card-full">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <div>
+                                <h3 class="panel-title" style="color:var(--purple-main);margin:0;">
+                                    <i class="fas fa-chart-bar"></i> Faixa de Atraso vs Mês — Visão Anual
+                                </h3>
+                                <p style="color:var(--text-muted);font-size:12px;margin:4px 0 0;">
+                                    Faturamento total por faixa de atraso em cada mês do ano.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="table-wrapper" style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:12px;">
+                                <thead>
+                                    <tr style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
+                                        <th style="padding:10px 14px;text-align:left;white-space:nowrap;border-right:2px solid #612d75;">Faixa de Atraso</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Jan</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Fev</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Mar</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Abr</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Mai</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Jun</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Jul</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Ago</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Set</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Out</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Nov</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;">Dez</th>
+                                        <th style="padding:10px 12px;text-align:center;white-space:nowrap;background:#612d75;">Total Ano</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-faixa-vs-mes-op">
+                                    <tr><td colspan="14" style="text-align:center;color:#95a5a6;padding:20px;">Carregando relatório de faixas...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </section>
+
 
             <!-- ========================================== -->
             <!-- PÁGINA: CAMPANHAS                          -->

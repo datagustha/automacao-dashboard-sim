@@ -182,12 +182,18 @@ async function carregarDados() {
         const ano = document.getElementById('filtro-ano')?.value || getAnoAtual();
         const dataInicio = document.getElementById('filtro-data-inicio')?.value || '';
         const dataFim = document.getElementById('filtro-data-fim')?.value || '';
+        // Filtro de dia útil (du_inicio / du_fim) — filtra toda a página pelo intervalo de DU
+        const duInicio = document.getElementById('filtro-du-inicio')?.value || '';
+        const duFim = document.getElementById('filtro-du-fim')?.value || '';
         
         showLoading();
         
         let url = `${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`;
         if (dataInicio) url += `&data_inicio=${dataInicio}`;
         if (dataFim) url += `&data_fim=${dataFim}`;
+        if (duInicio) url += `&du_inicio=${duInicio}`;
+        if (duFim) url += `&du_fim=${duFim}`;
+
         
         const response = await fetch(url);
         const data = await response.json();
@@ -201,6 +207,11 @@ async function carregarDados() {
             
             // Atualiza data do último recebimento no header
             _atualizarUltimoRecebimentoOp(data.data);
+
+            // Atualiza a aba Minha Performance sincronizada com os dados e filtros carregados
+            if (typeof renderizarMinhaPerformanceOp === 'function') {
+                renderizarMinhaPerformanceOp(data.data);
+            }
 
             // Atualiza pagamentos completos
             if (data.data.ultimos_pagamentos) {
@@ -489,8 +500,8 @@ function aplicarFiltroDatas() {
     const elPagFim = document.getElementById('filtro-pagamento-fim');
     if (elPagInicio) elPagInicio.value = inicio || '';
     if (elPagFim) elPagFim.value = fim || '';
-    // Atualiza tabela e KPIs imediatamente (sem ir ao servidor)
-    if (typeof aplicarFiltroPagamentos === 'function') aplicarFiltroPagamentos();
+    // Recarrega tudo do servidor com os filtros de data aplicados
+    carregarDados();
 }
 
 function limparFiltroDatas() {
@@ -505,8 +516,8 @@ function limparFiltroDatas() {
     const elPagFim = document.getElementById('filtro-pagamento-fim');
     if (elPagInicio) elPagInicio.value = '';
     if (elPagFim) elPagFim.value = '';
-    // Restaura KPIs e tabela
-    if (typeof aplicarFiltroPagamentos === 'function') aplicarFiltroPagamentos();
+    // Recarrega tudo do servidor sem filtros de data
+    carregarDados();
 }
 
 // ================================================================
@@ -555,8 +566,17 @@ async function carregarPerformanceOp() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) overlay.style.display = 'flex';
 
-        // Usa /api/resumo para ter indicadores_anterior, resultado_mes_a_mes e tma completos
-        const response = await fetch(`${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`);
+        // Usa /api/resumo para ter indicadores_anterior, resultado_mes_a_mes, trimestre_du e tma completos
+        const duInicio = document.getElementById('filtro-du-inicio')?.value || '';
+        const duFim = document.getElementById('filtro-du-fim')?.value || '';
+        const dataInicio = document.getElementById('filtro-data-inicio')?.value || '';
+        const dataFim = document.getElementById('filtro-data-fim')?.value || '';
+        let urlPerf = `${CONFIG.API_BASE}/resumo/${login}?mes=${mes}&ano=${ano}`;
+        if (dataInicio) urlPerf += `&data_inicio=${dataInicio}`;
+        if (dataFim) urlPerf += `&data_fim=${dataFim}`;
+        if (duInicio) urlPerf += `&du_inicio=${duInicio}`;
+        if (duFim) urlPerf += `&du_fim=${duFim}`;
+        const response = await fetch(urlPerf);
         const data = await response.json();
 
         if (overlay) overlay.style.display = 'none';
@@ -571,6 +591,7 @@ async function carregarPerformanceOp() {
                 indicadores_anterior: data.data.indicadores_anterior || {},
                 tma: data.data.tma || {},
                 ultimos_pagamentos: data.data.ultimos_pagamentos || [],
+                trimestre_du: data.data.trimestre_du || null,
             };
             // Sincroniza pagamentos para a tabela semanal
             pagamentosRecentesOpData = dadosRenderizar.ultimos_pagamentos;

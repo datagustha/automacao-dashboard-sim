@@ -94,14 +94,19 @@ def api_resumo(login):
                 'message': f'Operador {login} não encontrado'
             }), 404
         
-        # Filtros de data e faixa
+        # Filtros de data, faixa e dia útil
         ano = request.args.get('ano', datetime.now().year, type=int)
         mes = request.args.get('mes', datetime.now().month, type=int)
         faixa = request.args.get('faixa', 'todas')
         data_inicio = request.args.get('data_inicio', None)
         data_fim = request.args.get('data_fim', None)
+        du_inicio = request.args.get('du_inicio', None, type=int)
+        du_fim = request.args.get('du_fim', None, type=int)
         
-        resultado = montar_dashboard_operador(operador, ano, mes, faixa=faixa, data_inicio=data_inicio, data_fim=data_fim)
+        resultado = montar_dashboard_operador(
+            operador, ano, mes, faixa=faixa, data_inicio=data_inicio, data_fim=data_fim,
+            du_inicio=du_inicio, du_fim=du_fim
+        )
 
         
         if resultado:

@@ -1,0 +1,63 @@
+<html><head>
+    <link href="/css/fontes/fonts.min.css?v=Y9jw6o3ZL4z9WwjXxZFgrBTzberJqdx1uOJBcGoNyVU" rel="stylesheet" type="text/css">
+    <link href="/css/secullum.autenticacao.css?v=EdRSIlRWulY72TfzWBIqex9cleNZPgaJZk9gmNR8xyY" rel="stylesheet" type="text/css">
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+    <!--[if lt IE 9]>
+        <script src="/lib/html5shiv/dist/html5shiv.min.js"></script>
+    <![endif]-->
+
+        <title>Micromaq</title>
+</head>
+<body>
+    <header>
+    <div class="logo"></div>
+    <h1>A validade do serviço está expirada</h1>
+</header>
+
+<main>
+    <div class="container container-aviso">
+        <p>A validade do serviço está expirada.</p>
+        <p>Entre em contato com a revenda que atende sua empresa para regularizar a situação.</p>
+        <a href="/">Voltar ao menu</a>
+    </div>
+</main>
+
+
+
+    
+
+    <script>
+        var inputs = document.getElementsByTagName('input');
+
+        for (var i = 0; i < inputs.length; i++) {
+            var tipo = inputs[i].getAttribute('type').toLowerCase();
+
+            if (tipo === 'text' || tipo === 'password') {
+                inputs[i].focus();
+                break;
+            }
+        }
+
+        var campoComErro = document.querySelectorAll('.input-validation-error');
+
+        if (campoComErro.length > 0) {
+            campoComErro[0].focus();
+        }
+
+        var logoUrlPersonalizado = '';
+
+        if (logoUrlPersonalizado.length > 0) {
+            var logo = document.getElementsByClassName('logo-vertical');
+
+            if (logo.length > 0) {
+                logo[0].style.background = 'url(' + logoUrlPersonalizado + ') center center no-repeat';
+            }
+        }
+    </script>
+
+
+</body></html>

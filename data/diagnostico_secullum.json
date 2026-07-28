@@ -1,0 +1,161 @@
+{
+  "nome": [
+    {
+      "sel": "#react-select-3--value-item",
+      "txt": "Ariane Caroline de Andrade Theodoro"
+    },
+    {
+      "sel": "#react-select-2--value-item",
+      "txt": ""
+    },
+    {
+      "sel": ".Select-value-label",
+      "txt": ""
+    },
+    {
+      "sel": ".Select-value",
+      "txt": ""
+    },
+    {
+      "sel": "[class*='value-label']",
+      "txt": ""
+    },
+    {
+      "sel": ".Select--single .Select-value-label",
+      "txt": ""
+    }
+  ],
+  "html_select": "<div class=\"Select has-value is-searchable Select--single\"><div class=\"Select-control\"><div class=\"Select-multi-value-wrapper\" id=\"react-select-2--value\"><div class=\"Select-value\"><span class=\"Select-value-label\" role=\"option\" aria-selected=\"true\" id=\"react-select-2--value-item\">57734 - SIM FACILITA NEGOCIOS LTDA</span></div><div class=\"Select-input\" style=\"display: inline-block;\"><input aria-activedescendant=\"react-select-2--value\" aria-expanded=\"false\" aria-haspopup=\"false\" aria-owns=\"\" role=\"combobox\" value=\"\"></div></div><span class=\"Select-arrow-zone\"><span class=\"Select-arrow\"></span></span></div></div>",
+  "botoes": [
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btn-editar-conta-secullum\" class=\"btn\"><i class=\"fa fa-external-link\"></i><!-- react-text: 345 -->Editar Conta Secullum<!-- /react-text --></button>",
+      "i": 0,
+      "text": "Editar Conta Secullum",
+      "title": ""
+    },
+    {
+      "cls": "carrossel-dot",
+      "html": "<button class=\"carrossel-dot\"></button>",
+      "i": 1,
+      "text": "",
+      "title": ""
+    },
+    {
+      "cls": "carrossel-dot",
+      "html": "<button class=\"carrossel-dot\"></button>",
+      "i": 2,
+      "text": "",
+      "title": ""
+    },
+    {
+      "cls": "carrossel-dot ativo",
+      "html": "<button class=\"carrossel-dot ativo\"></button>",
+      "i": 3,
+      "text": "",
+      "title": ""
+    },
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btnImprimir\" title=\"Imprimir\" class=\"btn\"><i class=\"fa fa-print\"></i></button>",
+      "i": 4,
+      "text": "",
+      "title": "Imprimir"
+    },
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btnExportar\" title=\"Exportar\" class=\"btn\"><i class=\"fa fa-share\"></i></button>",
+      "i": 5,
+      "text": "",
+      "title": "Exportar"
+    },
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btnFiltros\" title=\"Filtros\" class=\"btn\"><i class=\"fa fa-filter\"></i></button>",
+      "i": 6,
+      "text": "",
+      "title": "Filtros"
+    },
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btnOpcoes\" title=\"Opções\" class=\"btn\"><i class=\"fa fa-cog\"></i></button>",
+      "i": 7,
+      "text": "",
+      "title": "Opções"
+    },
+    {
+      "cls": "btn button-icon arrow",
+      "html": "<button type=\"button\" id=\"leftArrow\" title=\"Visualizar o funcionario anterior\" class=\"btn button-icon arrow\" disabled=\"\" style=\"margin-right: 5px;\"><i class=\"fa fa-arrow-left\"></i></button>",
+      "i": 8,
+      "text": "",
+      "title": "Visualizar o funcionario anterior"
+    },
+    {
+      "cls": "btn button-icon arrow",
+      "html": "<button type=\"button\" id=\"rightArrow\" title=\"Visualizar o funcionario posterior\" class=\"btn button-icon arrow\" style=\"margin-right: 9px;\"><i class=\"fa fa-arrow-right\"></i></button>",
+      "i": 9,
+      "text": "",
+      "title": "Visualizar o funcionario posterior"
+    },
+    {
+      "cls": "btn button-search",
+      "html": "<button type=\"button\" id=\"btnPesquisaFuncionario\" class=\"btn button-search\" title=\"Pesquisar\"><i class=\"fa fa-search\"></i></button>",
+      "i": 10,
+      "text": "",
+      "title": "Pesquisar"
+    },
+    {
+      "cls": "btn button-search",
+      "html": "<button type=\"button\" id=\"btnMiniaturaHorario\" class=\"btn button-search\" title=\"Miniatura do Horário\"><i class=\"fa fa-list-alt\"></i></button>",
+      "i": 11,
+      "text": "",
+      "title": "Miniatura do Horário"
+    },
+    {
+      "cls": "btn button-search",
+      "html": "<button type=\"button\" id=\"btnConsultarCadastro\" class=\"btn button-search\" title=\"Consultar cadastro\"><i class=\"fa fa-user\"></i></button>",
+      "i": 12,
+      "text": "",
+      "title": "Consultar cadastro"
+    },
+    {
+      "cls": "btn",
+      "html": "<button type=\"button\" id=\"btnAtualizar\" class=\"btn\">Atualizar</button>",
+      "i": 13,
+      "text": "Atualizar",
+      "title": ""
+    },
+    {
+      "cls": "btn primario",
+      "html": "<button type=\"button\" id=\"btnOk\" class=\"btn primario\">OK</button>",
+      "i": 14,
+      "text": "OK",
+      "title": ""
+    },
+    {
+      "cls": "btn primario",
+      "html": "<button type=\"button\" id=\"modal-portaria-671-ok\" class=\"btn primario\">OK</button>",
+      "i": 15,
+      "text": "OK",
+      "title": ""
+    }
+  ],
+  "avancar": [
+    {
+      "sel": "i.fa-chevron-right",
+      "html": "<i class=\"fa fa-chevron-right subMenuInativo\"></i>"
+    },
+    {
+      "sel": "i.fa-arrow-right",
+      "html": "<i class=\"fa fa-arrow-right\"></i>"
+    },
+    {
+      "sel": "[class*='chevron-right']",
+      "html": "<i class=\"fa fa-chevron-right subMenuInativo\"></i>"
+    },
+    {
+      "sel": "[class*='arrow-right']",
+      "html": "<i class=\"fa fa-arrow-right\"></i>"
+    }
+  ]
+}

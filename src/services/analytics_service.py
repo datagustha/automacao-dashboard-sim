@@ -376,9 +376,9 @@ def calcular_performance_operador(
     total_dias_corridos_mes = cal_lib.monthrange(ano, mes)[1]
 
     # ----------------------------------------------------------------
-    # 5. CÁLCULO DAS MÉTRICAS (Unificado com Admin: por dia corrido da data máxima)
+    # 5. CÁLCULO DAS MÉTRICAS (Unificado com Admin: por dia útil)
     # ----------------------------------------------------------------
-    feito_diario = faturamento / dia_divisor if dia_divisor > 0 else 0.0
+    feito_diario = faturamento / dias_trabalhados if dias_trabalhados > 0 else 0.0
     meta_diaria = meta_valor / total_dias_uteis if total_dias_uteis > 0 else 0
     atingido_meta = (faturamento / meta_valor) * 100 if meta_valor > 0 else 0
     
@@ -387,8 +387,8 @@ def calcular_performance_operador(
     falta_90 = max(0, (meta_valor * 0.9) - faturamento)
     falta_100 = max(0, meta_valor - faturamento)
     
-    # Projeção baseada no feito_diario corrido multiplicado pelo total de dias corridos do mês
-    projecao = feito_diario * total_dias_corridos_mes
+    # Projeção baseada no feito_diario (DU) multiplicado pelo total de dias úteis do mês
+    projecao = feito_diario * total_dias_uteis
     projecao_percentual = (projecao / meta_valor) * 100 if meta_valor > 0 else 0
     
     # ----------------------------------------------------------------
@@ -596,73 +596,134 @@ def calcular_meta_diaria_por_dia(
     metas: List[Any],
     ano: int,
     mes: int,
-    banco: str = "SEMEAR"
+    banco: str = "SEMEAR",
+    data_inicio: Optional[str] = None,
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None,
+    ultima_baixa_str: Optional[str] = None
 ) -> List[Dict]:
     """
-    Retorna lista com faturamento de cada dia do mês e indica se a meta
-    diária foi atingida.
-
-    REGRAS:
-    - Meta diária = meta100 do mês / total de dias úteis do mês
-    - Exclui "Fora da fase" para SEMEAR
-    - Só inclui dias que tiveram pagamento
-    - Retorna dicts prontos para DataTable
+    Retorna lista com faturamento de todos os dias úteis (segunda a sexta) do mês.
+    Trunca no dia da última baixa do banco e respeita os filtros de data e DU.
     """
-    if not pagamentos:
-        return []
-
-    df = pd.DataFrame(pagamentos)
-    if df.empty or 'dtPgto' not in df.columns or 'valorTotal' not in df.columns:
-        return []
-
-    df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
-    df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
-    df = df.dropna(subset=['dtPgto'])
-
-    # Filtra mês/ano
-    df = df[(df['dtPgto'].dt.month == mes) & (df['dtPgto'].dt.year == ano)]
-
-    # Remove "Fora da fase" para SEMEAR
-    if banco == "SEMEAR" and 'faseAtraso' in df.columns:
-        df = df[df['faseAtraso'] != 'Fora da fase']
-
-    if df.empty:
-        return []
+    # Mapeamento dos dias da semana em português abreviado
+    DIAS_SEMANA_ABREV = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom']
 
     # Busca meta do mês
     meta_total = buscar_meta_do_mes(metas, ano, mes) if metas else 0.0
 
-    # Calcula total de dias úteis do mês
+    # Feriados BR + Corpus Christi
     from dateutil.easter import easter
     feriados_br = holidays.country_holidays('BR', years=ano)
     from datetime import timedelta as _td
     corpus_christi = easter(ano) + _td(days=60)
     feriados_br.update({corpus_christi: "Corpus Christi"})
+
+    # Total de dias corridos no mês
     total_dias_mes = calendar.monthrange(ano, mes)[1]
-    dias_uteis = [
-        d for d in range(1, total_dias_mes + 1)
-        if date(ano, mes, d).weekday() < 5 and date(ano, mes, d) not in feriados_br
-    ]
-    total_du = len(dias_uteis)
+
+    # Determina dia limite com base na última baixa
+    max_dia_baixa = total_dias_mes
+    if ultima_baixa_str:
+        try:
+            if '/' in ultima_baixa_str:
+                parts = ultima_baixa_str.split('/')
+                max_dia_baixa = int(parts[0])
+            elif '-' in ultima_baixa_str:
+                parts = ultima_baixa_str.split('-')
+                max_dia_baixa = int(parts[2][:2])
+        except Exception:
+            pass
+
+    # Prepara mapa de pagamentos por dia
+    pagos_por_dia = {}
+    qtd_por_dia = {}
+
+    if pagamentos:
+        df = pd.DataFrame(pagamentos)
+        if not df.empty and 'dtPgto' in df.columns and 'valorTotal' in df.columns:
+            # Converte data e valor
+            df['dtPgto'] = pd.to_datetime(df['dtPgto'], errors='coerce')
+            df['valorTotal'] = pd.to_numeric(df['valorTotal'], errors='coerce').fillna(0.0)
+            df = df.dropna(subset=['dtPgto'])
+            # Filtra mês e ano
+            df = df[(df['dtPgto'].dt.month == mes) & (df['dtPgto'].dt.year == ano)]
+            # Remove "Fora da fase" para SEMEAR
+            if banco == "SEMEAR" and 'faseAtraso' in df.columns:
+                df = df[df['faseAtraso'] != 'Fora da fase']
+
+            if not df.empty:
+                df['dia'] = df['dtPgto'].dt.day
+                grouped = df.groupby('dia').agg(
+                    valorTotal=('valorTotal', 'sum'),
+                    quantidade=('valorTotal', 'count')
+                ).reset_index()
+                for _, row in grouped.iterrows():
+                    pagos_por_dia[int(row['dia'])] = float(row['valorTotal'])
+                    qtd_por_dia[int(row['dia'])] = int(row['quantidade'])
+
+    # Mapeia dias úteis do mês (segunda a sexta)
+    dias_uteis_list = []
+    for d in range(1, total_dias_mes + 1):
+        dt_obj = date(ano, mes, d)
+        # Filtra apenas dias de segunda a sexta (weekday < 5)
+        if dt_obj.weekday() < 5 and dt_obj not in feriados_br:
+            dias_uteis_list.append(d)
+
+    total_du = len(dias_uteis_list)
     meta_diaria = meta_total / total_du if total_du > 0 and meta_total > 0 else 0.0
 
-    # Agrupa por dia
-    df['dia'] = df['dtPgto'].dt.day
-    por_dia = df.groupby('dia').agg(
-        valorTotal=('valorTotal', 'sum'),
-        quantidade=('valorTotal', 'count')
-    ).reset_index()
-    por_dia = por_dia.sort_values('dia')
+    dt_ini_filter = datetime.strptime(data_inicio[:10], '%Y-%m-%d').date() if data_inicio else None
+    dt_fim_filter = datetime.strptime(data_fim[:10], '%Y-%m-%d').date() if data_fim else None
 
     resultado = []
-    for _, row in por_dia.iterrows():
-        fat = float(row['valorTotal'])
-        qtd = int(row['quantidade'])
-        bateu = fat >= meta_diaria if meta_diaria > 0 else None
+    du_contador = 0
+
+    # Percorre os dias do mês até a última baixa do banco
+    for d in range(1, max_dia_baixa + 1):
+        dt_obj = date(ano, mes, d)
+        # Considera apenas dias de segunda a sexta-feira
+        if dt_obj.weekday() >= 5:
+            continue
+
+        # Filtro de data
+        if dt_ini_filter and dt_obj < dt_ini_filter:
+            continue
+        if dt_fim_filter and dt_obj > dt_fim_filter:
+            continue
+
+        dia_semana_str = DIAS_SEMANA_ABREV[dt_obj.weekday()]
+        data_formatada = f"{d:02d} - {dia_semana_str}"
+
+        # Verifica se é dia útil sequencial
+        if d in dias_uteis_list:
+            du_contador += 1
+            dia_util_str = f"{du_contador}º DU"
+            # Filtro por DU
+            if du_inicio is not None and du_contador < du_inicio:
+                continue
+            if du_fim is not None and du_contador > du_fim:
+                continue
+        else:
+            dia_util_str = "Feriado"
+
+        fat = pagos_por_dia.get(d, 0.0)
+        qtd = qtd_por_dia.get(d, 0)
+
+        # Status da meta batida
+        if meta_diaria > 0:
+            bateu = fat >= meta_diaria
+            status_meta = "✅ Sim" if bateu else "❌ Não"
+        else:
+            status_meta = "—"
 
         resultado.append({
-            'dia': int(row['dia']),
+            'dia': d,
+            'data_formatada': data_formatada,
+            'dia_util': dia_util_str,
             'quantidade': qtd,
+            'realizado_num': round(fat, 2),
             'realizado': (
                 f"R$ {fat:,.2f}"
                 .replace(",", "X").replace(".", ",").replace("X", ".")
@@ -672,10 +733,281 @@ def calcular_meta_diaria_por_dia(
                 .replace(",", "X").replace(".", ",").replace("X", ".")
                 if meta_diaria > 0 else "—"
             ),
-            'meta_batida': (
-                "✅ Sim" if bateu is True
-                else ("❌ Não" if bateu is False else "—")
-            ),
+            'meta_batida': status_meta,
         })
 
     return resultado
+
+
+# ================================================================
+# 9. COMPARATIVO TRIMESTRAL POR DIA ÚTIL (Segunda a Sexta)
+# ================================================================
+
+def montar_comparativo_trimestre_du(
+    pagamentos: List[Any],
+    ano: int,
+    mes: int,
+    banco: str = "SEMEAR",
+    data_inicio: Optional[str] = None,
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None,
+    ultima_baixa_str: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Monta a matriz comparativa dos últimos 3 meses por dia útil (somente seg a sex).
+    Exemplo: para Julho/2026, compara Julho (atual), Junho (M-1) e Maio (M-2).
+    Suporta filtragem por data_inicio/data_fim e du_inicio/du_fim.
+    Trunca no DU da última baixa real para não exibir dias futuros zerados.
+    """
+    DIAS_SEMANA_ABREV = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom']
+
+    # Define os 3 meses
+    dt_atual = date(ano, mes, 1)
+    dt_m1 = dt_atual - relativedelta(months=1)
+    dt_m2 = dt_atual - relativedelta(months=2)
+
+    meses_info = [
+        {'ano': dt_atual.year, 'mes': dt_atual.month, 'nome': calendar.month_name[dt_atual.month]},
+        {'ano': dt_m1.year, 'mes': dt_m1.month, 'nome': calendar.month_name[dt_m1.month]},
+        {'ano': dt_m2.year, 'mes': dt_m2.month, 'nome': calendar.month_name[dt_m2.month]}
+    ]
+
+    MESES_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    nome_m0 = MESES_PT[dt_atual.month - 1]
+    nome_m1 = MESES_PT[dt_m1.month - 1]
+    nome_m2 = MESES_PT[dt_m2.month - 1]
+
+    # Prepara mapa de pagamentos por (ano, mes, dia_util)
+    df_pg = pd.DataFrame(pagamentos or [])
+    if not df_pg.empty and 'dtPgto' in df_pg.columns and 'valorTotal' in df_pg.columns:
+        df_pg['dtPgto'] = pd.to_datetime(df_pg['dtPgto'], errors='coerce')
+        df_pg['valorTotal'] = pd.to_numeric(df_pg['valorTotal'], errors='coerce').fillna(0.0)
+        df_pg = df_pg.dropna(subset=['dtPgto'])
+        if banco == "SEMEAR" and 'faseAtraso' in df_pg.columns:
+            df_pg = df_pg[df_pg['faseAtraso'] != 'Fora da fase']
+    else:
+        df_pg = pd.DataFrame()
+
+    # Mapeia faturamento por (mês_idx, du_num)
+    fat_matriz = {0: {}, 1: {}, 2: {}}
+
+    for idx_m, info in enumerate(meses_info):
+        a_i, m_i = info['ano'], info['mes']
+        total_dias = calendar.monthrange(a_i, m_i)[1]
+        
+        # Feriados
+        feriados_br = holidays.country_holidays('BR', years=a_i)
+        from dateutil.easter import easter
+        from datetime import timedelta as _td
+        feriados_br.update({easter(a_i) + _td(days=60): "Corpus Christi"})
+
+        du_cont = 0
+        for d in range(1, total_dias + 1):
+            dt_o = date(a_i, m_i, d)
+            if dt_o.weekday() < 5 and dt_o not in feriados_br:
+                du_cont += 1
+                if not df_pg.empty:
+                    df_dia = df_pg[(df_pg['dtPgto'].dt.year == a_i) & (df_pg['dtPgto'].dt.month == m_i) & (df_pg['dtPgto'].dt.day == d)]
+                    val_dia = float(df_dia['valorTotal'].sum()) if not df_dia.empty else 0.0
+                else:
+                    val_dia = 0.0
+                fat_matriz[idx_m][du_cont] = {'val': val_dia, 'dia': d, 'wday': dt_o.weekday(), 'dt_obj': dt_o}
+
+    # Encontra o DU da última baixa real do banco no mês atual (m0)
+    limit_du_m0 = None
+    if ultima_baixa_str:
+        try:
+            if '/' in ultima_baixa_str:
+                p = ultima_baixa_str.split('/')
+                dt_baixa_banco = date(int(p[2]), int(p[1]), int(p[0]))
+            else:
+                dt_baixa_banco = datetime.strptime(ultima_baixa_str[:10], '%Y-%m-%d').date()
+
+            # Localiza o DU correspondente a essa data em m0
+            for du_k, info in fat_matriz[0].items():
+                if info['dt_obj'] == dt_baixa_banco:
+                    limit_du_m0 = du_k
+                    break
+        except Exception:
+            pass
+
+    linhas = []
+    totais = {0: 0.0, 1: 0.0, 2: 0.0}
+
+    # Se não houver filtro de data nem DU fornecido, trunca no DU da última baixa
+    max_du = max(len(fat_matriz[0]), len(fat_matriz[1]), len(fat_matriz[2]), 22)
+    if limit_du_m0 and not data_inicio and not data_fim and du_fim is None:
+        max_du = limit_du_m0
+
+    # Determina limites de DU para filtro por data ou por DU
+    dt_ini_filter = datetime.strptime(data_inicio[:10], '%Y-%m-%d').date() if data_inicio else None
+    dt_fim_filter = datetime.strptime(data_fim[:10], '%Y-%m-%d').date() if data_fim else None
+
+    for du in range(1, max_du + 1):
+        info_m0 = fat_matriz[0].get(du, {'val': 0.0, 'dia': 0, 'wday': 0, 'dt_obj': None})
+        info_m1 = fat_matriz[1].get(du, {'val': 0.0, 'dia': 0, 'wday': 0, 'dt_obj': None})
+        info_m2 = fat_matriz[2].get(du, {'val': 0.0, 'dia': 0, 'wday': 0, 'dt_obj': None})
+
+        # Aplica filtro de DU se fornecido
+        if du_inicio is not None and du < du_inicio:
+            continue
+        if du_fim is not None and du > du_fim:
+            continue
+
+        # Aplica filtro de data se fornecido (compara com a data do mês atual m0)
+        if dt_ini_filter and info_m0['dt_obj'] and info_m0['dt_obj'] < dt_ini_filter:
+            continue
+        if dt_fim_filter and info_m0['dt_obj'] and info_m0['dt_obj'] > dt_fim_filter:
+            continue
+
+        v0, v1, v2 = info_m0['val'], info_m1['val'], info_m2['val']
+        totais[0] += v0
+        totais[1] += v1
+        totais[2] += v2
+
+        dia_str = f"{info_m0['dia']:02d} - {DIAS_SEMANA_ABREV[info_m0['wday']]}" if info_m0['dia'] > 0 else "—"
+
+        linhas.append({
+            'dia_util': f"{du}º DU",
+            'data_atual': dia_str,
+            'v_atual': round(v0, 2),
+            'v_m1': round(v1, 2),
+            'v_m2': round(v2, 2),
+        })
+
+    return {
+        'colunas': [nome_m0, nome_m1, nome_m2],
+        'linhas': linhas,
+        'totais': {
+            'total_atual': round(totais[0], 2),
+            'total_m1': round(totais[1], 2),
+            'total_m2': round(totais[2], 2),
+        }
+    }
+
+
+
+# ================================================================
+# 10. RELATÓRIO FAIXA DE ATRASO VS MÊS (Relatório SEMEAR)
+# ================================================================
+
+def montar_matriz_faixa_vs_mes(
+    pagamentos: List[Any],
+    ano: int,
+    banco: str = "SEMEAR",
+    data_inicio: Optional[str] = None,
+    data_fim: Optional[str] = None,
+    du_inicio: Optional[int] = None,
+    du_fim: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Monta a matriz de Faixas de Atraso vs Mês (Jan a Dez + Total) para o SEMEAR.
+    Exclusivo do banco SEMEAR. Suporta filtragem por período de data e dia útil.
+    """
+    MESES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    
+    FAIXAS_PADRAO = [
+        'Fase 10 a 30',
+        'Fase 31 a 60',
+        'Fase 61 a 90',
+        'Fase 91 a 120',
+        'Fase 121 a 180',
+        'Fase 181 a 240',
+        'Fase 241 a 360',
+        'Fase 361 a 720',
+        'Fase 721 a 1080',
+        'Fase 1081 a 1440',
+        'Fase 1441 a 1800',
+        '> 1800'
+    ]
+
+    matriz = {faixa: {m: 0.0 for m in range(1, 13)} for faixa in FAIXAS_PADRAO}
+    matriz['Outras Faixas'] = {m: 0.0 for m in range(1, 13)}
+
+    if pagamentos:
+        df_pg = pd.DataFrame(pagamentos)
+        if not df_pg.empty and 'dtPgto' in df_pg.columns and 'valorTotal' in df_pg.columns:
+            df_pg['dtPgto'] = pd.to_datetime(df_pg['dtPgto'], errors='coerce')
+            df_pg['valorTotal'] = pd.to_numeric(df_pg['valorTotal'], errors='coerce').fillna(0.0)
+            df_pg = df_pg.dropna(subset=['dtPgto'])
+
+            # Filtra por data_inicio / data_fim se fornecido
+            if data_inicio:
+                dt_i = pd.to_datetime(data_inicio[:10])
+                df_pg = df_pg[df_pg['dtPgto'] >= dt_i]
+            if data_fim:
+                dt_f = pd.to_datetime(data_fim[:10]) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+                df_pg = df_pg[df_pg['dtPgto'] <= dt_f]
+            if not data_inicio and not data_fim:
+                df_pg = df_pg[df_pg['dtPgto'].dt.year == ano]
+
+            # Filtra por intervalo de Dia Útil (du_inicio / du_fim) se fornecido
+            if du_inicio is not None or du_fim is not None:
+                feriados_cache = {}
+                def _du_valido(dt_ts):
+                    try:
+                        d_obj = dt_ts.date()
+                        y_val = d_obj.year
+                        if y_val not in feriados_cache:
+                            feriados_cache[y_val] = holidays.country_holidays('BR', years=y_val)
+                            from dateutil.easter import easter
+                            from datetime import timedelta as _td
+                            feriados_cache[y_val].update({easter(y_val) + _td(days=60): "Corpus Christi"})
+                        
+                        feriados = feriados_cache[y_val]
+                        du_cnt = 0
+                        for day in range(1, d_obj.day + 1):
+                            temp_d = date(y_val, d_obj.month, day)
+                            if temp_d.weekday() < 5 and temp_d not in feriados:
+                                du_cnt += 1
+
+                        if du_inicio is not None and du_cnt < du_inicio:
+                            return False
+                        if du_fim is not None and du_cnt > du_fim:
+                            return False
+                        return True
+                    except Exception:
+                        return False
+                df_pg = df_pg[df_pg['dtPgto'].apply(_du_valido)]
+
+
+            for _, row in df_pg.iterrows():
+                fase_val = str(row.get('faseAtraso') or 'Outras Faixas').strip()
+                if fase_val == 'Fora da fase':
+                    continue
+                
+                # Normaliza nome da faixa
+                faixa_chave = fase_val if fase_val in FAIXAS_PADRAO else 'Outras Faixas'
+                m_num = int(row['dtPgto'].month)
+                if 1 <= m_num <= 12:
+                    matriz[faixa_chave][m_num] += float(row['valorTotal'])
+
+    linhas = []
+    totais_por_mes = {m: 0.0 for m in range(1, 13)}
+    total_geral = 0.0
+
+    for faixa, valores_mes in matriz.items():
+        soma_faixa = sum(valores_mes.values())
+        if soma_faixa == 0 and faixa == 'Outras Faixas':
+            continue
+
+        item_linha = {'faixa': faixa, 'total_ano': round(soma_faixa, 2)}
+        for m in range(1, 13):
+            val = valores_mes[m]
+            item_linha[MESES_ABREV[m - 1]] = round(val, 2)
+            totais_por_mes[m] += val
+        
+        total_geral += soma_faixa
+        linhas.append(item_linha)
+
+    linha_totais = {'faixa': 'TOTAL GERAL', 'total_ano': round(total_geral, 2)}
+    for m in range(1, 13):
+        linha_totais[MESES_ABREV[m - 1]] = round(totais_por_mes[m], 2)
+
+    return {
+        'ano': ano,
+        'meses': MESES_ABREV,
+        'linhas': linhas,
+        'totais': linha_totais
+    }
