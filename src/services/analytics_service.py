@@ -825,10 +825,10 @@ def montar_comparativo_trimestre_du(
                 dt_baixa_banco = datetime.strptime(ultima_baixa_str[:10], '%Y-%m-%d').date()
 
             # Localiza o DU correspondente a essa data em m0
-            for du_k, info in fat_matriz[0].items():
-                if info['dt_obj'] == dt_baixa_banco:
+            # Se a última baixa for num fim de semana/feriado, pega o último DU válido antes dela
+            for du_k in sorted(fat_matriz[0].keys()):
+                if fat_matriz[0][du_k]['dt_obj'] <= dt_baixa_banco:
                     limit_du_m0 = du_k
-                    break
         except Exception:
             pass
 
