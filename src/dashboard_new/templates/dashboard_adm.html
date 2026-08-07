@@ -414,20 +414,20 @@
                     <h3 class="panel-title" style="color:var(--purple-main);">
                         <i class="fas fa-chart-line"></i> Evolução Diária por Banco (Gráficos)
                     </h3>
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="chart-container">
+                    <div class="row" style="overflow:hidden;">
+                        <div class="col-6" style="min-width:0;overflow:hidden;">
+                            <div class="chart-container" style="min-width:0;overflow:hidden;">
                                 <h4 style="color:var(--purple-main);font-size:14px;font-weight:600;margin-bottom:10px;">SEMEAR</h4>
-                                <div id="grafico-evolucao-semear-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
+                                <div id="grafico-evolucao-semear-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow:hidden;">
                                     <i class="fas fa-chart-line"></i>
                                     <span>Carregando...</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="chart-container">
+                        <div class="col-6" style="min-width:0;overflow:hidden;">
+                            <div class="chart-container" style="min-width:0;overflow:hidden;">
                                 <h4 style="color:var(--emerald);font-size:14px;font-weight:600;margin-bottom:10px;">AGORACRED</h4>
-                                <div id="grafico-evolucao-agoracred-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
+                                <div id="grafico-evolucao-agoracred-adm" class="chart-placeholder" style="height:280px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;overflow:hidden;">
                                     <i class="fas fa-chart-line"></i>
                                     <span>Carregando...</span>
                                 </div>
@@ -438,9 +438,14 @@
 
                 <!-- TABELA VALORES DIÁRIOS POR BANCO -->
                 <div class="card-full" style="margin-bottom: 24px;">
-                    <h3 class="panel-title">
-                        <i class="fas fa-table"></i> Valores Diários por Banco
-                    </h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <h3 class="panel-title" style="margin:0;">
+                            <i class="fas fa-table"></i> Valores Diários por Banco
+                        </h3>
+                        <button id="btn-download-evolucao-diaria" onclick="exportarEvolucaoDiariaCSV()" title="Baixar evolução diária em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#7e3d97,#a855f7);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
                     <div class="table-wrapper">
                         <table>
                             <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
@@ -520,6 +525,10 @@
                             <h3 class="panel-title" style="margin:0;color:#7E3E9A;">
                                 <i class="fas fa-list"></i> Recebimento por Operador × Faixa de Atraso — SEMEAR
                             </h3>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <button id="btn-download-faixas-semear" onclick="exportarFaixasCSV()" title="Baixar Recebimento por Faixa SEMEAR em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:#7E3E9A;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
                             <div style="display:flex;background:#f3f4f6;border-radius:8px;padding:3px;border:1px solid #e5e7eb;gap:4px;">
                                 <button id="btn-faixa-modo-valor" onclick="alterarVisualizacaoFaixas('valor')" style="padding:6px 12px;border:none;border-radius:6px;background:#7E3E9A;color:white;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">
                                     <i class="fas fa-dollar-sign"></i> Valor (R$)
@@ -528,8 +537,14 @@
                                     <i class="fas fa-calculator"></i> Qtd. Contratos
                                 </button>
                             </div>
+                            </div>
                         </div>
+
+                        <!-- Banner: Resumo Alto × Baixo Atraso -->
+                        <div id="banner-alto-baixo-atraso-semear" style="display:none;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
+
                         <div class="table-wrapper" style="max-height: 480px;">
+
                             <table>
                                 <thead style="background:#7E3E9A;position:sticky;top:0;z-index:20;">
                                     <tr>
@@ -558,9 +573,14 @@
 
                     <!-- Comparativo Trimestral por Dia Útil SEMEAR -->
                     <div class="card-full" style="margin-bottom:20px;border-top:3px solid #7E3E9A;">
-                        <h3 class="panel-title" style="color:#7E3E9A;margin-bottom:8px;">
-                            <i class="fas fa-calendar-days"></i> Comparativo Trimestral por Dia Útil — SEMEAR
-                        </h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:#7E3E9A;margin:0;">
+                                <i class="fas fa-calendar-days"></i> Comparativo Trimestral por Dia Útil — SEMEAR
+                            </h3>
+                            <button id="btn-download-trimestre-semear" onclick="exportarTrimestreCSV('semear')" title="Baixar Comparativo Trimestral SEMEAR em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:#7E3E9A;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
                         <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Faturamento consolidado SEMEAR em cada dia útil, comparando os 3 meses mais recentes.</p>
                         <div class="table-wrapper" style="max-height:480px;">
                             <table>
@@ -583,9 +603,14 @@
 
                     <!-- Faixa de Atraso vs Mês SEMEAR -->
                     <div class="card-full" style="margin-bottom:0;border-top:3px solid #7E3E9A;">
-                        <h3 class="panel-title" style="color:#7E3E9A;margin-bottom:8px;">
-                            <i class="fas fa-chart-bar"></i> Faixa de Atraso vs Mês — Visão Anual SEMEAR
-                        </h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:#7E3E9A;margin:0;">
+                                <i class="fas fa-chart-bar"></i> Faixa de Atraso vs Mês — Visão Anual SEMEAR
+                            </h3>
+                            <button id="btn-download-matriz-faixas" onclick="exportarMatrizFaixasCSV()" title="Baixar Faixa de Atraso vs Mês em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:#7E3E9A;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
                         <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Faturamento consolidado SEMEAR por faixa de atraso em cada mês do ano.</p>
                         <div class="table-wrapper">
                             <table>
@@ -673,9 +698,14 @@
 
                     <!-- Comparativo Trimestral por Dia Útil AGORACRED -->
                     <div class="card-full" style="margin-bottom:0;border-top:3px solid #10B981;">
-                        <h3 class="panel-title" style="color:#10B981;margin-bottom:8px;">
-                            <i class="fas fa-calendar-days"></i> Comparativo Trimestral por Dia Útil — AGORACRED
-                        </h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:#10B981;margin:0;">
+                                <i class="fas fa-calendar-days"></i> Comparativo Trimestral por Dia Útil — AGORACRED
+                            </h3>
+                            <button id="btn-download-trimestre-agoracred" onclick="exportarTrimestreCSV('agoracred')" title="Baixar Comparativo Trimestral AGORACRED em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:#10B981;color:white;font-size:12px;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
                         <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Faturamento consolidado AGORACRED em cada dia útil, comparando os 3 meses mais recentes.</p>
                         <div class="table-wrapper" style="max-height:480px;">
                             <table>
@@ -709,9 +739,14 @@
 
                     <!-- Evolução dos Operadores -->
                     <div class="card-full" style="margin-bottom:20px;border-top:3px solid #0284c7;">
-                        <h3 class="panel-title" style="color:#0284c7;">
-                            <i class="fas fa-arrow-trend-up"></i> Evolução dos Operadores — Variação vs Mês Anterior
-                        </h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:#0284c7;margin:0;">
+                                <i class="fas fa-arrow-trend-up"></i> Evolução dos Operadores — Variação vs Mês Anterior
+                            </h3>
+                            <button id="btn-download-evolucao-operadores" onclick="exportarEvolucaoOperadoresCSV()" title="Baixar Evolução de Operadores em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:#0284c7;color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
                         <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
                             Comparação de faturamento e % da meta entre o período selecionado e o mesmo período do mês anterior.
                         </p>
@@ -881,6 +916,8 @@
                         <option value="LISTA_OPERADORES">Lista Geral de Operadores (Tabela)</option>
                     </select>
 
+
+
                     <!-- Dropdown Customizado com Pesquisa (Estilo Premium) -->
                     <div class="filter-group dropdown-multiselect" id="multiselect-operador-perf-adm" style="position:relative; z-index:100; flex:1; min-width:320px; background:white; padding:0;">
                         <button type="button" onclick="toggleDropdownMultiselect('dropdown-perf-operadores-content')" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;justify-content:space-between;">
@@ -955,7 +992,12 @@
 
                     <!-- Recebimento Diário (largura total) -->
                     <div class="card-full" style="margin-bottom:16px;">
-                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária (Seg a Sex)</h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária (Seg a Sex)</h3>
+                            <button onclick="exportarPerformanceDiariaAdmOpCSV()" title="Baixar Recebimento Diário em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
                         <div class="table-wrapper" style="max-height:500px;overflow-y:auto;">
                             <table>
                                 <thead id="thead-recebimento-diario-adm-op" style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
@@ -1002,8 +1044,13 @@
 
                     <!-- Resultado Mês a Mês (largura total) -->
                     <div class="card-full" style="margin-bottom:16px;">
-                        <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> Resultado Mês a Mês</h3>
-                        <div class="table-wrapper">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                            <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-chart-line"></i> Resultado Mês a Mês</h3>
+                            <button onclick="exportarResultadoMesAdmOpCSV()" title="Baixar Resultado Mês a Mês em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
+                        <div class="table-wrapper-no-scroll">
                             <table>
                                 <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:20;">
                                     <tr>
@@ -1100,37 +1147,165 @@
                             </table>
                         </div>
                     </div>
-                </div>
+
+                    <!-- ===== VISÃO PERIÓDICA DO OPERADOR ===== -->
+                    <div id="secao-visao-periodica-adm" style="display:none;">
+                        <div class="section-divider" style="border-color:var(--purple-main);margin:20px 0 16px;">
+                            <span style="color:var(--purple-main);"><i class="fas fa-calendar-range"></i> VISÃO PERIÓDICA</span>
+                        </div>
+
+                        <!-- Seletor de período -->
+                        <div class="card-full" style="margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                                <span style="font-weight:600;color:var(--purple-main);font-size:14px;"><i class="fas fa-clock"></i> Período:</span>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;" id="radio-periodica-adm">
+                                    <button class="btn-periodo-adm active" data-meses="1" onclick="selecionarPeriodoAdm(this,1)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:var(--purple-main);color:white;font-size:12px;font-weight:700;cursor:pointer;">1 Mês</button>
+                                    <button class="btn-periodo-adm" data-meses="3" onclick="selecionarPeriodoAdm(this,3)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">3 Meses</button>
+                                    <button class="btn-periodo-adm" data-meses="6" onclick="selecionarPeriodoAdm(this,6)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">6 Meses</button>
+                                    <button class="btn-periodo-adm" data-meses="12" onclick="selecionarPeriodoAdm(this,12)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">12 Meses</button>
+                                </div>
+                                <span id="label-periodo-adm" style="color:var(--text-muted);font-size:12px;"></span>
+                            </div>
+                        </div>
+
+                        <!-- KPI Cards -->
+                        <div id="kpi-periodica-adm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
+                            <div style="background:linear-gradient(135deg,#7e3d97,#a855f7);border-radius:12px;padding:16px 18px;color:white;">
+                                <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-coins"></i> RECEBIMENTO ACUM.</div>
+                                <div id="kpi-periodica-fat-adm" style="font-size:20px;font-weight:800;">—</div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:12px;padding:16px 18px;color:white;">
+                                <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-bullseye"></i> META ACUM.</div>
+                                <div id="kpi-periodica-meta-adm" style="font-size:20px;font-weight:800;">—</div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#065f46,#10b981);border-radius:12px;padding:16px 18px;color:white;">
+                                <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-percent"></i> % META</div>
+                                <div id="kpi-periodica-perc-adm" style="font-size:20px;font-weight:800;">—</div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#92400e,#f59e0b);border-radius:12px;padding:16px 18px;color:white;">
+                                <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-list-check"></i> QTD PGTOS</div>
+                                <div id="kpi-periodica-qtd-adm" style="font-size:20px;font-weight:800;">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela mês a mês do período -->
+                        <div class="card-full" style="margin-bottom:0;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                                <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-table"></i> Mês a Mês no Período</h3>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span id="span-loading-periodica-adm" style="display:none;color:var(--text-muted);font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</span>
+                                    <button onclick="exportarVisaoPeriodicaAdmCSV()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                        <i class="fas fa-download"></i> Exportar CSV
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
+                                        <tr>
+                                            <th style="padding:10px 14px;text-align:center;">Mês</th>
+                                            <th style="padding:10px 14px;text-align:center;">Qtd.</th>
+                                            <th style="padding:10px 14px;text-align:center;">Recebido (R$)</th>
+                                            <th style="padding:10px 14px;text-align:center;">Meta (R$)</th>
+                                            <th style="padding:10px 14px;text-align:center;">% Meta</th>
+                                            <th style="padding:10px 14px;text-align:center;">Bateu?</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-periodica-adm">
+                                        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;">Selecione um período acima</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                        <!-- Faixas de Atraso no Período (SEMEAR) -->
+                        <div id="container-faixas-periodica-adm" style="display:none;margin-top:-8px;"></div>
+
+                    </div>
+                    <!-- /VISÃO PERIÓDICA e /painel-perf-individual-adm -->
 
                 <!-- Painel Geral (Lista de Operadores) -->
-                <div id="painel-geral-operadores-adm">
+                <div id="painel-geral-operadores-adm" style="display:none;">
                     <!-- Card info da lista de operadores -->
                     <div class="card-full">
                         <h3 class="panel-title">
                             <i class="fas fa-users"></i> Lista de Operadores
                         </h3>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
-                                <tr>
-                                    <th class="sticky-col-1" style="color:white;padding:12px 16px;text-align:center;width:50px;background:var(--purple-main);">Foto</th>
-                                    <th class="sticky-col-2 sticky-col-name" style="color:white;padding:12px 16px;text-align:center;background:var(--purple-main);">Login</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">Banco</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">Turno</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">Tempo de Casa</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">Faturamento</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">Qtd. Pgtos</th>
-                                    <th style="color:white;padding:12px 16px;text-align:center;">% Meta</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-operadores-adm">
-                                <tr><td colspan="8" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
-                            </tbody>
-                        </table>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead style="background:var(--purple-main);position:sticky;top:0;z-index:20;">
+                                    <tr>
+                                        <th class="sticky-col-1" style="color:white;padding:12px 16px;text-align:center;width:50px;background:var(--purple-main);">Foto</th>
+                                        <th class="sticky-col-2 sticky-col-name" style="color:white;padding:12px 16px;text-align:center;background:var(--purple-main);">Login</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">Banco</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">Turno</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">Tempo de Casa</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">Faturamento</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">Qtd. Pgtos</th>
+                                        <th style="color:white;padding:12px 16px;text-align:center;">% Meta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-operadores-adm">
+                                    <tr><td colspan="8" style="text-align:center;color:#6B7280;padding:30px;">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                </div> <!-- /painel-geral-operadores-adm -->
 
-                </div> <!-- painel-geral-operadores-adm -->
+
+                <!-- ============================================================ -->
+                <!-- PIVOT PERMANENTE: RECEBIMENTO MENSAL POR OPERADOR            -->
+                <!-- Visível sempre que estiver na aba Operadores                 -->
+                <!-- ============================================================ -->
+                <div id="card-mes-operador-adm" style="display:block;margin-top:24px;width:100%;max-width:100%;box-sizing:border-box;">
+                    <div class="section-divider" style="border-color:#7E3E9A;margin:0 0 16px;">
+                        <span style="color:#7E3E9A;"><i class="fas fa-table"></i> RECEBIMENTO MENSAL POR OPERADOR</span>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:13px;font-weight:600;color:#6b7280;">Banco:</span>
+                        <button id="btn-pivot-semear" onclick="alterarPivotBanco('SEMEAR')" style="padding:5px 18px;border-radius:20px;border:2px solid #7E3E9A;background:#7E3E9A;color:white;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">SEMEAR</button>
+                        <button id="btn-pivot-agoracred" onclick="alterarPivotBanco('AGORACRED')" style="padding:5px 18px;border-radius:20px;border:2px solid #10b981;background:transparent;color:#10b981;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">AGORACRED</button>
+                        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">Faturamento + % atingido da meta por mês</span>
+                        <span style="margin-left:auto;font-size:11px;"><span style="color:#16a34a;font-weight:700;">Verde ≥100%</span> · <span style="color:#d97706;font-weight:700;">Laranja ≥70%</span> · <span style="color:#dc2626;font-weight:700;">Vermelho &lt;70%</span></span>
+                    </div>
+
+                    <!-- Card pivot enquadrado sem overflow no conteiner principal -->
+                    <div style="background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #f0f0f0;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
+                        <div style="padding:12px 18px;border-bottom:1px solid #f0f0f0;background:linear-gradient(90deg,#f5f0ff,#fff);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-calendar-alt" style="color:#7E3E9A;"></i>
+                            <h3 id="titulo-mes-operador-adm" style="margin:0;color:#7E3E9A;font-size:13px;font-weight:700;letter-spacing:0.3px;">Recebimento Mensal por Operador — SEMEAR</h3>
+                        </div>
+                        <!-- Scroll horizontal apenas dentro desta div -->
+                        <div style="max-height:520px;overflow-x:auto;overflow-y:auto;width:100%;max-width:100%;box-sizing:border-box;">
+                            <table style="width:100%;min-width:960px;border-collapse:separate;border-spacing:0;font-size:12px;">
+                                <thead id="thead-mes-operador-adm" style="background:#7E3E9A;position:sticky;top:0;z-index:20;">
+                                    <tr>
+                                        <th id="th-op-sticky" style="padding:10px 14px;color:white;text-align:left;min-width:150px;width:150px;position:sticky;left:0;z-index:30;background:#7E3E9A;border-right:2px solid rgba(255,255,255,0.3);box-shadow:2px 0 4px rgba(0,0,0,0.08);">Operador</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Jan</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Fev</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Mar</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Abr</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Mai</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Jun</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Jul</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Ago</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Set</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Out</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Nov</th>
+                                        <th style="padding:10px 8px;color:white;text-align:center;min-width:70px;">Dez</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-mes-operador-adm">
+                                    <tr><td colspan="13" style="text-align:center;color:#9ca3af;padding:40px;"><i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i>Carregando dados...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <!-- /card-mes-operador-adm -->
+
             </section>
 
             <!-- ==================================== -->

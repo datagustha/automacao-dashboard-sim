@@ -313,6 +313,41 @@ def montar_dashboard_operador(
 
     tma = buscar_tma_operador(login, banco, ano, mes) or {}
 
+    # Segmentação ≤360 dias / >360 dias (apenas SEMEAR)
+    # Usa pagamentos do PERÍODO COMPLETO (data_inicio a data_fim), não só do mês atual
+    faixas_operador = None
+    if banco == 'SEMEAR':
+        fases_ate_360   = {'Fase 10 a 30', 'Fase 31 a 60', 'Fase 61 a 90', 'Fase 91 a 120',
+                           'Fase 121 a 180', 'Fase 181 a 240', 'Fase 241 a 360'}
+        fases_acima_360 = {'Fase 361 a 720', 'Fase 721 a 1080', 'Fase 1081 a 1440',
+                           'Fase 1441 a 1800', '> 1800'}
+
+        # Para período com filtro de data, usa todos os pagamentos do range (multi-mês)
+        if data_inicio or data_fim:
+            pgtos_periodo = [p for p in pagamentos if _pagamento_no_range(p, data_inicio, data_fim)]
+        else:
+            pgtos_periodo = pagamentos_mes  # fallback: só mês atual
+
+        pgtos_ate_360   = [p for p in pgtos_periodo if (p.get('faseAtraso') or '') in fases_ate_360]
+        pgtos_acima_360 = [p for p in pgtos_periodo if (p.get('faseAtraso') or '') in fases_acima_360]
+
+        total_ate   = sum(float(p.get('valorTotal', 0) or 0) for p in pgtos_ate_360)
+        total_acima = sum(float(p.get('valorTotal', 0) or 0) for p in pgtos_acima_360)
+        total_geral = total_ate + total_acima
+
+        faixas_operador = {
+            'ate_360': {
+                'total':      round(total_ate, 2),
+                'qtd':        len(pgtos_ate_360),
+                'percentual': round(total_ate / total_geral * 100, 1) if total_geral > 0 else 0.0
+            },
+            'acima_360': {
+                'total':      round(total_acima, 2),
+                'qtd':        len(pgtos_acima_360),
+                'percentual': round(total_acima / total_geral * 100, 1) if total_geral > 0 else 0.0
+            }
+        }
+
     return {
         'operador': operador,
         'indicadores': indicadores,
@@ -326,6 +361,7 @@ def montar_dashboard_operador(
         'resultado_mes_a_mes': resultado_mes_a_mes,
         'trimestre_du': trimestre_du,
         'matriz_faixas_mes': matriz_faixas_mes,
+        'faixas_operador': faixas_operador,
         'total_pagamentos': len(pagamentos_mes),
         'metas': metas,
         'tma': tma

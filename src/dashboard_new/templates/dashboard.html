@@ -425,7 +425,7 @@
                 <div class="card-full" style="margin-bottom:24px;">
                     <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-days"></i> Resultado Mês a Mês</h3>
                     <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Desempenho consolidado mês a mês, mostrando a evolução (para cima ou para baixo) em relação ao mês anterior.</p>
-                    <div class="table-wrapper">
+                    <div class="table-wrapper-no-scroll">
                         <table>
                             <thead style="background:var(--purple-main);color:white;">
                                 <tr>
@@ -618,7 +618,12 @@
 
                 <!-- Recebimento Diário - Meta Diária (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
-                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária (Seg a Sex)</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-calendar-day"></i> Recebimento Diário — Meta Diária (Seg a Sex)</h3>
+                        <button id="btn-download-rec-diario" onclick="exportarPerformanceDiariaCSV()" title="Baixar Recebimento Diário em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
                     <div class="table-wrapper" style="max-height:500px;overflow-y:auto;">
                         <table>
                             <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
@@ -640,7 +645,12 @@
 
                 <!-- Visão Trimestral por Dia Útil -->
                 <div class="card-full" style="margin-bottom:16px;">
-                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> Visão Trimestral por Dia Útil (Últimos 3 Meses)</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-chart-line"></i> Visão Trimestral por Dia Útil (Últimos 3 Meses)</h3>
+                        <button id="btn-download-trimestre-op" onclick="exportarTrimestreDUOperadorCSV()" title="Baixar Comparativo Trimestral em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
                     <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Comparação direta dos recebimentos por dia útil nos 3 meses mais recentes (somente de segunda a sexta).</p>
                     <div class="table-wrapper" style="max-height:450px;overflow-y:auto;">
                         <table>
@@ -719,7 +729,12 @@
 
                 <!-- Resultado Mês a Mês (largura total) -->
                 <div class="card-full" style="margin-bottom:16px;">
-                    <h3 class="panel-title" style="color:var(--purple-main);"><i class="fas fa-chart-line"></i> Resultado Mês a Mês</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-chart-line"></i> Resultado Mês a Mês</h3>
+                        <button id="btn-download-mes-a-mes-op" onclick="exportarResultadoMesOperadorCSV()" title="Baixar Resultado Mês a Mês em CSV" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
                     <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">Desempenho consolidado mês a mês, mostrando a evolução (para cima ou para baixo) em relação ao mês anterior.</p>
                     <div class="table-wrapper">
                         <table>
@@ -790,6 +805,82 @@
                         </table>
                     </div>
                 </div>
+
+
+                <!-- ===== VISÃO PERIÓDICA DO OPERADOR ===== -->
+                <div class="section-divider" style="border-color:var(--purple-main);margin:24px 0 16px;">
+                    <span style="color:var(--purple-main);"><i class="fas fa-calendar-range"></i> VISÃO PERIÓDICA</span>
+                </div>
+
+                <!-- Seletor de período -->
+                <div class="card-full" style="margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span style="font-weight:600;color:var(--purple-main);font-size:14px;"><i class="fas fa-clock"></i> Período:</span>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="radio-periodica-op">
+                            <button class="btn-periodo-op active" data-meses="1" onclick="selecionarPeriodoOp(this,1)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:var(--purple-main);color:white;font-size:12px;font-weight:700;cursor:pointer;">1 Mês</button>
+                            <button class="btn-periodo-op" data-meses="3" onclick="selecionarPeriodoOp(this,3)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">3 Meses</button>
+                            <button class="btn-periodo-op" data-meses="6" onclick="selecionarPeriodoOp(this,6)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">6 Meses</button>
+                            <button class="btn-periodo-op" data-meses="12" onclick="selecionarPeriodoOp(this,12)" style="padding:5px 14px;border-radius:20px;border:2px solid var(--purple-main);background:transparent;color:var(--purple-main);font-size:12px;font-weight:700;cursor:pointer;">12 Meses</button>
+                        </div>
+                        <span id="label-periodo-op" style="color:var(--text-muted);font-size:12px;"></span>
+                    </div>
+                </div>
+
+                <!-- KPI Cards período -->
+                <div id="kpi-periodica-op" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+                    <div style="background:linear-gradient(135deg,#7e3d97,#a855f7);border-radius:12px;padding:16px 18px;color:white;">
+                        <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-coins"></i> RECEBIMENTO ACUM.</div>
+                        <div id="kpi-periodica-fat-op" style="font-size:20px;font-weight:800;">—</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:12px;padding:16px 18px;color:white;">
+                        <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-bullseye"></i> META ACUM.</div>
+                        <div id="kpi-periodica-meta-op" style="font-size:20px;font-weight:800;">—</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#065f46,#10b981);border-radius:12px;padding:16px 18px;color:white;">
+                        <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-percent"></i> % META</div>
+                        <div id="kpi-periodica-perc-op" style="font-size:20px;font-weight:800;">—</div>
+                    </div>
+                    <div style="background:linear-gradient(135deg,#92400e,#f59e0b);border-radius:12px;padding:16px 18px;color:white;">
+                        <div style="font-size:11px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-list-check"></i> QTD PGTOS</div>
+                        <div id="kpi-periodica-qtd-op" style="font-size:20px;font-weight:800;">—</div>
+                    </div>
+                </div>
+
+                <!-- Tabela mês a mês do período -->
+                <div class="card-full" style="margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                        <h3 class="panel-title" style="color:var(--purple-main);margin:0;"><i class="fas fa-table"></i> Mês a Mês no Período</h3>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span id="span-loading-periodica-op" style="display:none;color:var(--text-muted);font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</span>
+                            <button onclick="exportarVisaoPeriodicaOpCSV()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:none;background:var(--purple-main);color:white;font-size:12px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead style="background:var(--purple-main);color:white;position:sticky;top:0;z-index:10;">
+                                <tr>
+                                    <th style="padding:10px 14px;text-align:center;">Mês</th>
+                                    <th style="padding:10px 14px;text-align:center;">Qtd.</th>
+                                    <th style="padding:10px 14px;text-align:center;">Recebido (R$)</th>
+                                    <th style="padding:10px 14px;text-align:center;">Meta (R$)</th>
+                                    <th style="padding:10px 14px;text-align:center;">% Meta</th>
+                                    <th style="padding:10px 14px;text-align:center;">Bateu?</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-periodica-op">
+                                <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;">Carregando visão periódica...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+
+                <!-- Faixas de Atraso no Período (SEMEAR) -->
+                <div id="container-faixas-periodica-op" style="display:none;margin-top:-8px;"></div>
+
+                <!-- /VISÃO PERIÓDICA -->
+
 
 
                 <!-- ============================================ -->

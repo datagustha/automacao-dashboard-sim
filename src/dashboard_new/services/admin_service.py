@@ -1011,11 +1011,83 @@ def montar_dashboard_adm(
 
 
 
+
+    # ── PIVOT: Mês × Operador (usa pagamentos_brutos antes de removê-los) ──
+    def _pivot_mes_op(ranking: list, banco_nome: str, metas_por_op: dict) -> list:
+        """
+        Retorna lista de operadores com faturamento e % meta por mês.
+        Estrutura: [{login, mes_1..mes_12: {fat, perc_meta}}, ...]
+        """
+        MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+        resultado = []
+        for op in ranking:
+            login = op.get('login') or op.get('operador', '')
+            pbr   = op.get('pagamentos_brutos', [])
+            fat_m = {m: 0.0 for m in range(1, 13)}
+            for p in pbr:
+                data = p.get('dtPgto')
+                if not data:
+                    continue
+                try:
+                    if isinstance(data, datetime):
+                        pm = data.month
+                        py = data.year
+                    else:
+                        dt = datetime.strptime(str(data)[:10], '%Y-%m-%d')
+                        pm, py = dt.month, dt.year
+                except Exception:
+                    continue
+                if py == ano:
+                    fat_m[pm] += float(p.get('valorTotal') or 0.0)
+
+            meses_data = {}
+            for i, nome in enumerate(MESES_ABREV, start=1):
+                fat  = round(fat_m[i], 2)
+                meta = metas_por_op.get(login, {}).get(i, 0.0)
+                perc = round(fat / meta * 100, 1) if meta > 0 else 0.0
+                meses_data[nome] = {'fat': fat, 'meta': round(meta, 2), 'perc': perc}
+            resultado.append({'login': login, 'meses': meses_data})
+        return resultado
+
+    # Coleta metas por operador para o pivot
+    def _metas_por_login(operadores_lista: list, banco_nome: str) -> dict:
+        metas = {}
+        for op in operadores_lista:
+            login = op.get('login') or op.get('operador', '')
+            if banco_nome == 'SEMEAR':
+                m_list = buscar_metas_semear(op) or []
+            else:
+                m_list = buscar_metas_agoracred(op) or []
+            if m_list and not isinstance(m_list[0], dict):
+                m_list = [x.__dict__ for x in m_list]
+            meta_m = {m: 0.0 for m in range(1, 13)}
+            for m in m_list:
+                try:
+                    md = m.get('data')
+                    if not md:
+                        continue
+                    if isinstance(md, str):
+                        dt_obj = datetime.strptime(md[:10], '%Y-%m-%d')
+                    else:
+                        dt_obj = md
+                    if dt_obj.year == ano:
+                        meta_m[dt_obj.month] += float(m.get('meta100', 0.0) or 0.0)
+                except Exception:
+                    continue
+            metas[login] = meta_m
+        return metas
+
+    metas_semear_op    = _metas_por_login(operadores_semear, 'SEMEAR')
+    metas_agoracred_op = _metas_por_login(operadores_agoracred, 'AGORACRED')
+    pivot_semear    = _pivot_mes_op(ranking_semear,    'SEMEAR',    metas_semear_op)
+    pivot_agoracred = _pivot_mes_op(ranking_agoracred, 'AGORACRED', metas_agoracred_op)
+
     # 12. Remove pagamentos brutos antes de serializar
     for op in ranking_semear:
         op.pop('pagamentos_brutos', None)
     for op in ranking_agoracred:
         op.pop('pagamentos_brutos', None)
+
 
     # 13. Retorna o dicionário final com o formato exato esperado pelo frontend
     return {
@@ -1034,6 +1106,7 @@ def montar_dashboard_adm(
             'matriz_faixas_mes': matriz_faixas_semear,
             'trimestre_du': trimestre_du_semear,
             'ultima_baixa': ultima_baixa_semear,
+            'pivot_mes_operador': pivot_semear,
         },
         'agoracred': {
             'faturamento': fat_agoracred,
@@ -1048,6 +1121,7 @@ def montar_dashboard_adm(
             'resultado_mes_a_mes': historico_agoracred,
             'trimestre_du': trimestre_du_agoracred,
             'ultima_baixa': ultima_baixa_agoracred,
+            'pivot_mes_operador': pivot_agoracred,
         },
         'total_operacoes': total_ops,
         'operacoes_anterior': total_ops_ant,

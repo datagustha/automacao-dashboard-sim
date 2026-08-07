@@ -266,11 +266,15 @@ function renderizarDashboardAdm(dados) {
     // TABELA - Faixas SEMEAR (COM FOTOS)
     // ============================================================
     renderizarFaixasSemear(semear.faixas || []);
+    // Guarda dados das faixas globalmente para exportação CSV
+    window._faixasAdmSemear = semear.faixas || [];
 
     // ============================================================
     // TABELA - Evolução Operadores
     // ============================================================
     renderizarEvolucaoOperadores(dados.evolucao_operadores || []);
+    // Guarda dados da evolução de operadores para exportação CSV
+    window._evolucaoOperadoresAdm = dados.evolucao_operadores || [];
 
     // ============================================================
     // RELATÓRIO DIRETORIA: FAIXA DE ATRASO VS MÊS (SEMEAR)
@@ -286,6 +290,15 @@ function renderizarDashboardAdm(dados) {
         renderizarTrimestreDUAdm('semear', semear.trimestre_du || null);
         renderizarTrimestreDUAdm('agoracred', agoracred.trimestre_du || null);
     }
+    // Guarda dados trimestrais globalmente para exportação CSV
+    window._trimestreDUSemear   = semear.trimestre_du   || null;
+    window._trimestreDUAgoracred = agoracred.trimestre_du || null;
+    // Guarda dados do resultado mês a mês
+    window._resultadoMesSemear   = semear.resultado_mes_a_mes   || [];
+    window._resultadoMesAgoracred = agoracred.resultado_mes_a_mes || [];
+    // Guarda dados da evolução diária para exportação
+    window._evolucaoDiariaAdmSemear   = semear.evolucao   || [];
+    window._evolucaoDiariaAdmAgoracred = agoracred.evolucao || [];
 
     // ============================================================
     // ALERTAS DE OPERADORES INATIVOS (> 2 DIAS SEM RECEBIMENTO)
@@ -395,12 +408,16 @@ function renderizarMatrizFaixasAdm(dados) {
     const tbody = document.getElementById('tabela-faixa-vs-mes-adm');
     if (!tbody) return;
 
+    // Armazena para exportação CSV
+    window._matrizFaixasAdm = dados;
+
     if (!dados || !dados.linhas || dados.linhas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#95a5a6;padding:20px;">Sem dados disponíveis para o relatório de faixas.</td></tr>';
         return;
     }
 
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const mesAtualIdx = new Date().getMonth(); // 0-indexed
     const linhas = dados.linhas || [];
     let html = '';
 
@@ -409,10 +426,25 @@ function renderizarMatrizFaixasAdm(dados) {
         let rowHtml = `<tr style="background:${bgRow};border-bottom:1px solid #e5e7eb;">
             <td style="padding:9px 14px;font-weight:700;color:#7E3E9A;border-right:2px solid #e5e7eb;white-space:nowrap;">${linha.faixa || '-'}</td>`;
 
-        meses.forEach(mes => {
-            const val = linha[mes] || 0;
+        meses.forEach((mes, mIdx) => {
+            const val     = linha[mes]    || 0;
+            const valPrev = mIdx > 0 ? (linha[meses[mIdx - 1]] || 0) : null;
             const cor = val > 0 ? '#612d75' : '#9ca3af';
-            rowHtml += `<td style="padding:9px 12px;text-align:center;color:${cor};font-weight:${val > 0 ? '600' : '400'};">${val > 0 ? formatarMoeda(val) : '—'}</td>`;
+
+            // Delta vs mês anterior (só para mês atual e até o mês anterior ao atual)
+            let deltaHtml = '';
+            if (mIdx <= mesAtualIdx && valPrev !== null && (val > 0 || valPrev > 0)) {
+                const diff = val - valPrev;
+                if (diff > 0) {
+                    deltaHtml = `<div style="font-size:9px;color:#16a34a;font-weight:700;margin-top:1px;">▲ +${formatarMoeda(diff)}</div>`;
+                } else if (diff < 0) {
+                    deltaHtml = `<div style="font-size:9px;color:#dc2626;font-weight:700;margin-top:1px;">▼ ${formatarMoeda(Math.abs(diff))}</div>`;
+                } else if (val > 0) {
+                    deltaHtml = `<div style="font-size:9px;color:#6b7280;margin-top:1px;">— igual</div>`;
+                }
+            }
+
+            rowHtml += `<td style="padding:7px 12px;text-align:center;color:${cor};font-weight:${val > 0 ? '600' : '400'};">${val > 0 ? formatarMoeda(val) : '—'}${deltaHtml}</td>`;
         });
 
         const totalAno = linha.total_ano || 0;
@@ -432,9 +464,9 @@ function renderizarMatrizFaixasAdm(dados) {
         html += totalRow;
     }
 
-
     tbody.innerHTML = html;
 }
+
 
 // ================================================================
 // ALERTA DE OPERADORES INATIVOS — ADM
@@ -859,7 +891,6 @@ function renderizarFaixasSemear(faixas) {
     const tbody = document.getElementById('tabela-faixas-semear');
     if (!tbody) return;
 
-    // Guarda dados na variável global para permitir alternância de visualização instantânea
     window._faixasAdmSemear = faixas;
 
     if (!faixas || faixas.length === 0) {
@@ -867,59 +898,93 @@ function renderizarFaixasSemear(faixas) {
         return;
     }
 
-    // Modo de visualização ativo: 'valor' ou 'qtd'
     const modo = window._faixasModoVisualizacao || 'valor';
 
-    // Colunas de fases (em ordem)
-    const colunasFases = [
-        'Fase 10 a 30', 'Fase 31 a 60', 'Fase 61 a 90', 'Fase 91 a 120',
-        'Fase 121 a 180', 'Fase 181 a 240', 'Fase 241 a 360',
-        'Fase 361 a 720', 'Fase 721 a 1080', 'Fase 1081 a 1440',
-        'Fase 1441 a 1800', '> 1800'
-    ];
+    // Todas as faixas em ordem (operadores aparecem UMA vez com TODAS as colunas)
+    const faixasBaixo = ['Fase 10 a 30','Fase 31 a 60','Fase 61 a 90','Fase 91 a 120','Fase 121 a 180','Fase 181 a 240','Fase 241 a 360'];
+    const faixasAlto  = ['Fase 361 a 720','Fase 721 a 1080','Fase 1081 a 1440','Fase 1441 a 1800','> 1800'];
+    const colunasFases = [...faixasBaixo, ...faixasAlto];
 
-    tbody.innerHTML = faixas.map(op => {
+    // --- Linhas de operadores (cada um aparece UMA vez com todas as colunas) ---
+    let html = faixas.map((op, idx) => {
+        const bg = idx % 2 === 0 ? '#ffffff' : '#faf5ff';
         const foto = _avatarCell(op.imagem, op.operador, '#7e3d97');
-        let html = `
-            <tr>
-                <td class="sticky-col-1" style="text-align:center;padding:8px 10px;">${foto}</td>
-                <td class="sticky-col-2 sticky-col-name" style="text-align:center;padding:8px 10px;font-weight:600;color:var(--purple-main);">${op.operador || '-'}</td>
-        `;
-
+        let row = `<tr style="background:${bg};">
+            <td class="sticky-col-1" style="text-align:center;padding:8px 10px;">${foto}</td>
+            <td class="sticky-col-2 sticky-col-name" style="text-align:center;padding:8px 10px;font-weight:600;color:var(--purple-main);">${op.operador || '-'}</td>`;
         colunasFases.forEach(fase => {
-            // Se o modo for 'qtd', lemos a chave com sufixo '_qtd'
             const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
             const valor = op[chave] || 0;
             const cor = valor > 0 ? 'var(--text-main)' : '#9ca3af';
-            
-            // Formata conforme o modo selecionado
-            const valorFormatado = modo === 'qtd' ? parseInt(valor) : formatarMoeda(valor);
-            html += `<td class="faixa-atraso-col" style="color:${cor};text-align:center;">${valorFormatado}</td>`;
+            const valorFmt = modo === 'qtd' ? parseInt(valor) : formatarMoeda(valor);
+            row += `<td class="faixa-atraso-col" style="color:${cor};text-align:center;">${valorFmt}</td>`;
         });
-
-        html += `</tr>`;
-        return html;
+        row += '</tr>';
+        return row;
     }).join('');
 
-    // Cálculo dos totais de faixas
-    const totaisFases = {};
+    // --- Subtotal ≤ 360 dias (mostra só colunas baixo atraso, resto em branco) ---
+    const totaisBaixo = {};
+    faixasBaixo.forEach(fase => {
+        const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
+        totaisBaixo[fase] = faixas.reduce((s, op) => s + (op[chave] || 0), 0);
+    });
+    html += `<tr style="background:#bbf7d0;">
+        <td class="sticky-col-1" style="text-align:center;padding:8px;"></td>
+        <td class="sticky-col-2" style="padding:8px 10px;font-weight:800;font-size:11px;color:#065f46;white-space:nowrap;">✅ SUBTOTAL ≤ 360 dias</td>`;
+    colunasFases.forEach(fase => {
+        if (faixasBaixo.includes(fase)) {
+            const v = totaisBaixo[fase];
+            const vFmt = modo === 'qtd' ? parseInt(v) : formatarMoeda(v);
+            html += `<td class="faixa-atraso-col" style="font-weight:700;color:#065f46;text-align:center;background:#dcfce7;">${vFmt}</td>`;
+        } else {
+            html += `<td class="faixa-atraso-col" style="background:#f0fdf4;"></td>`;
+        }
+    });
+    html += '</tr>';
+
+    // --- Subtotal > 360 dias (mostra só colunas alto atraso, resto em branco) ---
+    const totaisAlto = {};
+    faixasAlto.forEach(fase => {
+        const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
+        totaisAlto[fase] = faixas.reduce((s, op) => s + (op[chave] || 0), 0);
+    });
+    html += `<tr style="background:#fecaca;">
+        <td class="sticky-col-1" style="text-align:center;padding:8px;"></td>
+        <td class="sticky-col-2" style="padding:8px 10px;font-weight:800;font-size:11px;color:#991b1b;white-space:nowrap;">⚠️ SUBTOTAL > 360 dias</td>`;
+    colunasFases.forEach(fase => {
+        if (faixasAlto.includes(fase)) {
+            const v = totaisAlto[fase];
+            const vFmt = modo === 'qtd' ? parseInt(v) : formatarMoeda(v);
+            html += `<td class="faixa-atraso-col" style="font-weight:700;color:#991b1b;text-align:center;background:#fee2e2;">${vFmt}</td>`;
+        } else {
+            html += `<td class="faixa-atraso-col" style="background:#fff7f7;"></td>`;
+        }
+    });
+    html += '</tr>';
+
+    // --- Total Geral ---
+    const totaisGeral = {};
     colunasFases.forEach(fase => {
         const chave = modo === 'qtd' ? `${fase}_qtd` : fase;
-        totaisFases[fase] = faixas.reduce((sum, op) => sum + (op[chave] || 0), 0);
+        totaisGeral[fase] = faixas.reduce((s, op) => s + (op[chave] || 0), 0);
     });
-
-    let totalHtml = `
-        <tr class="sticky-total-row" style="background:#e9d8fd;font-weight:bold;">
-            <td class="sticky-col-1" style="text-align:center;padding:10px;color:#4a1d8c;"><strong>TOTAL</strong></td>
-            <td class="sticky-col-2" style="text-align:center;padding:10px;color:#4a1d8c;"></td>
-    `;
+    html += `<tr style="background:#7E3E9A;color:#ffffff;font-weight:800;">
+        <td class="sticky-col-1" style="text-align:center;padding:10px;"></td>
+        <td class="sticky-col-2" style="padding:10px 14px;color:#ffffff;font-weight:800;">TOTAL GERAL</td>`;
     colunasFases.forEach(fase => {
-        const val = totaisFases[fase];
-        const valFormatado = modo === 'qtd' ? parseInt(val) : formatarMoeda(val);
-        totalHtml += `<td class="faixa-atraso-col" style="color:#4a1d8c;font-weight:700;text-align:center;">${valFormatado}</td>`;
+        const val = totaisGeral[fase];
+        const valFmt = modo === 'qtd' ? parseInt(val) : formatarMoeda(val);
+        html += `<td class="faixa-atraso-col" style="color:#ffffff;font-weight:800;text-align:center;">${valFmt}</td>`;
     });
-    totalHtml += `</tr>`;
-    tbody.innerHTML += totalHtml;
+    html += '</tr>';
+
+    tbody.innerHTML = html;
+
+    // Atualiza o banner de alto vs baixo atraso
+    if (typeof atualizarBannerAltoBaixoAtraso === 'function') {
+        atualizarBannerAltoBaixoAtraso(faixas);
+    }
 }
 
 /**
@@ -1397,8 +1462,8 @@ function _atualizarBannerUltimaBaixa(banco, ultimaBaixa, operadores) {
         if (operadores && operadores.length > 0) {
             const op = operadores[0];
             const dTrabalhados = op.dias_trabalhados || 0;
-            const dRestantes = op.dias_restantes || 0;
             const dTotal = op.total_dias_uteis || 0;
+            const dRestantes = Math.max(0, dTotal - dTrabalhados);
             
             const isAgoracred = banco === 'agoracred';
             const iconColor = isAgoracred ? 'color:#10b981;opacity:0.8;' : 'color:var(--purple-main);opacity:0.8;';
@@ -2134,3 +2199,396 @@ function filtrarDUAtualAdm() {
     if (typeof carregarDadosAdm === 'function') carregarDadosAdm();
 }
 window.filtrarDUAtualAdm = filtrarDUAtualAdm;
+
+// ================================================================
+// EXPORT - CSV DAS FAIXAS (Recebimento por Operador × Faixa de Atraso — SEMEAR)
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela de Recebimento por Operador × Faixa de Atraso (SEMEAR).
+ * Lê os dados de window._faixasAdmSemear preenchido ao renderizar o dashboard.
+ */
+function exportarFaixasCSV() {
+    const dados = window._faixasAdmSemear || [];
+    if (!dados || dados.length === 0) {
+        alert('Nenhum dado de faixas para exportar.');
+        return;
+    }
+
+    // As chaves de fases são as mesmas usadas em renderizarFaixasSemear
+    // O backend retorna {operador, imagem, 'Fase 10 a 30': valor, 'Fase 10 a 30_qtd': qtd, ...}
+    const faixasCols = [
+        'Fase 10 a 30', 'Fase 31 a 60', 'Fase 61 a 90', 'Fase 91 a 120',
+        'Fase 121 a 180', 'Fase 181 a 240', 'Fase 241 a 360',
+        'Fase 361 a 720', 'Fase 721 a 1080', 'Fase 1081 a 1440',
+        'Fase 1441 a 1800', '> 1800'
+    ];
+
+    const cabecalhos = ['Operador', ...faixasCols, 'Total (R$)'];
+
+    const linhas = dados.map(op => {
+        const valores = faixasCols.map(f => {
+            const v = op[f] || 0;
+            return (typeof v === 'number' ? v : 0).toFixed(2).replace('.', ',');
+        });
+        // Calcula total somando todos os valores de faixas
+        const total = faixasCols.reduce((acc, f) => acc + (op[f] || 0), 0);
+        return [`"${(op.operador || '').replace(/"/g, '""')}"`, ...valores, total.toFixed(2).replace('.', ',')].join(';');
+    });
+
+    // Linha de totais
+    const totais = faixasCols.map(f =>
+        dados.reduce((acc, op) => acc + (op[f] || 0), 0).toFixed(2).replace('.', ',')
+    );
+    const totalGeral = faixasCols.reduce((acc, f) =>
+        acc + dados.reduce((s, op) => s + (op[f] || 0), 0), 0
+    ).toFixed(2).replace('.', ',');
+    linhas.push(['"TOTAL"', ...totais, totalGeral].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSV(csv, `faixas_semear_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DO COMPARATIVO TRIMESTRAL POR DIA ÚTIL
+// ================================================================
+
+/**
+ * Exporta para CSV o Comparativo Trimestral por Dia Útil do banco especificado.
+ * @param {string} banco - 'semear' ou 'agoracred'
+ */
+function exportarTrimestreCSV(banco) {
+    const dados = banco === 'semear'
+        ? (window._trimestreDUSemear || null)
+        : (window._trimestreDUAgoracred || null);
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        alert('Nenhum dado trimestral para exportar.');
+        return;
+    }
+
+    // O backend retorna: colunas, linhas[{dia_util, data_atual, v_atual, v_m1, v_m2}],
+    // totais: {total_atual, total_m1, total_m2}
+    const colunas = dados.colunas || ['Mês Atual', 'M-1', 'M-2'];
+    const cabecalhos = ['Dia Útil', 'Data', colunas[0] || 'Mês Atual', colunas[1] || 'M-1', colunas[2] || 'M-2'];
+
+    const linhas = dados.linhas.map(linha => [
+        linha.dia_util || linha.du || '',
+        linha.data_atual || linha.data || '',
+        (linha.v_atual || linha.m0 || 0).toFixed(2).replace('.', ','),
+        (linha.v_m1   || linha.m1 || 0).toFixed(2).replace('.', ','),
+        (linha.v_m2   || linha.m2 || 0).toFixed(2).replace('.', ',')
+    ].join(';'));
+
+    // Linha de totais
+    if (dados.totais) {
+        const t = dados.totais;
+        linhas.push([
+            'TOTAL', '',
+            (t.total_atual || t.v_atual || t.m0 || 0).toFixed(2).replace('.', ','),
+            (t.total_m1   || t.v_m1   || t.m1 || 0).toFixed(2).replace('.', ','),
+            (t.total_m2   || t.v_m2   || t.m2 || 0).toFixed(2).replace('.', ',')
+        ].join(';'));
+    }
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSV(csv, `trimestral_${banco.toUpperCase()}_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DA EVOLUÇÃO DIÁRIA POR BANCO
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela de Valores Diários por Banco (SEMEAR + AGORACRED + Total).
+ * Cruza os dados de evolução diária de ambos os bancos.
+ */
+function exportarEvolucaoDiariaCSV() {
+    const semear    = window._evolucaoDiariaAdmSemear   || [];
+    const agoracred = window._evolucaoDiariaAdmAgoracred || [];
+
+    if (semear.length === 0 && agoracred.length === 0) {
+        alert('Nenhum dado de evolução diária para exportar.');
+        return;
+    }
+
+    // Constrói mapa por data — o backend retorna {data, total, quantidade, data_formatada}
+    const mapaData = {};
+    semear.forEach(d => {
+        const k = d.data || '';
+        if (!k) return;
+        if (!mapaData[k]) mapaData[k] = { data: k, dataFmt: d.data_formatada || k, semear: 0, agoracred: 0 };
+        mapaData[k].semear = d.total || d.valor || d.faturamento || 0;
+    });
+    agoracred.forEach(d => {
+        const k = d.data || '';
+        if (!k) return;
+        if (!mapaData[k]) mapaData[k] = { data: k, dataFmt: d.data_formatada || k, semear: 0, agoracred: 0 };
+        mapaData[k].agoracred = d.total || d.valor || d.faturamento || 0;
+    });
+
+    const cabecalhos = ['Data (YYYY-MM-DD)', 'Dia', 'SEMEAR (R$)', 'AGORACRED (R$)', 'TOTAL (R$)'];
+    const linhas = Object.values(mapaData)
+        .sort((a, b) => (a.data > b.data ? 1 : -1))
+        .map(d => [
+            d.data,
+            `"${d.dataFmt}"`,
+            (d.semear    || 0).toFixed(2).replace('.', ','),
+            (d.agoracred || 0).toFixed(2).replace('.', ','),
+            ((d.semear || 0) + (d.agoracred || 0)).toFixed(2).replace('.', ',')
+        ].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSV(csv, `evolucao_diaria_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DA EVOLUÇÃO DE OPERADORES (Variação vs Mês Anterior)
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela de Evolução dos Operadores — Variação vs Mês Anterior.
+ */
+function exportarEvolucaoOperadoresCSV() {
+    const dados = window._evolucaoOperadoresAdm || [];
+    if (!dados || dados.length === 0) {
+        alert('Nenhum dado de evolução de operadores para exportar.');
+        return;
+    }
+
+    const cabecalhos = ['Banco', 'Operador', 'Fat. Atual (R$)', 'Fat. Anterior (R$)',
+                        'Dif. (R$)', 'Var. (%)', '% Meta Atual', '% Meta Ant.',
+                        'Dif. Meta (pp)', 'Projeção (R$)', '% Projeção'];
+
+    const linhas = dados.map(op => [
+        op.banco || '',
+        `"${(op.operador || '').replace(/"/g, '""')}"`,
+        (op.fat_atual    || 0).toFixed(2).replace('.', ','),
+        (op.fat_anterior || 0).toFixed(2).replace('.', ','),
+        (op.variacao     || 0).toFixed(2).replace('.', ','),
+        (op.variacao_percentual || 0).toFixed(1).replace('.', ',') + '%',
+        (op.perc_meta_atual    || 0).toFixed(1).replace('.', ',') + '%',
+        (op.perc_meta_anterior || 0).toFixed(1).replace('.', ',') + '%',
+        (op.variacao_meta_pp   || 0).toFixed(1).replace('.', ',') + ' pp',
+        (op.projecao            || 0).toFixed(2).replace('.', ','),
+        (op.projecao_percentual != null ? op.projecao_percentual : (op.meta > 0 ? (op.projecao / op.meta) * 100 : 0)).toFixed(1).replace('.', ',') + '%'
+    ].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSV(csv, `evolucao_operadores_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - HELPER: dispara download de blob CSV
+// ================================================================
+
+/**
+ * Cria um link temporário e dispara o download de um CSV.
+ * @param {string} csvContent - Conteúdo CSV (com BOM UTF-8 se necessário)
+ * @param {string} filename   - Nome do arquivo
+ */
+function _dispararDownloadCSV(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Expõe funções de exportação ao escopo global
+window.exportarFaixasCSV             = exportarFaixasCSV;
+window.exportarTrimestreCSV          = exportarTrimestreCSV;
+window.exportarEvolucaoDiariaCSV     = exportarEvolucaoDiariaCSV;
+window.exportarEvolucaoOperadoresCSV = exportarEvolucaoOperadoresCSV;
+window.exportarMatrizFaixasCSV       = exportarMatrizFaixasCSV;
+
+// ================================================================
+// BANNER ALTO × BAIXO ATRASO (SEMEAR)
+// Calcula e exibe o resumo de baixo atraso (≤360d) vs alto atraso (>360d)
+// usando os dados já disponíveis em window._faixasAdmSemear
+// ================================================================
+
+/**
+ * Atualiza o banner de distribuição Alto × Baixo Atraso.
+ * @param {Array} faixas - lista de operadores com valores por fase
+ */
+function atualizarBannerAltoBaixoAtraso(faixas) {
+    const banner = document.getElementById('banner-alto-baixo-atraso-semear');
+    if (!banner) return;
+
+    const faixasBaixo = ['Fase 10 a 30','Fase 31 a 60','Fase 61 a 90','Fase 91 a 120','Fase 121 a 180','Fase 181 a 240','Fase 241 a 360'];
+    const faixasAlto  = ['Fase 361 a 720','Fase 721 a 1080','Fase 1081 a 1440','Fase 1441 a 1800','> 1800'];
+
+    const totalBaixo = faixasBaixo.reduce((acc, f) =>
+        acc + faixas.reduce((s, op) => s + (op[f] || 0), 0), 0);
+    const totalAlto  = faixasAlto.reduce((acc, f) =>
+        acc + faixas.reduce((s, op) => s + (op[f] || 0), 0), 0);
+    const totalGeral = totalBaixo + totalAlto;
+
+    const pctBaixo = totalGeral > 0 ? (totalBaixo / totalGeral * 100).toFixed(1) : '0.0';
+    const pctAlto  = totalGeral > 0 ? (totalAlto  / totalGeral * 100).toFixed(1) : '0.0';
+
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+        <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:12px;padding:16px 20px;border-left:5px solid #10b981;">
+            <div style="font-size:11px;font-weight:700;color:#065f46;letter-spacing:.5px;margin-bottom:6px;">🟢 BAIXO ATRASO — ATÉ 360 DIAS</div>
+            <div style="font-size:22px;font-weight:900;color:#065f46;">${formatarMoeda(totalBaixo)}</div>
+            <div style="font-size:12px;color:#047857;margin-top:4px;">${pctBaixo}% do recebimento total</div>
+            <div style="background:#10b981;border-radius:4px;height:6px;margin-top:8px;width:${pctBaixo}%;"></div>
+        </div>
+        <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:12px;padding:16px 20px;border-left:5px solid #ef4444;">
+            <div style="font-size:11px;font-weight:700;color:#991b1b;letter-spacing:.5px;margin-bottom:6px;">🔴 ALTO ATRASO — ACIMA DE 360 DIAS</div>
+            <div style="font-size:22px;font-weight:900;color:#991b1b;">${formatarMoeda(totalAlto)}</div>
+            <div style="font-size:12px;color:#b91c1c;margin-top:4px;">${pctAlto}% do recebimento total</div>
+            <div style="background:#ef4444;border-radius:4px;height:6px;margin-top:8px;width:${pctAlto}%;"></div>
+        </div>
+    `;
+}
+window.atualizarBannerAltoBaixoAtraso = atualizarBannerAltoBaixoAtraso;
+
+// ================================================================
+// EXPORT - CSV DA MATRIZ FAIXAS VS MÊS
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela Faixa de Atraso vs Mês — Visão Anual SEMEAR.
+ * Lê window._matrizFaixasAdm gravado em renderizarMatrizFaixasAdm().
+ */
+function exportarMatrizFaixasCSV() {
+    const dados = window._matrizFaixasAdm || null;
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        alert('Nenhum dado de matriz de faixas para exportar.');
+        return;
+    }
+
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const cabecalhos = ['Faixa de Atraso', ...meses, 'Total Ano'];
+
+    const linhas = dados.linhas.map(linha => [
+        `"${(linha.faixa || '').replace(/"/g,'""')}"`,
+        ...meses.map(m => (linha[m] || 0).toFixed(2).replace('.',',')),
+        (linha.total_ano || 0).toFixed(2).replace('.',',')
+    ].join(';'));
+
+    if (dados.totais) {
+        const t = dados.totais;
+        linhas.push([
+            '"TOTAL GERAL"',
+            ...meses.map(m => (t[m] || 0).toFixed(2).replace('.',',')),
+            (t.total_ano || 0).toFixed(2).replace('.',',')
+        ].join(';'));
+    }
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSV(csv, `faixa_vs_mes_semear_${new Date().toISOString().split('T')[0]}.csv`);
+}
+window.exportarMatrizFaixasCSV = exportarMatrizFaixasCSV;
+
+// ================================================================
+// VISÃO PERIÓDICA — Faixas ≤360 / >360 (SEMEAR)
+// ================================================================
+
+/**
+ * Renderiza mini-cards de faixa de atraso na Visão Periódica do admin.
+ * Só exibe para banco SEMEAR; oculta para AGORACRED e CONSOLIDADO.
+ */
+function renderizarFaixasPeriodica(faixas, banco) {
+    const container = document.getElementById('container-faixas-periodica-adm');
+    if (!container) return;
+    if (!faixas || banco !== 'SEMEAR') {
+        container.style.display = 'none';
+        return;
+    }
+    const ate   = faixas.ate_360   || {};
+    const acima = faixas.acima_360 || {};
+    container.style.display = 'block';
+    container.innerHTML = `
+    <div style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:#7e3d97;letter-spacing:.5px;margin-bottom:10px;">
+            <i class="fas fa-layer-group"></i> FAIXAS DE ATRASO NO PERÍODO
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:10px;padding:12px 16px;border-left:4px solid #10b981;">
+                <div style="font-size:10px;font-weight:700;color:#065f46;letter-spacing:.5px;margin-bottom:4px;">🟢 ATÉ 360 DIAS</div>
+                <div style="font-size:18px;font-weight:900;color:#065f46;">${formatarMoeda(ate.total || 0)}</div>
+                <div style="font-size:11px;color:#047857;margin-top:2px;">${ate.qtd || 0} pgtos · ${ate.percentual || 0}%</div>
+            </div>
+            <div style="flex:1;min-width:160px;background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:10px;padding:12px 16px;border-left:4px solid #ef4444;">
+                <div style="font-size:10px;font-weight:700;color:#991b1b;letter-spacing:.5px;margin-bottom:4px;">🔴 ACIMA DE 360 DIAS</div>
+                <div style="font-size:18px;font-weight:900;color:#991b1b;">${formatarMoeda(acima.total || 0)}</div>
+                <div style="font-size:11px;color:#b91c1c;margin-top:2px;">${acima.qtd || 0} pgtos · ${acima.percentual || 0}%</div>
+            </div>
+        </div>
+    </div>`;
+}
+window.renderizarFaixasPeriodica = renderizarFaixasPeriodica;
+
+// ================================================================
+// VISÃO MÊS × OPERADOR (pivot table)
+// ================================================================
+
+/**
+ * Renderiza tabela pivô Operador × Mês com faturamento e % meta de cada operador por mês.
+ * @param {Array}  operadores  - lista do ranking (semear ou agoracred)
+ * @param {string} banco       - 'SEMEAR' | 'AGORACRED'
+ */
+function renderizarMesOperadorAdm(operadores, banco) {
+    const tbody  = document.getElementById('tabela-mes-operador-adm');
+    const titulo = document.getElementById('titulo-mes-operador-adm');
+    const card   = document.getElementById('card-mes-operador-adm');
+    if (!tbody || !card) return;
+
+    const cor = banco === 'AGORACRED' ? '#10b981' : '#7E3E9A';
+    if (titulo) titulo.textContent = `Recebimento Mensal por Operador — ${banco}`;
+
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mesAtual = new Date().getMonth(); // 0-indexed
+
+    if (!operadores || operadores.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#9ca3af;padding:20px;">Nenhum dado disponível para este banco</td></tr>';
+        card.style.display = 'block';
+        return;
+    }
+
+    let html = '';
+    operadores.forEach((op, idx) => {
+        const bg       = idx % 2 === 0 ? '#ffffff' : (banco === 'AGORACRED' ? '#f0fdf4' : '#faf5ff');
+        const bgSticky = idx % 2 === 0 ? '#ffffff' : (banco === 'AGORACRED' ? '#f0fdf4' : '#faf5ff');
+        // Backend retorna: { login, meses: { Jan: {fat, meta, perc}, ... } }
+        const mesMap = op.meses || {};
+        const nomeOp = op.login || op.operador || '-';
+
+        // PRIMEIRO TD: nome do operador — sticky para permanecer visível durante o scroll horizontal
+        let row = `<tr style="background:${bg};">
+            <td style="padding:8px 12px;font-weight:700;white-space:nowrap;border-right:2px solid #e5e7eb;text-align:left;color:#1f2937;font-size:12px;position:sticky;left:0;z-index:5;background:${bgSticky};box-shadow:2px 0 4px rgba(0,0,0,0.06);min-width:150px;width:150px;">${nomeOp}</td>`;
+
+        meses.forEach((nomeMes, i) => {
+            const m = mesMap[nomeMes];
+            const isFuturo = i > mesAtual;
+            if (isFuturo) {
+                row += `<td style="padding:6px 4px;text-align:center;color:#d1d5db;background:#fafafa;min-width:70px;">—</td>`;
+            } else if (m && (m.fat > 0 || m.meta > 0)) {
+                const perc    = (m.perc || 0).toFixed(1);
+                const percNum = parseFloat(perc);
+                const percCor = percNum >= 100 ? '#16a34a' : percNum >= 70 ? '#d97706' : '#dc2626';
+                const percBg  = percNum >= 100 ? '#f0fdf4' : percNum >= 70 ? '#fffbeb' : '#fef2f2';
+                row += `<td style="padding:6px 4px;text-align:center;vertical-align:middle;min-width:70px;border-bottom:1px solid #f3f4f6;">
+                    <div style="font-size:11px;font-weight:700;color:#111827;">${formatarMoeda(m.fat || 0)}</div>
+                    <span style="font-size:10px;font-weight:700;color:${percCor};background:${percBg};border-radius:10px;padding:1px 5px;display:inline-block;margin-top:2px;border:1px solid ${percCor}20;">${perc}%</span>
+                </td>`;
+            } else {
+                row += `<td style="padding:6px 4px;text-align:center;color:#9ca3af;min-width:70px;">—</td>`;
+            }
+        });
+        row += '</tr>';
+        html += row;
+    });
+
+    tbody.innerHTML = html;
+    card.style.display = 'block';
+}
+window.renderizarMesOperadorAdm = renderizarMesOperadorAdm;

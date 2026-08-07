@@ -248,6 +248,13 @@ async function carregarDadosAdm() {
                 carregarPagamentosAdm();
             }
             renderizarOperadoresAdm(data.data);
+
+            // Pivot Mês × Operador
+            window._pivotSemear    = (data.data.semear    || {}).pivot_mes_operador || [];
+            window._pivotAgoracred = (data.data.agoracred || {}).pivot_mes_operador || [];
+            if (typeof renderizarMesOperadorAdm === 'function') {
+                renderizarMesOperadorAdm(window._pivotSemear, 'SEMEAR');
+            }
         } else {
             console.error('Erro ao carregar dados ADM:', data.message);
             showErrorAdm('Erro ao carregar dados: ' + data.message);
@@ -1242,6 +1249,21 @@ function renderizarTmaAdm(lista) {
                 sel.value = "CONSOLIDADO_SEMEAR";
                 selecionarOperadorPerfAdm();
             }
+
+            // Renderiza o pivot Operador × Mês imediatamente (SEMEAR por padrão)
+            // O card agora é permanente (display:block) — só precisa preencher os dados
+            if (typeof renderizarMesOperadorAdm === 'function') {
+                renderizarMesOperadorAdm(window._pivotSemear || [], 'SEMEAR');
+                // Reseta botões do pivot para SEMEAR ativo
+                const btnS = document.getElementById('btn-pivot-semear');
+                const btnA = document.getElementById('btn-pivot-agoracred');
+                const head = document.getElementById('thead-mes-operador-adm');
+                const tit  = document.getElementById('titulo-mes-operador-adm');
+                if (btnS) { btnS.style.background = '#7E3E9A'; btnS.style.color = 'white'; }
+                if (btnA) { btnA.style.background = 'transparent'; btnA.style.color = '#10b981'; }
+                if (head) head.style.background = '#7E3E9A';
+                if (tit)  tit.style.color = '#7E3E9A';
+            }
         } else if (pagina === 'pagamentos') {
             // Sincroniza o mês/ano da aba de pagamentos com o filtro principal ANTES de carregar
             const mesPrincipal = document.getElementById('filtro-mes-adm')?.value || getMesAtual();
@@ -1661,6 +1683,16 @@ async function selecionarOperadorPerfAdm() {
         painelIndiv.style.display = 'none';
         if (banner) banner.style.display = 'none';
         
+        // Renderiza o pivot Mês × Operador (usa banco atual selecionado no filtro)
+        const bancoPivot = document.getElementById('filtro-banco-adm')?.value || 'SEMEAR';
+        if (typeof renderizarMesOperadorAdm === 'function') {
+            if (bancoPivot === 'AGORACRED') {
+                renderizarMesOperadorAdm(window._pivotAgoracred || [], 'AGORACRED');
+            } else {
+                renderizarMesOperadorAdm(window._pivotSemear || [], 'SEMEAR');
+            }
+        }
+        
         // Se for lista geral, o select global do topo volta a ser TODOS
         const selGlobal = document.getElementById('filtro-operador-adm');
         if (selGlobal && selGlobal.value !== 'TODOS') {
@@ -1680,9 +1712,32 @@ async function selecionarOperadorPerfAdm() {
         const mes = document.getElementById('filtro-mes-adm')?.value || getMesAtual();
         const ano = document.getElementById('filtro-ano-adm')?.value || getAnoAtual();
         
+        // Define contexto para Visão Periódica do consolidado
+        const loginConsolidado = login;
+        window._admOpAtual    = loginConsolidado;
+        window._admBancoAtual = banco;
+
         const dadosConsolidados = obterDadosConsolidadosBanco(banco);
         if (dadosConsolidados) {
             renderizarMinhaPerformanceOpAdm(dadosConsolidados, mes, ano);
+        }
+
+        // Exibe e carrega Visão Periódica para o consolidado
+        const secaoPeriodica = document.getElementById('secao-visao-periodica-adm');
+        if (secaoPeriodica) secaoPeriodica.style.display = 'block';
+        if (typeof carregarVisaoPeriodicaAdm === 'function') {
+            const btnDefault = document.querySelector('.btn-periodo-adm[data-meses="1"]');
+            if (btnDefault) {
+                document.querySelectorAll('.btn-periodo-adm').forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color      = 'var(--purple-main)';
+                });
+                btnDefault.style.background = 'var(--purple-main)';
+                btnDefault.style.color      = 'white';
+            }
+            // Para consolidado usa login fictício mapeado para o banco
+            const loginApi = banco === 'SEMEAR' ? 'CONSOLIDADO_SEMEAR' : 'CONSOLIDADO_AGORACRED';
+            carregarVisaoPeriodicaAdm(loginApi, banco, 1);
         }
         
         // Se consolidado, o select global do topo volta a ser TODOS
@@ -1730,8 +1785,27 @@ async function selecionarOperadorPerfAdm() {
                 tempo_casa: operadorInfo.tempo_casa || resumo.tempo_casa || '',
                 tma: resumo.tma || {}
             };
-            
+
+            // Salva login e banco para uso na Visão Periódica
+            window._admOpAtual    = login;
+            window._admBancoAtual = banco;
+
             renderizarMinhaPerformanceOpAdm(_admOpSelecionadoData, mes, ano);
+
+            // Carrega Visão Periódica automaticamente com padrão de 1 mês
+            if (typeof carregarVisaoPeriodicaAdm === 'function') {
+                // Atualiza botões de período para refletir seleção inicial
+                const btnDefault = document.querySelector('.btn-periodo-adm[data-meses="1"]');
+                if (btnDefault) {
+                    document.querySelectorAll('.btn-periodo-adm').forEach(b => {
+                        b.style.background = 'transparent';
+                        b.style.color      = 'var(--purple-main)';
+                    });
+                    btnDefault.style.background = 'var(--purple-main)';
+                    btnDefault.style.color      = 'white';
+                }
+                carregarVisaoPeriodicaAdm(login, banco, 1);
+            }
 
             // Exibe e atualiza o banner visual informativo
             if (banner) {
@@ -1831,8 +1905,8 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
         const tagDu = duCalculado ? ` <span style="background:rgba(255,255,255,0.7);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;border:1px solid currentColor;">${duCalculado}</span>` : '';
         
         const dTrabalhados = perf.dias_trabalhados || 0;
-        const dRestantes = perf.dias_restantes || 0;
         const dTotal = perf.total_dias_uteis || 0;
+        const dRestantes = Math.max(0, dTotal - dTrabalhados);
         
         const extrasHtml = `
         <div style="margin-top:6px;font-size:12.5px;font-weight:600;display:flex;gap:12px;color:var(--text-main);align-items:center;flex-wrap:wrap;">
@@ -1904,7 +1978,40 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
         `;
     }
 
+    // --- 1b. MINI-CARD FAIXAS ≤360 / >360 (apenas SEMEAR) ---
+    const faixasOp = dadosPerformance.faixas_operador || null;
+    if (faixasOp && banco === 'SEMEAR') {
+        const ate   = faixasOp.ate_360   || {};
+        const acima = faixasOp.acima_360 || {};
+        const cardHtml = `
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+            <div style="flex:1;min-width:180px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:12px;padding:14px 18px;border-left:5px solid #10b981;">
+                <div style="font-size:10px;font-weight:700;color:#065f46;letter-spacing:.5px;margin-bottom:4px;">🟢 ATÉ 360 DIAS (META)</div>
+                <div style="font-size:18px;font-weight:900;color:#065f46;">${formatarMoeda(ate.total || 0)}</div>
+                <div style="font-size:11px;color:#047857;margin-top:3px;">${ate.qtd || 0} pgtos · ${ate.percentual || 0}% do total</div>
+            </div>
+            <div style="flex:1;min-width:180px;background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:12px;padding:14px 18px;border-left:5px solid #ef4444;">
+                <div style="font-size:10px;font-weight:700;color:#991b1b;letter-spacing:.5px;margin-bottom:4px;">🔴 ACIMA DE 360 DIAS</div>
+                <div style="font-size:18px;font-weight:900;color:#991b1b;">${formatarMoeda(acima.total || 0)}</div>
+                <div style="font-size:11px;color:#b91c1c;margin-top:3px;">${acima.qtd || 0} pgtos · ${acima.percentual || 0}% do total</div>
+            </div>
+        </div>`;
+        let miniCard = document.getElementById('mini-card-faixas-op-adm');
+        if (!miniCard) {
+            miniCard = document.createElement('div');
+            miniCard.id = 'mini-card-faixas-op-adm';
+            const diasBlock = document.getElementById('adm-op-dias-trab');
+            if (diasBlock) diasBlock.closest('.card-full')?.before(miniCard);
+        }
+        miniCard.innerHTML = cardHtml;
+        miniCard.style.display = 'block';
+    } else {
+        const mc = document.getElementById('mini-card-faixas-op-adm');
+        if (mc) mc.style.display = 'none';
+    }
+
     // --- 2. RESUMO DOS DIAS ---
+
     let diasComMeta = 0;
     let diasSemMeta = 0;
     diarios.forEach(d => {
@@ -1915,8 +2022,10 @@ function renderizarMinhaPerformanceOpAdm(dadosPerformance, mes, ano) {
     document.getElementById('adm-op-dias-trab').textContent = perf.dias_trabalhados || 0;
     document.getElementById('adm-op-dias-com-meta').textContent = diasComMeta;
     document.getElementById('adm-op-dias-sem-meta').textContent = diasSemMeta;
-    document.getElementById('adm-op-dias-rest').textContent = perf.dias_restantes || 0;
+    const _diasRestCalc = Math.max(0, (perf.total_dias_uteis || 0) - (perf.dias_trabalhados || 0));
+    document.getElementById('adm-op-dias-rest').textContent = (perf.dias_restantes != null) ? perf.dias_restantes : _diasRestCalc;
     document.getElementById('adm-op-total-dias').textContent = perf.total_dias_uteis || 0;
+
 
     // --- 3. RECEBIMENTO DIÁRIO ---
     const tbodyDiario = document.getElementById('tabela-recebimento-diario-adm-op');
@@ -2303,3 +2412,366 @@ function _fmtAcion(valor) {
     }
 }
 window._fmtAcion = _fmtAcion;
+
+// ================================================================
+// EXPORT - CSV DO RECEBIMENTO DIÁRIO (Visão Operador Individual — ADM)
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela de Recebimento Diário do operador individual
+ * visualizado pelo ADM. Lê os dados de window._admOpSelecionadoData.performance_diaria.
+ */
+function exportarPerformanceDiariaAdmOpCSV() {
+    const dadosOp = window._admOpSelecionadoData || {};
+    const diarios = dadosOp.performance_diaria || [];
+
+    if (!diarios || diarios.length === 0) {
+        alert('Nenhum dado de recebimento diário para exportar.');
+        return;
+    }
+
+    const perf  = dadosOp.performance || {};
+    const login = perf.login || 'operador';
+
+    const cabecalhos = ['Data', 'Dia Útil', 'Qtd. Pgtos', 'Recebimento (R$)', 'Meta Diária', 'Bateu Meta?'];
+
+    const linhas = diarios.map(d => {
+        // O backend fornece realizado_num (numérico) além de realizado (string formatada)
+        const realizadoNum = d.realizado_num != null
+            ? d.realizado_num
+            : parseFloat((d.realizado || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        const metaDiariaRaw = d.meta_diaria || '0';
+        const metaDiariaNum = typeof metaDiariaRaw === 'number'
+            ? metaDiariaRaw
+            : parseFloat(metaDiariaRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        return [
+            d.data_formatada || d.data || '—',
+            d.dia_util || '—',
+            d.quantidade ?? d.qtd ?? 0,
+            realizadoNum.toFixed(2).replace('.', ','),
+            metaDiariaNum.toFixed(2).replace('.', ','),
+            (d.meta_batida || 'Não').replace(/[^\w\sÀ-ú]/g, '').trim()
+        ].join(';');
+    });
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVAdm(csv, `recebimento_diario_${login}_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DO RESULTADO MÊS A MÊS (Visão Operador Individual — ADM)
+// ================================================================
+
+/**
+ * Exporta para CSV o Resultado Mês a Mês do operador individual.
+ * Lê os dados de window._admOpSelecionadoData.resultado_mes_a_mes.
+ */
+function exportarResultadoMesAdmOpCSV() {
+    const dadosOp = window._admOpSelecionadoData || {};
+    const lista   = dadosOp.resultado_mes_a_mes || [];
+
+    if (!lista || lista.length === 0) {
+        alert('Nenhum dado de Resultado Mês a Mês para exportar.');
+        return;
+    }
+
+    const perf  = dadosOp.performance || {};
+    const login = perf.login || 'operador';
+
+    const cabecalhos = ['Mês', 'Quantidade', 'Faturamento (R$)', 'Meta (R$)', '% Meta', 'Bateu?', 'Projeção (R$)', '% Projeção'];
+
+    const linhas = lista.map(item => [
+        item.mes || item.label || '—',
+        item.quantidade || 0,
+        (item.faturamento || 0).toFixed(2).replace('.', ','),
+        (item.meta        || 0).toFixed(2).replace('.', ','),
+        (item.perc_meta   || (item.meta > 0 ? (item.faturamento / item.meta) * 100 : 0)).toFixed(1).replace('.', ',') + '%',
+        item.bateu || '—',
+        (item.projecao || 0).toFixed(2).replace('.', ','),
+        (item.projecao_percentual || 0).toFixed(1).replace('.', ',') + '%'
+    ].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVAdm(csv, `resultado_mes_a_mes_${login}_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - HELPER: dispara download de blob CSV (App ADM)
+// ================================================================
+
+function _dispararDownloadCSVAdm(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// ================================================================
+// FILTRO DE INTERVALO — ABA DE OPERADORES ADM
+// ================================================================
+
+/**
+ * Aplica o filtro de intervalo de período na aba de Operadores do ADM.
+ * Calcula data_inicio e data_fim com base no intervalo selecionado
+ * e aciona o carregamento de dados completo.
+ *
+ * Intervalos disponíveis:
+ *   mes_atual  → mês corrente (sem filtro de range, usa ano/mês)
+ *   3_meses    → últimos 3 meses completos até hoje
+ *   6_meses    → últimos 6 meses completos até hoje
+ *   12_meses   → últimos 12 meses completos até hoje
+ */
+function aplicarIntervaloOperadores() {
+    const sel = document.getElementById('filtro-intervalo-operadores-adm');
+    if (!sel) return;
+
+    const intervalo = sel.value;
+    const hoje = new Date();
+
+    // Obtém os campos de data global do dashboard
+    const dataInicioEl = document.getElementById('filtro-data-inicio-adm');
+    const dataFimEl    = document.getElementById('filtro-data-fim-adm');
+    const mesEl        = document.getElementById('filtro-mes-adm');
+    const anoEl        = document.getElementById('filtro-ano-adm');
+
+    if (intervalo === 'mes_atual') {
+        // Limpa os filtros de range e volta ao mês/ano atual
+        if (dataInicioEl) dataInicioEl.value = '';
+        if (dataFimEl)    dataFimEl.value    = '';
+        // Garante que mês e ano estejam no valor atual
+        if (mesEl) mesEl.value = String(hoje.getMonth() + 1).padStart(2, '0');
+        if (anoEl) anoEl.value = String(hoje.getFullYear());
+    } else {
+        // Calcula quantos meses recuar
+        const mesesRecuar = intervalo === '3_meses' ? 3 : intervalo === '6_meses' ? 6 : 12;
+
+        // Data fim = hoje
+        const dataFim = new Date(hoje);
+        const yyyy_fim = dataFim.getFullYear();
+        const mm_fim   = String(dataFim.getMonth() + 1).padStart(2, '0');
+        const dd_fim   = String(dataFim.getDate()).padStart(2, '0');
+        const strFim   = `${yyyy_fim}-${mm_fim}-${dd_fim}`;
+
+        // Data início = 1º dia do mês de N meses atrás
+        const dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - mesesRecuar + 1, 1);
+        const yyyy_ini   = dataInicio.getFullYear();
+        const mm_ini     = String(dataInicio.getMonth() + 1).padStart(2, '0');
+        const strInicio  = `${yyyy_ini}-${mm_ini}-01`;
+
+        if (dataInicioEl) dataInicioEl.value = strInicio;
+        if (dataFimEl)    dataFimEl.value    = strFim;
+
+        // Atualiza mês/ano para o mês atual (necessário para a API)
+        if (mesEl) mesEl.value = String(hoje.getMonth() + 1).padStart(2, '0');
+        if (anoEl) anoEl.value = String(hoje.getFullYear());
+    }
+
+    // Recarrega os dados com os novos filtros
+    if (typeof carregarDadosAdm === 'function') {
+        carregarDadosAdm();
+    }
+}
+
+// Expõe funções ao escopo global
+window.exportarPerformanceDiariaAdmOpCSV = exportarPerformanceDiariaAdmOpCSV;
+window.exportarResultadoMesAdmOpCSV      = exportarResultadoMesAdmOpCSV;
+window.aplicarIntervaloOperadores        = aplicarIntervaloOperadores;
+
+// ================================================================
+// VISÃO PERIÓDICA — ADM (operador individual)
+// ================================================================
+
+// Dados da visão periódica do operador atualmente visualizado
+let _visaoPeriodicaAdmDados = [];
+
+/**
+ * Seleciona visualmente o botão de período e dispara o carregamento.
+ */
+function selecionarPeriodoAdm(btn, meses) {
+    document.querySelectorAll('.btn-periodo-adm').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color      = 'var(--purple-main)';
+    });
+    btn.style.background = 'var(--purple-main)';
+    btn.style.color      = 'white';
+
+    const login = window._admOpAtual || null;
+    const banco = window._admBancoAtual || 'SEMEAR';
+    if (!login) return;
+    carregarVisaoPeriodicaAdm(login, banco, meses);
+}
+window.selecionarPeriodoAdm = selecionarPeriodoAdm;
+
+/**
+ * Busca dados da API para o intervalo de N meses e renderiza a visão periódica.
+ * @param {string} login  - login do operador
+ * @param {string} banco  - 'SEMEAR' | 'AGORACRED'
+ * @param {number} meses  - quantidade de meses (1, 3, 6, 12)
+ */
+async function carregarVisaoPeriodicaAdm(login, banco, meses) {
+    const secao   = document.getElementById('secao-visao-periodica-adm');
+    const loading = document.getElementById('span-loading-periodica-adm');
+    const label   = document.getElementById('label-periodo-adm');
+    const tbody   = document.getElementById('tabela-periodica-adm');
+
+    if (!secao) return;
+    secao.style.display = 'block';
+    if (loading) loading.style.display = 'inline';
+    if (tbody)   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
+
+    const hoje    = new Date();
+    const dataFim = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+    const ini     = new Date(hoje.getFullYear(), hoje.getMonth() - meses + 1, 1);
+    const dataIni = `${ini.getFullYear()}-${String(ini.getMonth()+1).padStart(2,'0')}-01`;
+
+    const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    if (label) label.textContent = `${mesesNomes[ini.getMonth()]}/${ini.getFullYear()} — ${mesesNomes[hoje.getMonth()]}/${hoje.getFullYear()}`;
+
+    // Calcula meses dentro do período
+    const mesesNoPeriodo = [];
+    const cursor = new Date(ini.getFullYear(), ini.getMonth(), 1);
+    while (cursor <= hoje) {
+        mesesNoPeriodo.push(cursor.getMonth() + 1);
+        cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    // ── Para CONSOLIDADO usa os dados já carregados (sem chamar /api/resumo) ──
+    const isConsolidado = login === 'CONSOLIDADO_SEMEAR' || login === 'CONSOLIDADO_AGORACRED';
+    if (isConsolidado) {
+        const bancoDados = banco === 'AGORACRED' ? dadosAdmCompletos.agoracred : dadosAdmCompletos.semear;
+        const listaConsolidada = ((bancoDados && bancoDados.resultado_mes_a_mes) || [])
+            .filter(item => mesesNoPeriodo.includes(item.mes_num));
+        _visaoPeriodicaAdmDados = listaConsolidada;
+        renderizarKPIsPeriodicaAdm(listaConsolidada);
+        renderizarTabelaPeriodicaAdm(listaConsolidada);
+        renderizarFaixasPeriodica(null, banco); // sem faixas individuais no consolidado
+        if (loading) loading.style.display = 'none';
+        return;
+    }
+
+    try {
+        const resp = await fetch(`/api/resumo/${login}?data_inicio=${dataIni}&data_fim=${dataFim}`);
+        const json = await resp.json();
+        if (!json.success) throw new Error(json.message || 'Erro na API');
+
+        const lista = (json.data.resultado_mes_a_mes || []).filter(item =>
+            mesesNoPeriodo.includes(item.mes_num)
+        );
+        _visaoPeriodicaAdmDados = lista;
+        renderizarKPIsPeriodicaAdm(lista);
+        renderizarTabelaPeriodicaAdm(lista);
+
+        // Faixas de atraso do período (apenas SEMEAR)
+        const faixasPeriodo = banco === 'SEMEAR' ? (json.data.faixas_operador || null) : null;
+        renderizarFaixasPeriodica(faixasPeriodo, banco);
+    } catch (e) {
+        console.error('[Visão Periódica ADM]', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:20px;">Erro ao carregar: ${e.message}</td></tr>`;
+    } finally {
+        if (loading) loading.style.display = 'none';
+    }
+}
+window.carregarVisaoPeriodicaAdm = carregarVisaoPeriodicaAdm;
+
+/** Preenche os KPI cards com totais acumulados do período. */
+function renderizarKPIsPeriodicaAdm(lista) {
+    const totalFat  = lista.reduce((s, i) => s + (i.faturamento || 0), 0);
+    const totalMeta = lista.reduce((s, i) => s + (i.meta       || 0), 0);
+    const totalQtd  = lista.reduce((s, i) => s + (i.quantidade || 0), 0);
+    const pctMeta   = totalMeta > 0 ? (totalFat / totalMeta * 100).toFixed(1) : '0.0';
+
+    const el = id => document.getElementById(id);
+    if (el('kpi-periodica-fat-adm'))  el('kpi-periodica-fat-adm').textContent  = formatarMoeda(totalFat);
+    if (el('kpi-periodica-meta-adm')) el('kpi-periodica-meta-adm').textContent = formatarMoeda(totalMeta);
+    if (el('kpi-periodica-perc-adm')) el('kpi-periodica-perc-adm').textContent = `${pctMeta}%`;
+    if (el('kpi-periodica-qtd-adm'))  el('kpi-periodica-qtd-adm').textContent  = totalQtd;
+}
+
+/** Renderiza a tabela mês a mês da visão periódica. */
+function renderizarTabelaPeriodicaAdm(lista) {
+    const tbody = document.getElementById('tabela-periodica-adm');
+    if (!tbody) return;
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;">Nenhum dado no período</td></tr>';
+        return;
+    }
+    tbody.innerHTML = lista.map((item, idx) => {
+        const bateuCor = item.bateu === 'Sim' ? '#16a34a' : '#dc2626';
+        const bateuBg  = item.bateu === 'Sim' ? '#dcfce7' : '#fee2e2';
+        const bg = idx % 2 === 0 ? '#fff' : '#faf5ff';
+        const percFmt = (item.perc_meta || 0).toFixed(1) + '%';
+        return `<tr style="background:${bg};">
+            <td style="padding:9px 14px;text-align:center;font-weight:600;">${item.mes || '-'}</td>
+            <td style="padding:9px 14px;text-align:center;">${item.quantidade || 0}</td>
+            <td style="padding:9px 14px;text-align:center;font-weight:600;">${formatarMoeda(item.faturamento || 0)}</td>
+            <td style="padding:9px 14px;text-align:center;">${formatarMoeda(item.meta || 0)}</td>
+            <td style="padding:9px 14px;text-align:center;font-weight:700;">${percFmt}</td>
+            <td style="padding:9px 14px;text-align:center;"><span style="background:${bateuBg};color:${bateuCor};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">${item.bateu || '-'}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+/**
+ * Exporta CSV da Visão Periódica (admin).
+ */
+function exportarVisaoPeriodicaAdmCSV() {
+    const lista = _visaoPeriodicaAdmDados || [];
+    if (!lista || lista.length === 0) {
+        alert('Nenhum dado periódico para exportar.');
+        return;
+    }
+    const cabecalhos = ['Mês', 'Qtd. Pgtos', 'Faturamento (R$)', 'Meta (R$)', '% Meta', 'Bateu Meta?'];
+    const linhas = lista.map(item => [
+        item.mes || '-',
+        item.quantidade || 0,
+        (item.faturamento || 0).toFixed(2).replace('.',','),
+        (item.meta        || 0).toFixed(2).replace('.',','),
+        (item.perc_meta   || 0).toFixed(1).replace('.',',') + '%',
+        item.bateu || '-'
+    ].join(';'));
+    // Totais
+    const tFat  = lista.reduce((s, i) => s + (i.faturamento || 0), 0);
+    const tMeta = lista.reduce((s, i) => s + (i.meta || 0), 0);
+    const tQtd  = lista.reduce((s, i) => s + (i.quantidade || 0), 0);
+    const tPerc = tMeta > 0 ? (tFat / tMeta * 100).toFixed(1) : '0.0';
+    linhas.push(['TOTAL ACÚMULADO', tQtd, tFat.toFixed(2).replace('.',','), tMeta.toFixed(2).replace('.',','), `${tPerc.replace('.',',')}%`, ''].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    const login = window._admOpAtual || 'operador';
+    _dispararDownloadCSVAdm(csv, `visao_periodica_${login}_${new Date().toISOString().split('T')[0]}.csv`);
+}
+window.exportarVisaoPeriodicaAdmCSV = exportarVisaoPeriodicaAdmCSV;
+
+// ================================================================
+// PIVOT: alternância SEMEAR ↔ AGORACRED (Mês × Operador)
+// ================================================================
+function alterarPivotBanco(banco) {
+    const btnS  = document.getElementById('btn-pivot-semear');
+    const btnA  = document.getElementById('btn-pivot-agoracred');
+    const head  = document.getElementById('thead-mes-operador-adm');
+    const thOp  = document.getElementById('th-op-sticky');
+    const tit   = document.getElementById('titulo-mes-operador-adm');
+    if (banco === 'SEMEAR') {
+        if (btnS) { btnS.style.background = '#7E3E9A'; btnS.style.color = 'white'; }
+        if (btnA) { btnA.style.background = 'transparent'; btnA.style.color = '#10b981'; }
+        if (head) head.style.background = '#7E3E9A';
+        if (thOp) thOp.style.background = '#7E3E9A';
+        if (tit)  tit.style.color = '#7E3E9A';
+        renderizarMesOperadorAdm(window._pivotSemear || [], 'SEMEAR');
+    } else {
+        if (btnS) { btnS.style.background = 'transparent'; btnS.style.color = '#7E3E9A'; }
+        if (btnA) { btnA.style.background = '#10b981'; btnA.style.color = 'white'; }
+        if (head) head.style.background = '#10b981';
+        if (thOp) thOp.style.background = '#10b981';
+        if (tit)  tit.style.color = '#10b981';
+        renderizarMesOperadorAdm(window._pivotAgoracred || [], 'AGORACRED');
+    }
+}
+window.alterarPivotBanco = alterarPivotBanco;

@@ -262,6 +262,22 @@ function renderizarDashboard(dados) {
     }
 
     // ============================================================
+    // VISÃO PERIÓDICA — carga automática (padrão 1 mês)
+    // ============================================================
+    if (typeof carregarVisaoPeriodicaOp === 'function') {
+        const btnDefault = document.querySelector('.btn-periodo-op[data-meses="1"]');
+        if (btnDefault) {
+            document.querySelectorAll('.btn-periodo-op').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color      = 'var(--purple-main)';
+            });
+            btnDefault.style.background = 'var(--purple-main)';
+            btnDefault.style.color      = 'white';
+        }
+        carregarVisaoPeriodicaOp(1);
+    }
+
+    // ============================================================
     // ALERTA DE INATIVIDADE (> 2 DIAS SEM RECEBIMENTO)
     // Banner exibido no topo da página do operador.
     // ============================================================
@@ -2065,4 +2081,321 @@ function filtrarDUAtual() {
     // Recarrega com o novo filtro de DU
     if (typeof carregarDados === 'function') carregarDados();
 }
-window.filtrarDUAtual = filtrarDUAtual;
+window.filtrarDUAtual = filtrarDUAtual;
+
+// ================================================================
+// EXPORT - CSV DO RECEBIMENTO DIÁRIO (Performance dia a dia do Operador)
+// ================================================================
+
+/**
+ * Exporta para CSV a tabela de Recebimento Diário do operador.
+ * Lê os dados de window._ultimoResultadoPerformance.performance_diaria.
+ */
+function exportarPerformanceDiariaCSV() {
+    const perf    = window._ultimoResultadoPerformance || {};
+    const diarios = perf.performance_diaria || [];
+
+    if (!diarios || diarios.length === 0) {
+        alert('Nenhum dado de recebimento diário para exportar.');
+        return;
+    }
+
+    const cabecalhos = ['Data', 'Dia Útil', 'Qtd. Pgtos', 'Recebimento (R$)', 'Meta Diária', 'Bateu Meta?'];
+
+    const linhas = diarios.map(d => {
+        // O backend fornece realizado_num (numerico) e realizado (string formatada)
+        // Prefere o campo numerico para garantir precisao no CSV
+        const realizadoNum = d.realizado_num != null
+            ? d.realizado_num
+            : parseFloat((d.realizado || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        // meta_diaria pode ser string formatada ("R$ X,XX") ou zero
+        const metaDiariaRaw = d.meta_diaria || '0';
+        const metaDiariaNum = typeof metaDiariaRaw === 'number'
+            ? metaDiariaRaw
+            : parseFloat(metaDiariaRaw.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+
+        return [
+            d.data_formatada || d.data || '—',
+            d.dia_util || '—',
+            d.quantidade ?? d.qtd ?? 0,
+            realizadoNum.toFixed(2).replace('.', ','),
+            metaDiariaNum.toFixed(2).replace('.', ','),
+            (d.meta_batida || 'Nao').replace(/[^\w\sA-Za-zÀ-ú]/g, '').trim()
+        ].join(';');
+    });
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVOp(csv, `recebimento_diario_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DO RESULTADO MÊS A MÊS (Operador)
+// ================================================================
+
+/**
+ * Exporta para CSV o Resultado Mês a Mês do operador.
+ * Lê os dados de window._ultimoResultadoPerformance.resultado_mes_a_mes.
+ */
+function exportarResultadoMesOperadorCSV() {
+    const perf    = window._ultimoResultadoPerformance || {};
+    const lista   = perf.resultado_mes_a_mes || [];
+
+    if (!lista || lista.length === 0) {
+        alert('Nenhum dado de Resultado Mês a Mês para exportar.');
+        return;
+    }
+
+    const cabecalhos = ['Mês', 'Quantidade', 'Faturamento (R$)', 'Meta (R$)', '% Meta', 'Bateu?', 'Projeção (R$)', '% Projeção'];
+
+    const linhas = lista.map(item => [
+        item.mes || item.label || '—',
+        item.quantidade || 0,
+        (item.faturamento || 0).toFixed(2).replace('.', ','),
+        (item.meta        || 0).toFixed(2).replace('.', ','),
+        (item.perc_meta   || (item.meta > 0 ? (item.faturamento / item.meta) * 100 : 0)).toFixed(1).replace('.', ',') + '%',
+        item.bateu || '—',
+        (item.projecao || 0).toFixed(2).replace('.', ','),
+        (item.projecao_percentual || 0).toFixed(1).replace('.', ',') + '%'
+    ].join(';'));
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVOp(csv, `resultado_mes_a_mes_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - CSV DO COMPARATIVO TRIMESTRAL (Operador)
+// ================================================================
+
+/**
+ * Exporta para CSV a Visão Trimestral por Dia Útil do operador.
+ * Lê os dados de window._ultimoResultadoPerformance.trimestre_du.
+ */
+function exportarTrimestreDUOperadorCSV() {
+    const perf   = window._ultimoResultadoPerformance || {};
+    const dados  = perf.trimestre_du || null;
+
+    if (!dados || !dados.linhas || dados.linhas.length === 0) {
+        alert('Nenhum dado trimestral para exportar.');
+        return;
+    }
+
+    // O backend retorna: colunas, linhas[{dia_util, data_atual, v_atual, v_m1, v_m2}],
+    // totais: {total_atual, total_m1, total_m2} ou {v_atual, v_m1, v_m2}
+    const colunas    = dados.colunas || ['Mês Atual', 'M-1', 'M-2'];
+    const cabecalhos = ['Dia Útil', 'Data', colunas[0] || 'Mês Atual', colunas[1] || 'M-1', colunas[2] || 'M-2'];
+
+    const linhas = dados.linhas.map(linha => [
+        linha.dia_util || linha.du   || '',
+        linha.data_atual || linha.data || '',
+        (linha.v_atual || linha.m0 || 0).toFixed(2).replace('.', ','),
+        (linha.v_m1   || linha.m1 || 0).toFixed(2).replace('.', ','),
+        (linha.v_m2   || linha.m2 || 0).toFixed(2).replace('.', ',')
+    ].join(';'));
+
+    if (dados.totais) {
+        const t = dados.totais;
+        linhas.push([
+            'TOTAL', '',
+            (t.total_atual || t.v_atual || t.m0 || 0).toFixed(2).replace('.', ','),
+            (t.total_m1   || t.v_m1   || t.m1 || 0).toFixed(2).replace('.', ','),
+            (t.total_m2   || t.v_m2   || t.m2 || 0).toFixed(2).replace('.', ',')
+        ].join(';'));
+    }
+
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVOp(csv, `trimestral_operador_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+// ================================================================
+// EXPORT - HELPER: dispara download de blob CSV (Operador)
+// ================================================================
+
+/**
+ * Cria um link temporário e dispara o download de um arquivo CSV.
+ * @param {string} csvContent - Conteúdo CSV
+ * @param {string} filename   - Nome do arquivo
+ */
+function _dispararDownloadCSVOp(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Expõe funções ao escopo global
+window.exportarPerformanceDiariaCSV    = exportarPerformanceDiariaCSV;
+window.exportarResultadoMesOperadorCSV = exportarResultadoMesOperadorCSV;
+window.exportarTrimestreDUOperadorCSV  = exportarTrimestreDUOperadorCSV;
+
+// ================================================================
+// VISÃO PERIÓDICA — Operador (Minha Performance)
+// ================================================================
+
+let _visaoPeriodicaOpDados = [];
+
+/**
+ * Seleciona visualmente o botão de período e carrega os dados.
+ */
+function selecionarPeriodoOp(btn, meses) {
+    document.querySelectorAll('.btn-periodo-op').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color      = 'var(--purple-main)';
+    });
+    btn.style.background = 'var(--purple-main)';
+    btn.style.color      = 'white';
+    carregarVisaoPeriodicaOp(meses);
+}
+
+/**
+ * Busca dados do período para o operador logado e renderiza visão periódica.
+ * @param {number} meses - 1, 3, 6 ou 12
+ */
+async function carregarVisaoPeriodicaOp(meses) {
+    const loading = document.getElementById('span-loading-periodica-op');
+    const label   = document.getElementById('label-periodo-op');
+    const tbody   = document.getElementById('tabela-periodica-op');
+
+    const login = window.operadorLogado ? window.operadorLogado.login : null;
+    if (!login) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:20px;">Login não disponível</td></tr>';
+        return;
+    }
+
+    if (loading) loading.style.display = 'inline';
+    if (tbody)   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Carregando...</td></tr>';
+
+    const hoje    = new Date();
+    const dataFim = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+    const ini     = new Date(hoje.getFullYear(), hoje.getMonth() - meses + 1, 1);
+    const dataIni = `${ini.getFullYear()}-${String(ini.getMonth()+1).padStart(2,'0')}-01`;
+
+    const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    if (label) label.textContent = `${mesesNomes[ini.getMonth()]}/${ini.getFullYear()} — ${mesesNomes[hoje.getMonth()]}/${hoje.getFullYear()}`;
+
+    try {
+        const resp = await fetch(`/api/resumo/${login}?data_inicio=${dataIni}&data_fim=${dataFim}`);
+        const json = await resp.json();
+        if (!json.success) throw new Error(json.message || 'Erro na API');
+
+        // Filtra SOMENTE os meses dentro do período solicitado
+        const mesesNoPeriodo = [];
+        const cursor = new Date(ini.getFullYear(), ini.getMonth(), 1);
+        while (cursor <= hoje) {
+            mesesNoPeriodo.push(cursor.getMonth() + 1);
+            cursor.setMonth(cursor.getMonth() + 1);
+        }
+        const lista = (json.data.resultado_mes_a_mes || []).filter(item =>
+            mesesNoPeriodo.includes(item.mes_num)
+        );
+
+        _visaoPeriodicaOpDados = lista;
+        _renderizarKPIsPeriodicaOp(lista);
+        _renderizarTabelaPeriodicaOp(lista);
+
+        // Faixas de atraso do período (apenas SEMEAR)
+        const banco = window.operadorLogado ? (window.operadorLogado.banco || '') : '';
+        renderizarFaixasPeriodicaOp(banco === 'SEMEAR' ? (json.data.faixas_operador || null) : null);
+    } catch (e) {
+        console.error('[Visão Periódica Op]', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:20px;">Erro: ${e.message}</td></tr>`;
+    } finally {
+        if (loading) loading.style.display = 'none';
+    }
+}
+
+function _renderizarKPIsPeriodicaOp(lista) {
+    const totalFat  = lista.reduce((s, i) => s + (i.faturamento || 0), 0);
+    const totalMeta = lista.reduce((s, i) => s + (i.meta || 0), 0);
+    const totalQtd  = lista.reduce((s, i) => s + (i.quantidade || 0), 0);
+    const pctMeta   = totalMeta > 0 ? (totalFat / totalMeta * 100).toFixed(1) : '0.0';
+
+    const el = id => document.getElementById(id);
+    if (el('kpi-periodica-fat-op'))  el('kpi-periodica-fat-op').textContent  = formatarMoeda(totalFat);
+    if (el('kpi-periodica-meta-op')) el('kpi-periodica-meta-op').textContent = formatarMoeda(totalMeta);
+    if (el('kpi-periodica-perc-op')) el('kpi-periodica-perc-op').textContent = `${pctMeta}%`;
+    if (el('kpi-periodica-qtd-op'))  el('kpi-periodica-qtd-op').textContent  = totalQtd;
+}
+
+function _renderizarTabelaPeriodicaOp(lista) {
+    const tbody = document.getElementById('tabela-periodica-op');
+    if (!tbody) return;
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px;">Nenhum dado no período</td></tr>';
+        return;
+    }
+    tbody.innerHTML = lista.map((item, idx) => {
+        const bateuCor = item.bateu === 'Sim' ? '#16a34a' : '#dc2626';
+        const bateuBg  = item.bateu === 'Sim' ? '#dcfce7' : '#fee2e2';
+        const bg = idx % 2 === 0 ? '#fff' : '#faf5ff';
+        return `<tr style="background:${bg};">
+            <td style="padding:9px 14px;text-align:center;font-weight:600;">${item.mes || '-'}</td>
+            <td style="padding:9px 14px;text-align:center;">${item.quantidade || 0}</td>
+            <td style="padding:9px 14px;text-align:center;font-weight:600;">${formatarMoeda(item.faturamento || 0)}</td>
+            <td style="padding:9px 14px;text-align:center;">${formatarMoeda(item.meta || 0)}</td>
+            <td style="padding:9px 14px;text-align:center;font-weight:700;">${(item.perc_meta || 0).toFixed(1)}%</td>
+            <td style="padding:9px 14px;text-align:center;"><span style="background:${bateuBg};color:${bateuCor};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">${item.bateu || '-'}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function exportarVisaoPeriodicaOpCSV() {
+    const lista = _visaoPeriodicaOpDados || [];
+    if (!lista || lista.length === 0) {
+        alert('Nenhum dado periódico para exportar.');
+        return;
+    }
+    const cabecalhos = ['Mês', 'Qtd. Pgtos', 'Faturamento (R$)', 'Meta (R$)', '% Meta', 'Bateu Meta?'];
+    const linhas = lista.map(item => [
+        item.mes || '-',
+        item.quantidade || 0,
+        (item.faturamento || 0).toFixed(2).replace('.',','),
+        (item.meta        || 0).toFixed(2).replace('.',','),
+        (item.perc_meta   || 0).toFixed(1).replace('.',',') + '%',
+        item.bateu || '-'
+    ].join(';'));
+    const tFat  = lista.reduce((s, i) => s + (i.faturamento || 0), 0);
+    const tMeta = lista.reduce((s, i) => s + (i.meta || 0), 0);
+    const tQtd  = lista.reduce((s, i) => s + (i.quantidade || 0), 0);
+    const tPerc = tMeta > 0 ? (tFat / tMeta * 100).toFixed(1) : '0.0';
+    linhas.push(['TOTAL ACUMULADO', tQtd, tFat.toFixed(2).replace('.',','), tMeta.toFixed(2).replace('.',','), `${tPerc.replace('.',',')}%`, ''].join(';'));
+    const csv = '\uFEFF' + [cabecalhos.join(';'), ...linhas].join('\n');
+    _dispararDownloadCSVOp(csv, `visao_periodica_${new Date().toISOString().split('T')[0]}.csv`);
+}
+
+function renderizarFaixasPeriodicaOp(faixas) {
+    const c = document.getElementById('container-faixas-periodica-op');
+    if (!c) return;
+    if (!faixas) { c.style.display = 'none'; return; }
+    const ate   = faixas.ate_360   || {};
+    const acima = faixas.acima_360 || {};
+    c.style.display = 'block';
+    c.innerHTML = `
+    <div style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:#7e3d97;letter-spacing:.5px;margin-bottom:10px;">
+            <i class="fas fa-layer-group"></i> FAIXAS DE ATRASO NO PERÍODO
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:10px;padding:12px 16px;border-left:4px solid #10b981;">
+                <div style="font-size:10px;font-weight:700;color:#065f46;letter-spacing:.5px;margin-bottom:4px;">🟢 ATÉ 360 DIAS</div>
+                <div style="font-size:18px;font-weight:900;color:#065f46;">${formatarMoeda(ate.total || 0)}</div>
+                <div style="font-size:11px;color:#047857;margin-top:2px;">${ate.qtd || 0} pgtos &middot; ${ate.percentual || 0}%</div>
+            </div>
+            <div style="flex:1;min-width:160px;background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:10px;padding:12px 16px;border-left:4px solid #ef4444;">
+                <div style="font-size:10px;font-weight:700;color:#991b1b;letter-spacing:.5px;margin-bottom:4px;">🔴 ACIMA DE 360 DIAS</div>
+                <div style="font-size:18px;font-weight:900;color:#991b1b;">${formatarMoeda(acima.total || 0)}</div>
+                <div style="font-size:11px;color:#b91c1c;margin-top:2px;">${acima.qtd || 0} pgtos &middot; ${acima.percentual || 0}%</div>
+            </div>
+        </div>
+    </div>`;
+}
+
+window.selecionarPeriodoOp         = selecionarPeriodoOp;
+window.exportarVisaoPeriodicaOpCSV = exportarVisaoPeriodicaOpCSV;
+window.carregarVisaoPeriodicaOp    = carregarVisaoPeriodicaOp;
+

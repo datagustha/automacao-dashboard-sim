@@ -386,6 +386,38 @@ body {
     overflow-y: auto;
 }
 
+/* Tabelas que devem mostrar todos os dados sem scroll vertical */
+.table-wrapper-no-scroll {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+.table-wrapper-no-scroll table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.table-wrapper-no-scroll th {
+    padding: 10px 14px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.table-wrapper-no-scroll td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    color: var(--text-main);
+    text-align: center;
+}
+.table-wrapper-no-scroll tbody tr:hover {
+    background: var(--gray-bg);
+}
+
 .table-wrapper table {
     width: 100%;
     border-collapse: collapse;
